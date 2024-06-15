@@ -44,6 +44,8 @@
     "zego-express-engine-webrtc": "^2.23.0"
   },
   "scripts": {
+    "dev": "concurrently -n \"client,server\" -c \"bgBlue,bgYellow\" \"npm run start\" \"npm run server\"",
+    "server": "cd Chat-App-Backend && npm run start",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
@@ -68,6 +70,7 @@
     ]
   },
   "devDependencies": {
-    "@faker-js/faker": "^7.5.0"
+    "@faker-js/faker": "^7.5.0",
+    "concurrently": "^8.2.2"
   }
 }
