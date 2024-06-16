@@ -511,7 +511,7 @@ io.on("connection", async (socket) => {
       // Update the user's status to Offline in the database
       const user = await User.findByIdAndUpdate(
         data.user_id,
-        { status: "Offline" },
+        { status: "Offline", lastSeen: new Date().toISOString() },
         { new: true }
       ).populate("friends", "socket_id");
 

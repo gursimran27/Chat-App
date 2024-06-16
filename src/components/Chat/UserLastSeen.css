@@ -1,0 +1,11 @@
+/* UserLastSeen.css */
+.last-seen {
+  opacity: 1;
+  transform: scale(1) ;
+  transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+}
+
+.last-seen.updating {
+  opacity: 0.5;
+  transform: scale(0.85);
+}

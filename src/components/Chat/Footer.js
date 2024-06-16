@@ -253,6 +253,8 @@ const Footer = () => {
             >
               <IconButton
                 onClick={() => {
+                  if(value=="")
+                    return;
                   console.log("clicked...")
                   socket.emit("text_message", {
                     message: linkify(value),
@@ -261,6 +263,7 @@ const Footer = () => {
                     to: current_conversation.user_id,
                     type: containsUrl(value) ? "Link" : "Text",
                   });
+                  setValue("")
                 }}
               >
                 <PaperPlaneTilt color="#ffffff" />

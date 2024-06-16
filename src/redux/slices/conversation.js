@@ -21,6 +21,7 @@ const slice = createSlice({
   initialState,
   reducers: {
     fetchDirectConversations(state, action) {
+      console.log("hola",action.payload.conversations)
       const list = action.payload.conversations.map((el) => {
         const user = el.participants.find(
           (elm) => elm._id.toString() !== user_id
@@ -33,7 +34,7 @@ const slice = createSlice({
         //   img: `https://${S3_BUCKET_NAME}.s3.${AWS_S3_REGION}.amazonaws.com/${user?.avatar}`,
           img: faker.image.avatar(),
         //   msg: el.messages.slice(-1)[0].text, 
-          msg: faker.music.songName(), 
+          msg: el.messages[el.messages.length-1].text, 
           time: "9:36",
           unread: 2,
           pinned: false,
@@ -60,7 +61,7 @@ const slice = createSlice({
               name: `${user?.firstName} ${user?.lastName}`,
               online: user?.status === "Online",
               img: faker.image.avatar(),
-              msg: "KIDDA PRA",
+              msg: this_conversation.messages[this_conversation .messages.length - 1].text,
               time: "9:36",
               unread: 0,
               pinned: false,
@@ -85,7 +86,7 @@ const slice = createSlice({
         name: `${user?.firstName} ${user?.lastName}`,
         online: user?.status === "Online",
         img: faker.image.avatar(),
-        msg: faker.music.songName(),
+        msg: user?.text,
         time: "9:36",
         unread: 0,
         pinned: false,
@@ -109,6 +110,7 @@ const slice = createSlice({
     },
     addDirectMessage(state, action) {
       state.direct_chat.current_messages.push(action.payload.message);
+      console.log("inside addDirect messages",state.direct_chat.current_messages)
     },
     updateCurrent_conversationOnlineStatus(state,action){
       state.direct_chat.current_conversation = { ...state.direct_chat.current_conversation , online:action.payload.status}
@@ -122,6 +124,21 @@ const slice = createSlice({
       )
       console.log("conversations setting status to ",action.payload.status)
     },
+    updateConversationForNewMessage(state,action){
+      const this_conversation = action.payload.conversation;
+      state.direct_chat.conversations = state.direct_chat.conversations.map(
+        (el) => {
+          if (el?.id !== this_conversation._id) {
+            return el;
+          } else {
+            return {
+              ...el,
+              msg:this_conversation?.messages?.text,
+            };
+          }
+        }
+      );
+    }
   },
 });
 
@@ -161,7 +178,7 @@ export const FetchCurrentMessages = ({messages}) => {
 
 export const AddDirectMessage = (message) => {
   return async (dispatch, getState) => {
-    dispatch(slice.actions.addDirectMessage({message}));
+    await dispatch(slice.actions.addDirectMessage({message}));
   }
 }
 
@@ -174,5 +191,11 @@ export const UpdateCurrent_conversationOnlineStatus = ({status}) => {
 export const UpdateConversationOnlineStatus = ({status,user_id}) => {
   return async (dispatch, getState) => {
     dispatch(slice.actions.updateConversationOnlineStatus({status:status,user_id:user_id}));
+  }
+}
+
+export const UpdateConversationForNewMessage = ({conversation}) => {
+  return async (dispatch, getState) => {
+    dispatch(slice.actions.updateConversationForNewMessage({conversation:conversation}));
   }
 }

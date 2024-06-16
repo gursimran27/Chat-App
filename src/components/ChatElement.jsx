@@ -45,6 +45,7 @@ const StyledBadge = styled(Badge)(({ theme }) => ({
 }));
 
 const ChatElement = ({ img, name, msg, time, unread, online, id }) => {
+  // console.log("msg",msg);
   const dispatch = useDispatch();
   const {room_id} = useSelector((state) => state.app);//state variable
   // const selectedChatId = room_id?.toString();

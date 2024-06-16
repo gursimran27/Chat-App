@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Avatar,
   Badge,
@@ -20,6 +20,9 @@ import { ToggleSidebar } from "../../redux/slices/app";
 import { useDispatch, useSelector } from "react-redux";
 import { StartAudioCall } from "../../redux/slices/audioCall";
 import { StartVideoCall } from "../../redux/slices/videoCall";
+import axios from "../../utils/axios";
+import { format, isToday, isYesterday } from 'date-fns';
+import './UserLastSeen.css'; // Import CSS file
 
 const StyledBadge = styled(Badge)(({ theme }) => ({
   "& .MuiBadge-badge": {
@@ -81,6 +84,61 @@ const ChatHeader = () => {
   const handleCloseConversationMenu = () => {
     setConversationMenuAnchorEl(null);
   };
+
+  const userId = current_conversation?.user_id
+
+  const [lastSeen, setLastSeen] = useState(null);
+  const [updating, setUpdating] = useState(false);
+
+  const { token } = useSelector((state)=>state.auth)
+
+
+  useEffect(() => {
+    const fetchLastSeen = async () => {
+      setUpdating(true);
+      try {
+        const response = await axios.get(`http://localhost:3001/api/v1/user/${userId}/lastSeen`,
+
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setTimeout(() => setUpdating(false), 500); // Wait for the transition to complete
+        setLastSeen(response.data.lastSeen);
+      } catch (error) {
+        console.error('Error fetching last seen:', error);
+        setUpdating(false);
+      }
+    };
+
+    fetchLastSeen();
+  }, [userId,current_conversation?.online]);
+
+
+  // const formatLastSeen = (lastSeen) => {
+  //   if (!lastSeen) return 'Offline';
+  //   const date = new Date(lastSeen);
+  //   return `Last seen: ${date.toLocaleString()}`;
+  // };
+
+
+  const formatLastSeen = (lastSeen) => {
+    if (!lastSeen) return 'Offline';
+    const date = new Date(lastSeen);
+
+    if (isToday(date)) {
+      return `Last seen today at ${format(date, 'p')}`; // 'p' for time with AM/PM
+    } else if (isYesterday(date)) {
+      return `Last seen yesterday at ${format(date, 'p')}`;
+    } else {
+      return `Last seen on ${format(date, 'PPpp')}`; // 'PPpp' for full date and time with AM/PM
+    }
+  };
+
+
 
   return (
     <>
@@ -147,7 +205,9 @@ const ChatHeader = () => {
               <Typography variant="subtitle2">
                 {current_conversation?.name}
               </Typography>
-              <Typography variant="caption">Offline</Typography>
+              <div className={`last-seen ${updating ? 'updating' : ''}`}>
+                <Typography variant="caption"> {formatLastSeen(lastSeen)}</Typography>
+              </div>
             </Stack>
                 </>
               )

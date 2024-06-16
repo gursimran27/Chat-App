@@ -14,6 +14,7 @@ import {
   UpdateDirectConversation,
   AddDirectConversation,
   AddDirectMessage,
+  UpdateConversationForNewMessage,
 } from "../../redux/slices/conversation";
 import AudioCallNotification from "../../sections/Dashboard/Audio/CallNotification";
 import VideoCallNotification from "../../sections/Dashboard/video/CallNotification";
@@ -49,11 +50,19 @@ const DashboardLayout = () => {
 
   // Using useRef to keep a mutable reference
   const currentConversationUserIDRef = useRef(current_conversation?.user_id);
+  const currentConversationIDRef = useRef(current_conversation?.id);
+  const concersationsRef = useRef(conversations);
 
   // Update the ref whenever current_conversation changes
   useEffect(() => {
     currentConversationUserIDRef.current = current_conversation?.user_id;
-    console.log("changed", currentConversationUserIDRef.current);
+    currentConversationIDRef.current = current_conversation?.id;
+    concersationsRef.current = conversations;
+
+
+    console.log("changed Id", currentConversationIDRef.current);
+    console.log("changed userId", currentConversationUserIDRef.current);
+    console.log("changed conversations", concersationsRef.current);
   }, [current_conversation]);
 
   useEffect(() => {
@@ -94,10 +103,11 @@ const DashboardLayout = () => {
       });
 
       socket.on("new_message", (data) => {
+        const currentConversationID = currentConversationIDRef.current;
         const message = data.message;
-        console.log(current_conversation, data);
+        console.log("current_conversation",current_conversation,"data", data);
         // check if msg we got is from currently selected conversation
-        if (current_conversation?.id === data.conversation_id) {
+        if (currentConversationID === data.conversation_id) {
           dispatch(
             AddDirectMessage({
               id: message._id,
@@ -109,14 +119,22 @@ const DashboardLayout = () => {
             })
           );
         }
+
+        let conversation={
+          _id: data.conversation_id,
+          messages:data.message,
+        }
+
+        dispatch(UpdateConversationForNewMessage({conversation}));
         console.log("new message pushed to current_message");
         // after pushing new message to the current_message state variable the Message.jsx component is rerendered and all the current_messages are agian rerendered
       });
 
       socket.on("start_chat", (data) => {
-        console.log(data);
+        // console.log("data",data.messages[data.messages.length - 1].text );
+        const Conversations = concersationsRef.current;
         // add / update to conversation list
-        const existing_conversation = conversations.find(
+        const existing_conversation = Conversations.find(
           (el) => el?.id === data._id
         );
         if (existing_conversation) {

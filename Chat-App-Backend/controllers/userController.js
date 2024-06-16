@@ -22,6 +22,18 @@ exports.getMe = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.lastSeen = catchAsync(async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).send('User not found');
+    }
+    res.status(200).json({ lastSeen: user?.lastSeen });
+  } catch (error) {
+    res.status(500).send('Server error');
+  }
+});
+
 exports.updateMe = catchAsync(async (req, res, next) => {
   const filteredBody = filterObj(
     req.body,
