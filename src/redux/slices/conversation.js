@@ -138,7 +138,13 @@ const slice = createSlice({
           }
         }
       );
+    },
+    clearCurrentMessagesAndCurrentConversation(state,action){
+      console.log("bye")
+      state.direct_chat.current_messages = [];
+      state.direct_chat.current_conversation = null;
     }
+    
   },
 });
 
@@ -197,5 +203,11 @@ export const UpdateConversationOnlineStatus = ({status,user_id}) => {
 export const UpdateConversationForNewMessage = ({conversation}) => {
   return async (dispatch, getState) => {
     dispatch(slice.actions.updateConversationForNewMessage({conversation:conversation}));
+  }
+}
+
+export const ClearCurrentMessagesAndCurrentConversation = () => {
+  return async (dispatch, getState) => {
+    dispatch(slice.actions.clearCurrentMessagesAndCurrentConversation());
   }
 }

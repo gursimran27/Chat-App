@@ -40,7 +40,7 @@ const GeneralApp = () => {
           }}
         >
           {chat_type === "individual" &&
-          room_id !== null ? (
+          room_id !== null  ? (
             <Conversation />
           ) : (
             <Stack

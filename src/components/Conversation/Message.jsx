@@ -26,6 +26,9 @@ const Message = ({ isMobile, menu }) => {
   const { room_id } = useSelector((state) => state.app);
 
   useEffect(() => {
+    if(room_id===null){
+        return;
+    }
     console.log("inside useEffect updating current_conversation and current_messages")
     const current = conversations.find((el) => el?.id === room_id);
     console.log("cuurent",current);

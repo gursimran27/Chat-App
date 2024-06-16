@@ -181,7 +181,7 @@ const DashboardLayout = () => {
 
       // *To ensure the latest state is always used inside the socket event listener, you can leverage the useRef hook to keep a mutable reference to the current value of current_conversation.user_id. This way, you always have the most up-to-date value when the event is triggered.
       if (currentConversationUserID === data.user_id.trim()) {
-        console.log(current_conversation.user_id);
+        console.log(currentConversationUserID);
         dispatch(UpdateCurrent_conversationOnlineStatus({ status: false }));
       }
 
@@ -201,7 +201,7 @@ const DashboardLayout = () => {
 
       // *To ensure the latest state is always used inside the socket event listener, you can leverage the useRef hook to keep a mutable reference to the current value of current_conversation.user_id. This way, you always have the most up-to-date value when the event is triggered.
       if (currentConversationUserID === data.user_id) {
-        console.log(current_conversation.user_id);
+        console.log(currentConversationUserID);
         dispatch(UpdateCurrent_conversationOnlineStatus({ status: true }));
       }
 

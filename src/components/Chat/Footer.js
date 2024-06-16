@@ -18,7 +18,7 @@ import {
   User,
 } from "phosphor-react";
 import { useTheme, styled } from "@mui/material/styles";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import useResponsive from "../../hooks/useResponsive";
 
 import data from "@emoji-mart/data";
@@ -192,6 +192,30 @@ const Footer = () => {
     }
   }
 
+
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      if (event.key === 'Enter' && value !== '') {
+        // Trigger button click event
+        document.getElementById('sendButton').click();
+      }
+    };
+
+    const inputElement = inputRef.current;//when the room_id is set to null then this component is unmount so the <chatElement/> is not rendered so the ref of it is also not there 
+
+    // Attach event listener to listen for 'Enter' key press
+    if (inputElement) {
+      inputElement.addEventListener('keydown', handleKeyPress);
+    }
+
+    return () => {
+      // Clean up event listener on component unmount
+      if (inputElement) {
+        inputElement.removeEventListener('keydown', handleKeyPress);
+      }
+    };
+  }, [value]);
+
   return (
     <Box
       sx={{
@@ -242,7 +266,7 @@ const Footer = () => {
             sx={{
               height: 48,
               width: 48,
-              backgroundColor: theme.palette.primary.main,
+              backgroundColor: value ==""? "#899" : theme.palette.primary.main,
               borderRadius: 1.5,
             }}
           >
@@ -252,6 +276,8 @@ const Footer = () => {
               justifyContent="center"
             >
               <IconButton
+                id="sendButton"
+                disabled={value==""}
                 onClick={() => {
                   if(value=="")
                     return;
@@ -260,13 +286,13 @@ const Footer = () => {
                     message: linkify(value),
                     conversation_id: room_id,
                     from: user_id,
-                    to: current_conversation.user_id,
+                    to: current_conversation?.user_id,
                     type: containsUrl(value) ? "Link" : "Text",
                   });
                   setValue("")
                 }}
               >
-                <PaperPlaneTilt color="#ffffff" />
+                <PaperPlaneTilt color= "#ffffff" />
               </IconButton>
             </Stack>
           </Box>
