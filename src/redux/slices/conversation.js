@@ -105,6 +105,7 @@ const slice = createSlice({
         message: el.text,
         incoming: el.to === user_id,
         outgoing: el.from === user_id,
+        status:el?.status
       }));
       state.direct_chat.current_messages = formatted_messages;
     },
@@ -140,9 +141,23 @@ const slice = createSlice({
       );
     },
     clearCurrentMessagesAndCurrentConversation(state,action){
-      console.log("bye")
+      console.log("bye......")
       state.direct_chat.current_messages = [];
       state.direct_chat.current_conversation = null;
+    },
+    updateMessageStatus(state,action){
+      console.log("marking to delivered")
+      state.direct_chat.current_messages = state.direct_chat.current_messages.map((el)=>{
+        if(el.status=="Sent"){
+          return {
+            ...el,
+            status:"Delivered"
+          }
+        }
+        else{
+          return el;
+        }
+      })
     }
     
   },
@@ -209,5 +224,11 @@ export const UpdateConversationForNewMessage = ({conversation}) => {
 export const ClearCurrentMessagesAndCurrentConversation = () => {
   return async (dispatch, getState) => {
     dispatch(slice.actions.clearCurrentMessagesAndCurrentConversation());
+  }
+}
+
+export const UpdateMessageStatus = () => {
+  return async (dispatch, getState) => {
+    dispatch(slice.actions.updateMessageStatus());
   }
 }

@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 dotenv.config({ path: "./config.env" });
+const { ObjectId } = mongoose.Types;
 
 const path = require("path");
 
@@ -228,13 +229,29 @@ io.on("connection", async (socket) => {
 
     // message => {to, from, type, created_at, text, file}
 
-    const new_message = {
-      to: to,
-      from: from,
-      type: type,
-      created_at: Date.now(),
-      text: message,
-    };
+    let new_message=null;
+
+    if(to_user?.status=="Online"){
+      new_message = {
+        to: to,
+        from: from,
+        type: type,
+        created_at: Date.now(),
+        text: message,
+        status: "Delivered",
+      };
+    }else{
+      new_message = {
+        to: to,
+        from: from,
+        type: type,
+        created_at: Date.now(),
+        text: message,
+        status: "Sent",
+      };
+    }
+
+    
 
     // fetch OneToOneMessage Doc & push a new message to existing conversation
     const chat = await OneToOneMessage.findById(conversation_id);
@@ -281,6 +298,102 @@ io.on("connection", async (socket) => {
     // emit incoming_message -> to user
 
     // emit outgoing_message -> from user
+  });
+
+  // Event to handle marking messages as delivered
+  // socket.on("markMessagesDelivered", async ({ userId, conversationIds }) => {
+  //   try {
+  //     console.log("marking");
+  //     for (let conversationId of conversationIds) {
+  //       if (ObjectId.isValid(conversationId)) {
+  //         try {
+  //           conversationId = new ObjectId(conversationId);
+  //         } catch (err) {
+  //           console.error(`Invalid ObjectId: ${conversationId}`);
+  //           continue; // Skip invalid ObjectId
+  //         }
+  //       }
+  //       await OneToOneMessage.updateMany(
+  //         {
+  //           _id: conversationId,
+  //           "messages.to": userId,
+  //           "messages.status": "Sent",
+  //         },
+  //         { $set: { "messages.$.status": "Delivered" } }
+  //       );
+
+  //       // Emit the update to the sender
+  //       const conversation = await OneToOneMessage.findById(
+  //         conversationId
+  //       ).populate("participants");
+  //       const senderId = conversation.participants.find(
+  //         (id) => id.toString() !== userId
+  //       );
+  //       const sender = await User.findById(senderId);
+
+  //       if (sender && sender.socket_id) {
+  //         io.to(sender.socket_id).emit("messagesDelivered", conversationId);
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // });
+
+
+
+  socket.on('markMessagesDelivered', async ( data ) => {
+    let userId = data.current_id;
+    console.log("userObjectId........",userId);
+    
+    // if (!ObjectId.isValid(data?.userId)) {
+    //   console.error(`Invalid user ID: ${userId}`);
+    //   return;
+    // }
+
+    // const userObjectId = new ObjectId(userId);
+
+
+    try {
+      // Find all messages where the user is a participant
+      const conversations = await OneToOneMessage.find({
+        participants: userId
+      });
+
+      for (let conversation of conversations) {
+        let updateRequired = false; // Track if any message statuses are updated
+        // let sendersToNotify = conversation.messages.from; // To collect unique sender IDs
+
+        // Update message statuses and collect sender IDs
+        for (let message of conversation.messages) {
+          if (message.to.equals(userId) && message.status === 'Sent') {
+            message.status = 'Delivered';
+            updateRequired = true; // Mark that an update is needed
+            // sendersToNotify.add(message.from.toString());
+          }
+        }
+
+        // Save updates if necessary
+        if (updateRequired) {
+          await conversation.save(); // Save the conversation only if updates were made
+
+
+        const senderId = conversation.participants.find(
+            (id) => id.toString() !== userId
+        );
+
+        const sender = await User.findById(senderId);
+        
+          
+          // Notify senders about the delivered status
+          if (sender && sender.socket_id) {
+            io.to(sender.socket_id).emit("messagesDelivered", conversation?._id);
+          }
+        }
+      }
+    } catch (err) {
+      console.error(`Error updating message statuses: ${err.message}`);
+    }
   });
 
   // -------------- HANDLE AUDIO CALL SOCKET EVENTS ----------------- //

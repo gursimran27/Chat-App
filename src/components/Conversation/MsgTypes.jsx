@@ -216,6 +216,12 @@ const TextMsg = ({el,menu}) => {
         >
           {el.message}
         </Typography>
+        {
+          !el.incoming && 
+          (
+            <Typography>{el?.status}</Typography>
+          )
+        }
         </Box>
         {menu && <MessageOption />}
         

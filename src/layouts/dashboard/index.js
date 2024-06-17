@@ -15,6 +15,7 @@ import {
   AddDirectConversation,
   AddDirectMessage,
   UpdateConversationForNewMessage,
+  UpdateMessageStatus,
 } from "../../redux/slices/conversation";
 import AudioCallNotification from "../../sections/Dashboard/Audio/CallNotification";
 import VideoCallNotification from "../../sections/Dashboard/video/CallNotification";
@@ -47,11 +48,14 @@ const DashboardLayout = () => {
   const { conversations, current_conversation } = useSelector(
     (state) => state.conversation.direct_chat
   );
+  const current_id = useSelector((state)=>state.app.user._id)
 
   // Using useRef to keep a mutable reference
   const currentConversationUserIDRef = useRef(current_conversation?.user_id);
   const currentConversationIDRef = useRef(current_conversation?.id);
   const concersationsRef = useRef(conversations);
+  const current_idRef = useRef(current_id);
+
 
   // Update the ref whenever current_conversation changes
   useEffect(() => {
@@ -76,6 +80,11 @@ const DashboardLayout = () => {
     dispatch(UpdateVideoCallDialog({ state: false }));
   };
 
+
+  // useEffect(()=>{
+    
+  // },[current_id])
+
   useEffect(() => {
     if (isLoggedIn) {
       window.onload = function () {
@@ -92,6 +101,16 @@ const DashboardLayout = () => {
         console.log("socket-connected");
       }
 
+      // !!!!!!!!!!!!!!!!!!!!!
+      const current_id = current_idRef.current;
+    if(isLoggedIn && current_id!=undefined){
+
+        console.log("ll",current_id)
+  
+        socket.emit('markMessagesDelivered', { current_id });
+    }
+      
+
       socket.on("audio_call_notification", (data) => {
         // TODO => dispatch an action to add this in call_queue
         dispatch(PushToAudioCallQueue(data));
@@ -102,11 +121,12 @@ const DashboardLayout = () => {
         dispatch(PushToVideoCallQueue(data));
       });
 
-      socket.on("new_message", (data) => {
+      socket.on("new_message", async (data) => {
         const currentConversationID = currentConversationIDRef.current;
         const message = data.message;
         console.log("current_conversation",current_conversation,"data", data);
         // check if msg we got is from currently selected conversation
+        
         if (currentConversationID === data.conversation_id) {
           dispatch(
             AddDirectMessage({
@@ -116,6 +136,7 @@ const DashboardLayout = () => {
               message: message.text,
               incoming: message.to === user_id,
               outgoing: message.from === user_id,
+              status: message?.status,
             })
           );
         }
@@ -125,7 +146,14 @@ const DashboardLayout = () => {
           messages:data.message,
         }
 
-        dispatch(UpdateConversationForNewMessage({conversation}));
+        dispatch(UpdateConversationForNewMessage({conversation}));//for the conversations list
+// !!!!!!!!!!!!!!!!!!!!!!!
+        // const conversationIds =[] 
+        // conversationIds[0]=data.conversation_id
+        // await socket.emit('markMessagesDelivered', { current_id , conversationIds });
+
+
+
         console.log("new message pushed to current_message");
         // after pushing new message to the current_message state variable the Message.jsx component is rerendered and all the current_messages are agian rerendered
       });
@@ -210,6 +238,14 @@ const DashboardLayout = () => {
       );
     });
 
+    socket.on('messagesDelivered', (conversationId) => {
+      const currentConversationID = currentConversationIDRef.current;
+      if(currentConversationID == conversationId){
+        console.log("entering.... ")
+        dispatch(UpdateMessageStatus());
+      }
+    });
+
     // Remove event listener on component unmount
     return () => {
       socket?.off("new_friend_request");
@@ -220,6 +256,7 @@ const DashboardLayout = () => {
       socket?.off("audio_call_notification");
       socket?.off("friend_offline");
       socket?.off("friend_online");
+      socket?.off("messagesDelivered");
     };
   }, [isLoggedIn, socket]);
 
