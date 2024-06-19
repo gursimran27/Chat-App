@@ -216,6 +216,9 @@ io.on("connection", async (socket) => {
     }
   });
 
+
+
+
   // Handle incoming text/link messages
   socket.on("text_message", async (data) => {
     console.log("Received message:", data);
@@ -229,18 +232,40 @@ io.on("connection", async (socket) => {
 
     // message => {to, from, type, created_at, text, file}
 
-    let new_message=null;
+    let new_message = null;
+    // let currentConversationIdOfTo_User=null;
 
-    if(to_user?.status=="Online"){
-      new_message = {
-        to: to,
-        from: from,
-        type: type,
-        created_at: Date.now(),
-        text: message,
-        status: "Delivered",
-      };
-    }else{
+    if (to_user?.status == "Online") {
+      // Emit an event to the frontend to get the current conversation ID
+      // io.to(to_user.socket_id).emit("isSeen");
+
+      // socket.on("currentConversationId", ({ currentConversationid }) => {
+      //   currentConversationIdOfTo_User = currentConversationid;
+      //   console.log("Received currentConversationId:", currentConversationIdOfTo_User);
+      // });
+
+      // console.log("hi",currentConversationIdOfTo_User)
+
+      // if (currentConversationIdOfTo_User === conversation_id) {
+        // new_message = {
+        //   to: to,
+        //   from: from,
+        //   type: type,
+        //   created_at: Date.now(),
+        //   text: message,
+        //   status: "Seen", // Update the status to Seen if the conversation IDs match
+        // };
+      // } else {
+        new_message = {
+          to: to,
+          from: from,
+          type: type,
+          created_at: Date.now(),
+          text: message,
+          status: "Delivered", // Update the status to Delivered if the conversation IDs do not match
+        };
+      // }
+    } else {
       new_message = {
         to: to,
         from: from,
@@ -250,8 +275,6 @@ io.on("connection", async (socket) => {
         status: "Sent",
       };
     }
-
-    
 
     // fetch OneToOneMessage Doc & push a new message to existing conversation
     const chat = await OneToOneMessage.findById(conversation_id);
@@ -274,6 +297,8 @@ io.on("connection", async (socket) => {
       message: new_message,
     });
   });
+
+
 
   // handle Media/Document Message
   socket.on("file_message", (data) => {
@@ -340,12 +365,10 @@ io.on("connection", async (socket) => {
   //   }
   // });
 
-
-
-  socket.on('markMessagesDelivered', async ( data ) => {
+  socket.on("markMessagesDelivered", async (data) => {
     let userId = data.current_id;
-    console.log("userObjectId........",userId);
-    
+    console.log("userObjectId........", userId);
+
     // if (!ObjectId.isValid(data?.userId)) {
     //   console.error(`Invalid user ID: ${userId}`);
     //   return;
@@ -353,11 +376,10 @@ io.on("connection", async (socket) => {
 
     // const userObjectId = new ObjectId(userId);
 
-
     try {
       // Find all messages where the user is a participant
       const conversations = await OneToOneMessage.find({
-        participants: userId
+        participants: userId,
       });
 
       for (let conversation of conversations) {
@@ -366,8 +388,8 @@ io.on("connection", async (socket) => {
 
         // Update message statuses and collect sender IDs
         for (let message of conversation.messages) {
-          if (message.to.equals(userId) && message.status === 'Sent') {
-            message.status = 'Delivered';
+          if (message.to.equals(userId) && message.status === "Sent") {
+            message.status = "Delivered";
             updateRequired = true; // Mark that an update is needed
             // sendersToNotify.add(message.from.toString());
           }
@@ -377,17 +399,18 @@ io.on("connection", async (socket) => {
         if (updateRequired) {
           await conversation.save(); // Save the conversation only if updates were made
 
-
-        const senderId = conversation.participants.find(
+          const senderId = conversation.participants.find(
             (id) => id.toString() !== userId
-        );
+          );
 
-        const sender = await User.findById(senderId);
-        
-          
+          const sender = await User.findById(senderId);
+
           // Notify senders about the delivered status
           if (sender && sender.socket_id) {
-            io.to(sender.socket_id).emit("messagesDelivered", conversation?._id);
+            io.to(sender.socket_id).emit(
+              "messagesDelivered",
+              conversation?._id
+            );
           }
         }
       }
