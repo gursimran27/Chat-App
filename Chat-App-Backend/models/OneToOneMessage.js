@@ -33,7 +33,7 @@ const oneToOneMessageSchema = new mongoose.Schema({
       },
       status: {
         type: String,
-        enum: ["Sent", "Delivered"],
+        enum: ["Sent", "Delivered","Seen"],
         default: "Sent",
       },
     },

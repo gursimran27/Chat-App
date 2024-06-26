@@ -216,9 +216,6 @@ io.on("connection", async (socket) => {
     }
   });
 
-
-
-
   // Handle incoming text/link messages
   socket.on("text_message", async (data) => {
     console.log("Received message:", data);
@@ -247,23 +244,23 @@ io.on("connection", async (socket) => {
       // console.log("hi",currentConversationIdOfTo_User)
 
       // if (currentConversationIdOfTo_User === conversation_id) {
-        // new_message = {
-        //   to: to,
-        //   from: from,
-        //   type: type,
-        //   created_at: Date.now(),
-        //   text: message,
-        //   status: "Seen", // Update the status to Seen if the conversation IDs match
-        // };
+      // new_message = {
+      //   to: to,
+      //   from: from,
+      //   type: type,
+      //   created_at: Date.now(),
+      //   text: message,
+      //   status: "Seen", // Update the status to Seen if the conversation IDs match
+      // };
       // } else {
-        new_message = {
-          to: to,
-          from: from,
-          type: type,
-          created_at: Date.now(),
-          text: message,
-          status: "Delivered", // Update the status to Delivered if the conversation IDs do not match
-        };
+      new_message = {
+        to: to,
+        from: from,
+        type: type,
+        created_at: Date.now(),
+        text: message,
+        status: "Delivered", // Update the status to Delivered if the conversation IDs do not match
+      };
       // }
     } else {
       new_message = {
@@ -297,8 +294,6 @@ io.on("connection", async (socket) => {
       message: new_message,
     });
   });
-
-
 
   // handle Media/Document Message
   socket.on("file_message", (data) => {
@@ -416,6 +411,44 @@ io.on("connection", async (socket) => {
       }
     } catch (err) {
       console.error(`Error updating message statuses: ${err.message}`);
+    }
+  });
+
+  socket.on("markMsgAsSeen", async ({ conversationId, sender_id }) => {
+    try {
+      // Find the conversation by ID
+      const conversation = await OneToOneMessage.findById(conversationId);
+
+      if (!conversation) {
+        console.error(`Conversation not found: ${conversationId}`);
+        return;
+      }
+
+      // Update message statuses to 'Seen' if they are 'Sent' or 'Delivered'
+      let updateRequired = false;
+      for (let message of conversation.messages) {
+        if (message.status === "Sent" || message.status === "Delivered") {
+          message.status = "Seen";
+          updateRequired = true;
+        }
+      }
+
+      // Save the updated conversation to the database
+      if (updateRequired) {
+        await conversation.save({ validateModifiedOnly: true });
+      }
+
+      const sender = await User.findById(sender_id);
+
+      // Notify senders about the Seen status
+      if (sender && sender.socket_id) {
+        io.to(sender.socket_id).emit(
+          "messagesSeen",
+          conversationId
+        );
+      }
+    } catch (error) {
+      console.log(error);
     }
   });
 

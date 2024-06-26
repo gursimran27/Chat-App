@@ -5,8 +5,6 @@ import { useSelector } from "react-redux";
 
 const user_id = window.localStorage.getItem("user_id");
 
-
-
 const initialState = {
   direct_chat: {
     conversations: [],
@@ -21,7 +19,7 @@ const slice = createSlice({
   initialState,
   reducers: {
     fetchDirectConversations(state, action) {
-      console.log("hola",action.payload.conversations)
+      console.log("hola", action.payload.conversations);
       const list = action.payload.conversations.map((el) => {
         const user = el.participants.find(
           (elm) => elm._id.toString() !== user_id
@@ -31,10 +29,10 @@ const slice = createSlice({
           user_id: user?._id,
           name: `${user?.firstName} ${user?.lastName}`,
           online: user?.status === "Online",
-        //   img: `https://${S3_BUCKET_NAME}.s3.${AWS_S3_REGION}.amazonaws.com/${user?.avatar}`,
+          //   img: `https://${S3_BUCKET_NAME}.s3.${AWS_S3_REGION}.amazonaws.com/${user?.avatar}`,
           img: faker.image.avatar(),
-        //   msg: el.messages.slice(-1)[0].text, 
-          msg: el.messages[el.messages.length-1].text, 
+          //   msg: el.messages.slice(-1)[0].text,
+          msg: el.messages[el.messages.length - 1].text,
           time: "9:36",
           unread: 2,
           pinned: false,
@@ -57,11 +55,13 @@ const slice = createSlice({
             );
             return {
               id: this_conversation._id,
-              user_id: user?._id,//onetoonemsssage's _id
+              user_id: user?._id, //onetoonemsssage's _id
               name: `${user?.firstName} ${user?.lastName}`,
               online: user?.status === "Online",
               img: faker.image.avatar(),
-              msg: this_conversation.messages[this_conversation .messages.length - 1].text,
+              msg: this_conversation.messages[
+                this_conversation.messages.length - 1
+              ].text,
               time: "9:36",
               unread: 0,
               pinned: false,
@@ -105,27 +105,37 @@ const slice = createSlice({
         message: el.text,
         incoming: el.to === user_id,
         outgoing: el.from === user_id,
-        status:el?.status
+        status: el?.status,
       }));
       state.direct_chat.current_messages = formatted_messages;
     },
     addDirectMessage(state, action) {
       state.direct_chat.current_messages.push(action.payload.message);
-      console.log("inside addDirect messages",state.direct_chat.current_messages)
+      console.log(
+        "inside addDirect messages",
+        state.direct_chat.current_messages
+      );
     },
-    updateCurrent_conversationOnlineStatus(state,action){
-      state.direct_chat.current_conversation = { ...state.direct_chat.current_conversation , online:action.payload.status}
-      console.log("current_conversation setting status to  ",action.payload.status)
+    updateCurrent_conversationOnlineStatus(state, action) {
+      state.direct_chat.current_conversation = {
+        ...state.direct_chat.current_conversation,
+        online: action.payload.status,
+      };
+      console.log(
+        "current_conversation setting status to  ",
+        action.payload.status
+      );
     },
-    updateConversationOnlineStatus(state,action){
-      state.direct_chat.conversations = state.direct_chat.conversations.map(conversation =>
-        conversation.user_id === action.payload.user_id
-        ? { ...conversation, online: action.payload.status }
-        : conversation
-      )
-      console.log("conversations setting status to ",action.payload.status)
+    updateConversationOnlineStatus(state, action) {
+      state.direct_chat.conversations = state.direct_chat.conversations.map(
+        (conversation) =>
+          conversation.user_id === action.payload.user_id
+            ? { ...conversation, online: action.payload.status }
+            : conversation
+      );
+      console.log("conversations setting status to ", action.payload.status);
     },
-    updateConversationForNewMessage(state,action){
+    updateConversationForNewMessage(state, action) {
       const this_conversation = action.payload.conversation;
       state.direct_chat.conversations = state.direct_chat.conversations.map(
         (el) => {
@@ -134,32 +144,45 @@ const slice = createSlice({
           } else {
             return {
               ...el,
-              msg:this_conversation?.messages?.text,
+              msg: this_conversation?.messages?.text,
             };
           }
         }
       );
     },
-    clearCurrentMessagesAndCurrentConversation(state,action){
-      console.log("bye......")
+    clearCurrentMessagesAndCurrentConversation(state, action) {
+      console.log("bye......");
       state.direct_chat.current_messages = [];
       state.direct_chat.current_conversation = null;
     },
-    updateMessageStatus(state,action){
-      console.log("marking to delivered")
-      state.direct_chat.current_messages = state.direct_chat.current_messages.map((el)=>{
-        if(el.status=="Sent"){
-          return {
-            ...el,
-            status:"Delivered"
+    updateMessageStatus(state, action) {
+      console.log("marking to ",action.payload.status);
+      state.direct_chat.current_messages =
+        state.direct_chat.current_messages.map((el) => {
+          const status = action.payload.status;
+          console.log("status",status)
+          if (status == "Delivered") {
+            if (el.status == "Sent") {
+              return {
+                ...el,
+                status: "Delivered",
+              };
+            } else {
+              return el;
+            }
+          }else{
+            if(el.status=="Sent" || el.status=="Delivered"){
+              return {
+                ...el,
+                status:"Seen",
+              }
+            }
+            else{
+              return el;
+            }
           }
-        }
-        else{
-          return el;
-        }
-      })
-    }
-    
+        });
+    },
   },
 });
 
@@ -190,45 +213,55 @@ export const SetCurrentConversation = (current_conversation) => {
   };
 };
 
-
-export const FetchCurrentMessages = ({messages}) => {
-  return async(dispatch, getState) => {
-    dispatch(slice.actions.fetchCurrentMessages({messages}));
-  }
-}
+export const FetchCurrentMessages = ({ messages }) => {
+  return async (dispatch, getState) => {
+    dispatch(slice.actions.fetchCurrentMessages({ messages }));
+  };
+};
 
 export const AddDirectMessage = (message) => {
   return async (dispatch, getState) => {
-    await dispatch(slice.actions.addDirectMessage({message}));
-  }
-}
+    await dispatch(slice.actions.addDirectMessage({ message }));
+  };
+};
 
-export const UpdateCurrent_conversationOnlineStatus = ({status}) => {
+export const UpdateCurrent_conversationOnlineStatus = ({ status }) => {
   return async (dispatch, getState) => {
-    dispatch(slice.actions.updateCurrent_conversationOnlineStatus({status:status}));
-  }
-}
+    dispatch(
+      slice.actions.updateCurrent_conversationOnlineStatus({ status: status })
+    );
+  };
+};
 
-export const UpdateConversationOnlineStatus = ({status,user_id}) => {
+export const UpdateConversationOnlineStatus = ({ status, user_id }) => {
   return async (dispatch, getState) => {
-    dispatch(slice.actions.updateConversationOnlineStatus({status:status,user_id:user_id}));
-  }
-}
+    dispatch(
+      slice.actions.updateConversationOnlineStatus({
+        status: status,
+        user_id: user_id,
+      })
+    );
+  };
+};
 
-export const UpdateConversationForNewMessage = ({conversation}) => {
+export const UpdateConversationForNewMessage = ({ conversation }) => {
   return async (dispatch, getState) => {
-    dispatch(slice.actions.updateConversationForNewMessage({conversation:conversation}));
-  }
-}
+    dispatch(
+      slice.actions.updateConversationForNewMessage({
+        conversation: conversation,
+      })
+    );
+  };
+};
 
 export const ClearCurrentMessagesAndCurrentConversation = () => {
   return async (dispatch, getState) => {
     dispatch(slice.actions.clearCurrentMessagesAndCurrentConversation());
-  }
-}
+  };
+};
 
-export const UpdateMessageStatus = () => {
+export const UpdateMessageStatus = ({ status }) => {
   return async (dispatch, getState) => {
-    dispatch(slice.actions.updateMessageStatus());
-  }
-}
+    dispatch(slice.actions.updateMessageStatus({ status: status }));
+  };
+};

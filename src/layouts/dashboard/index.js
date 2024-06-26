@@ -49,21 +49,23 @@ const DashboardLayout = () => {
     (state) => state.conversation.direct_chat
   );
   const current_id = useSelector((state) => state.app.user._id);
-  // const currentMsg = useSelector((state)=>state.direct_chat.current_messages);
+  const currentMsg = useSelector((state)=> state.conversation.direct_chat.current_messages);
 
   // Using useRef to keep a mutable reference
   const currentConversationUserIDRef = useRef(current_conversation?.user_id);
   const currentConversationIDRef = useRef(current_conversation?.id);
   const concersationsRef = useRef(conversations);
   const current_idRef = useRef(current_id);
-  // const currentMsgRef = useRef(currentMsg);
+  const currentMsgRef = useRef(currentMsg);
+  const socketRef = useRef(socket);
+  console.log(currentMsgRef.current)
 
   // Update the ref whenever current_conversation changes
   useEffect(() => {
     currentConversationUserIDRef.current = current_conversation?.user_id;
     currentConversationIDRef.current = current_conversation?.id;
     concersationsRef.current = conversations;
-    // currentMsgRef = currentMsg;
+    currentMsgRef.current = currentMsg;
 
     console.log("changed Id", currentConversationIDRef.current);
     console.log("changed userId", currentConversationUserIDRef.current);
@@ -74,18 +76,28 @@ const DashboardLayout = () => {
     dispatch(FetchUserProfile());
   }, []);
 
-  // useEffect(()=>{
-  //   const currentMsg = currentMsgRef.current;
-  //   const conversationId = currentConversationIDRef.current;
-  //   const lastMessageIsFromOtherUser = currentMsg.length && currentMsg[currentMsg.length-1].outgoing ==false
+  useEffect(()=>{
+    currentMsgRef.current = currentMsg;
+    const currentMsgs = currentMsgRef.current;
+    const conversationId = currentConversationIDRef.current;
+    const sender_id = currentConversationUserIDRef.current;
+    const lastMessageIsFromOtherUser = (currentMsgs.length && currentMsgs[currentMsg.length-1]?.outgoing ===false && currentMsgs[currentMsg.length-1]?.status!="Seen")
 
-  //   if(lastMessageIsFromOtherUser){
-  //     socket.emit("markMsgAsSeen",{
-  //       conversationId: conversationId
-  //     })
-  //   }
+    if (!socket) {
+      connectSocket(user_id);
+      console.log("socket-connected");
+    }
 
-  // },[socket,currentMsgRef.current,currentConversationIDRef.current])
+    console.log("cal...",sender_id,lastMessageIsFromOtherUser,currentMsgs[currentMsgs.length-1])
+    if(lastMessageIsFromOtherUser && socket){
+      console.log("calling...")
+      socket.emit("markMsgAsSeen",{
+        conversationId: conversationId,
+        sender_id: sender_id,
+      });
+    }
+
+  },[socket,currentMsg,current_conversation])
 
   const handleCloseAudioDialog = () => {
     dispatch(UpdateAudioCallDialog({ state: false }));
@@ -248,7 +260,15 @@ const DashboardLayout = () => {
       const currentConversationID = currentConversationIDRef.current;
       if (currentConversationID == conversationId) {
         console.log("entering.... ");
-        dispatch(UpdateMessageStatus());
+        dispatch(UpdateMessageStatus({status:"Delivered"}));
+      }
+    });
+
+    socket.on("messagesSeen", (conversationId) => {
+      const currentConversationID = currentConversationIDRef.current;
+      if (currentConversationID == conversationId) {
+        console.log("entering.... ");
+        dispatch(UpdateMessageStatus({status:"Seen"}));
       }
     });
 
@@ -274,7 +294,7 @@ const DashboardLayout = () => {
       socket?.off("friend_offline");
       socket?.off("friend_online");
       socket?.off("messagesDelivered");
-      socket?.off("isSeen");
+      socket?.off("messagesSeen");
     };
   }, [isLoggedIn, socket]);
 
