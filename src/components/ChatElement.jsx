@@ -4,6 +4,7 @@ import { styled, useTheme, alpha } from "@mui/material/styles";
 // import { useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { SelectConversation } from "../redux/slices/app";
+import { UpdateConversationUnread } from "../redux/slices/conversation";
 
 const truncateText = (string, n) => {
   return string?.length > n ? `${string?.slice(0, n)}...` : string;
@@ -64,6 +65,7 @@ const ChatElement = ({ img, name, msg, time, unread, online, id }) => {
     <StyledChatBox
       onClick={() => {
         dispatch(SelectConversation({room_id: id}));
+        dispatch(UpdateConversationUnread({conversationId: id}));
       }}
       sx={{
         width: "100%",

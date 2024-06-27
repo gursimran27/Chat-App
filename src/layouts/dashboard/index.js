@@ -16,6 +16,7 @@ import {
   AddDirectMessage,
   UpdateConversationForNewMessage,
   UpdateMessageStatus,
+  UpdateConversationUnread,
 } from "../../redux/slices/conversation";
 import AudioCallNotification from "../../sections/Dashboard/Audio/CallNotification";
 import VideoCallNotification from "../../sections/Dashboard/video/CallNotification";
@@ -94,6 +95,7 @@ const DashboardLayout = () => {
       socket.emit("markMsgAsSeen",{
         conversationId: conversationId,
         sender_id: sender_id,
+        user_id: user_id,
       });
     }
 
@@ -164,6 +166,7 @@ const DashboardLayout = () => {
         let conversation = {
           _id: data.conversation_id,
           messages: data.message,
+          unread: data.unread,
         };
 
         dispatch(UpdateConversationForNewMessage({ conversation })); //for the conversations list
@@ -272,6 +275,10 @@ const DashboardLayout = () => {
       }
     });
 
+    socket.on("updateUnread", (conversationId) => {
+      dispatch(UpdateConversationUnread({conversationId:conversationId}));
+    });
+
     // // Listen for the 'isSeen' event from the server
     // socket.on("isSeen", () => {
     //   // Get the current conversation ID 
@@ -295,6 +302,7 @@ const DashboardLayout = () => {
       socket?.off("friend_online");
       socket?.off("messagesDelivered");
       socket?.off("messagesSeen");
+      socket?.off("updateUnread");
     };
   }, [isLoggedIn, socket]);
 

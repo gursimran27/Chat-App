@@ -38,6 +38,11 @@ const oneToOneMessageSchema = new mongoose.Schema({
       },
     },
   ],
+  unreadCount: {
+    type: Map,
+    of: Number,
+    default: {},
+  },
 });
 
 const OneToOneMessage = new mongoose.model(

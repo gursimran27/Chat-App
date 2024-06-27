@@ -276,6 +276,8 @@ io.on("connection", async (socket) => {
     // fetch OneToOneMessage Doc & push a new message to existing conversation
     const chat = await OneToOneMessage.findById(conversation_id);
     chat.messages.push(new_message);
+    // Increment the unreadCount for the recipient
+    chat.unreadCount.set(to, (chat.unreadCount.get(to) || 0) + 1);
     // save to db`
     await chat.save({ new: true, validateModifiedOnly: true });
 
@@ -286,6 +288,7 @@ io.on("connection", async (socket) => {
     io.to(to_user?.socket_id).emit("new_message", {
       conversation_id,
       message: new_message,
+      unread: chat.unreadCount.get(to),
     });
 
     // emit outgoing_message -> from user
@@ -414,7 +417,7 @@ io.on("connection", async (socket) => {
     }
   });
 
-  socket.on("markMsgAsSeen", async ({ conversationId, sender_id }) => {
+  socket.on("markMsgAsSeen", async ({ conversationId, sender_id, user_id }) => {
     try {
       // Find the conversation by ID
       const conversation = await OneToOneMessage.findById(conversationId);
@@ -423,6 +426,9 @@ io.on("connection", async (socket) => {
         console.error(`Conversation not found: ${conversationId}`);
         return;
       }
+
+      conversation.unreadCount.set(user_id, 0);
+      await conversation.save({ new: true, validateModifiedOnly: true });
 
       // Update message statuses to 'Seen' if they are 'Sent' or 'Delivered'
       let updateRequired = false;
@@ -439,13 +445,16 @@ io.on("connection", async (socket) => {
       }
 
       const sender = await User.findById(sender_id);
+      const receiver = await User.findById(user_id);
 
       // Notify senders about the Seen status
       if (sender && sender.socket_id) {
-        io.to(sender.socket_id).emit(
-          "messagesSeen",
-          conversationId
-        );
+        io.to(sender.socket_id).emit("messagesSeen", conversationId);
+      }
+
+      // notify the receiver to update it unread
+      if (receiver && receiver.socket_id) {
+        io.to(receiver.socket_id).emit("updateUnread", conversationId);
       }
     } catch (error) {
       console.log(error);

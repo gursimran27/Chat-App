@@ -38,6 +38,8 @@ const Chats = () => {
   const dispatch = useDispatch();
 
   const {conversations} = useSelector((state) => state.conversation.direct_chat);
+  // Sort conversations by unread count in descending order
+  // const sortedConversations = [...conversations].sort((a, b) => b.unread - a.unread);
 
   useEffect(() => {
     socket.emit("get_direct_conversations", { user_id }, (data) => {

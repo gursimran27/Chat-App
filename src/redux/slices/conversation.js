@@ -25,8 +25,8 @@ const slice = createSlice({
           (elm) => elm._id.toString() !== user_id
         );
         return {
-          id: el._id,
-          user_id: user?._id,
+          id: el._id,//conversationid
+          user_id: user?._id,//userid
           name: `${user?.firstName} ${user?.lastName}`,
           online: user?.status === "Online",
           //   img: `https://${S3_BUCKET_NAME}.s3.${AWS_S3_REGION}.amazonaws.com/${user?.avatar}`,
@@ -34,7 +34,7 @@ const slice = createSlice({
           //   msg: el.messages.slice(-1)[0].text,
           msg: el.messages[el.messages.length - 1].text,
           time: "9:36",
-          unread: 2,
+          unread: el?.unreadCount[user_id.toString()] || 0,
           pinned: false,
           about: user?.about,
         };
@@ -63,7 +63,7 @@ const slice = createSlice({
                 this_conversation.messages.length - 1
               ].text,
               time: "9:36",
-              unread: 0,
+              unread: el?.unreadCount[user_id.toString()] || 0,
               pinned: false,
             };
           }
@@ -88,7 +88,7 @@ const slice = createSlice({
         img: faker.image.avatar(),
         msg: user?.text,
         time: "9:36",
-        unread: 0,
+        unread: this_conversation?.unreadCount[user_id.toString()] || 0,
         pinned: false,
       });
     },
@@ -135,6 +135,15 @@ const slice = createSlice({
       );
       console.log("conversations setting status to ", action.payload.status);
     },
+    updateConversationUnread(state, action) {
+      state.direct_chat.conversations = state.direct_chat.conversations.map(
+        (conversation) =>
+          conversation.id === action.payload.conversationId
+            ? { ...conversation, unread: 0 }
+            : conversation
+      );
+      console.log("conversations setting status to 0");
+    },
     updateConversationForNewMessage(state, action) {
       const this_conversation = action.payload.conversation;
       state.direct_chat.conversations = state.direct_chat.conversations.map(
@@ -145,6 +154,7 @@ const slice = createSlice({
             return {
               ...el,
               msg: this_conversation?.messages?.text,
+              unread: this_conversation?.unread,
             };
           }
         }
@@ -239,6 +249,15 @@ export const UpdateConversationOnlineStatus = ({ status, user_id }) => {
       slice.actions.updateConversationOnlineStatus({
         status: status,
         user_id: user_id,
+      })
+    );
+  };
+};
+export const UpdateConversationUnread = ({ status, conversationId }) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.updateConversationUnread({
+        conversationId: conversationId,
       })
     );
   };
