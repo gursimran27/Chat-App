@@ -7,6 +7,7 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  Modal,
 } from "@mui/material";
 import React, { useState } from "react";
 import { alpha, useTheme } from "@mui/material/styles";
@@ -16,6 +17,7 @@ import {
   DotsThreeVertical,
   DownloadSimple,
   Image,
+  X,
 } from "phosphor-react";
 import { Message_options } from "../../data";
 
@@ -210,8 +212,24 @@ const ReplyMsg = ({ el, menu }) => {
 
 const MediaMsg = ({ el, menu }) => {
   const theme = useTheme();
+
+  const [openModal, setOpenModal] = useState(false);
+
+  const handleOpenModal = () => {
+    setOpenModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+  };
+
+  
   return (
-    <Stack direction="row" justifyContent={el.incoming ? "start" : "end"}>
+    <Stack
+      direction="row"
+      justifyContent={el.incoming ? "start" : "end"}
+      sx={{ position: "relative" }}
+    >
       <Box
         px={1.5}
         py={1.5}
@@ -223,12 +241,19 @@ const MediaMsg = ({ el, menu }) => {
           width: "max-content",
         }}
       >
-        <Stack spacing={1}>
+        <Stack spacing={1} sx={{ maxWidth: "100%" }}>
           <img
-            src={el.img}
+            src={el?.src}
             alt={el.message}
             loading="lazy"
-            style={{ maxHeight: 210, borderRadius: "10px" }}
+            style={{
+          width: '100%',
+          height: '210px',
+          objectFit: 'cover',
+          borderRadius: '10px',
+          cursor: 'pointer', // Add cursor pointer to indicate clickable
+        }}
+        onClick={handleOpenModal} // Open modal on image click
           />
           <Typography
             variant="body2"
@@ -239,6 +264,66 @@ const MediaMsg = ({ el, menu }) => {
         </Stack>
       </Box>
       {menu && <MessageOption />}
+      <Stack
+        justifyContent={"flex-end"}
+        sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
+      >
+        {!el.incoming &&
+          (el?.status == "Sent" ? (
+            <Check size={22} color="#908989" />
+          ) : el?.status == "Delivered" ? (
+            <Checks size={22} color="#908989" />
+          ) : (
+            <Checks size={22} color="#0949dc" />
+          ))}
+      </Stack>
+
+      {/* Modal for displaying larger image */}
+      <Modal
+        open={openModal}
+        onClose={handleCloseModal}
+        aria-labelledby="image-modal-title"
+        aria-describedby="image-modal-description"
+      >
+        <Box sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          maxWidth: '90vw',
+          maxHeight: '90vh',
+          backgroundColor: '#fff',
+          boxShadow: 24,
+          p: 4,
+          borderRadius: '10px',
+          outline: 'none',
+          textAlign: 'center',
+        }}>
+          <img
+            src={el?.src}
+            alt={el.message}
+            loading="lazy"
+            style={{
+              maxWidth: '100%',
+              maxHeight: '100%',
+              objectFit: 'contain',
+              borderRadius: '10px',
+            }}
+          />
+          <IconButton
+            aria-label="Close modal"
+            onClick={handleCloseModal}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              color: '#f00',
+            }}
+          >
+            <X />
+          </IconButton>
+        </Box>
+      </Modal>
     </Stack>
   );
 };
@@ -247,7 +332,11 @@ const TextMsg = ({ el, menu }) => {
   // console.log("test message pushed");
   const theme = useTheme();
   return (
-    <Stack direction="row" justifyContent={el.incoming ? "start" : "end"} sx={{position:'relative'}}>
+    <Stack
+      direction="row"
+      justifyContent={el.incoming ? "start" : "end"}
+      sx={{ position: "relative" }}
+    >
       <Box
         px={1.5}
         py={1.5}
@@ -266,8 +355,11 @@ const TextMsg = ({ el, menu }) => {
           {el.message}
         </Typography>
       </Box>
-        {menu && <MessageOption />}
-      <Stack justifyContent={"flex-end"} sx={{position:'absolute' , bottom:'0px',right:'-5px'}}>
+      {menu && <MessageOption />}
+      <Stack
+        justifyContent={"flex-end"}
+        sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
+      >
         {!el.incoming &&
           (el?.status == "Sent" ? (
             <Check size={22} color="#908989" />

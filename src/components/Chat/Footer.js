@@ -15,6 +15,7 @@ import {
   PaperPlaneTilt,
   Smiley,
   Sticker,
+  UploadSimple,
   User,
 } from "phosphor-react";
 import { useTheme, styled } from "@mui/material/styles";
@@ -74,72 +75,215 @@ const ChatInput = ({
   inputRef,
 }) => {
   const [openActions, setOpenActions] = React.useState(false);
+  const theme = useTheme();
+  const { current_conversation } = useSelector(
+    (state) => state.conversation.direct_chat
+  );
+  const user_id = window.localStorage.getItem("user_id");
+  const { room_id } = useSelector((state) => state.app);
+
+  const [loading, setLoading] = useState(false);
+  const [imageFile, setImageFile] = useState(null); // to store the uploaded file-obj
+  const [previewSource, setPreviewSource] = useState(null); // to store the dataURL representation of uploaded file obj
+
+  const fileInputRef = useRef(null); //to access the hidden <input> field
+
+  const handleClick = () => {
+    fileInputRef.current.click(); //makes a click on hidden input field
+    setOpenActions(!openActions);
+  };
+
+  //   fetch the file from input tag and set it in imageFile and call the previewFile func to convert file obj into a dataURL string format so that is can be used in img tag
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    // console.log(file)
+    if (file) {
+      setImageFile(file);
+      previewFile(file);
+    }
+  };
+
+  //  this function accepets the file obj and convert it into a dataURL string form(which can be used in HTML in img tag) and then store dataURL string in previewSource
+  const previewFile = (file) => {
+    const reader = new FileReader(); // initiate a reader constructor
+    reader.readAsDataURL(file); //convert to dataURl string format
+    reader.onloadend = () => {
+      // after converting this is executed
+      setPreviewSource(reader.result); //store the dataURL format of file-obj in  previewSource
+    };
+  };
+
+  const handleFileUpload = () => {
+    console.log(imageFile, previewFile);
+    try {
+      if (imageFile == null) return;
+      console.log("uploading...");
+      setLoading(true);
+      // const formData = new FormData(); //used to gather form data from HTML forms.
+      // if(imageFile){
+      //   formData.append("file", imageFile); // make a key-value pair so to send it in form-data section of request
+      // }
+      // // formData.append('message', message);
+      // formData.append('to', current_conversation?.user_id);
+      // formData.append('from', user_id);
+      // formData.append('conversation_id', room_id);
+      // formData.append('type', "img");
+
+      // for (let pair of formData.entries()) {
+      //   console.log(pair[0] + ', ' + pair[1]);
+      // }
+
+      if (imageFile) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const buffer = event.target.result;
+          socket.emit(
+            "file_message",
+            {
+              data: buffer,
+              name: imageFile.name,
+              to: current_conversation?.user_id,
+              from: user_id,
+              conversation_id: room_id,
+              type: "img",
+            },
+            (response) => {
+              if (response.success) {
+                console.log("File uploaded successfully:", response.url);
+              } else {
+                console.error("File upload failed:", response.error);
+              }
+            }
+          );
+        };
+        reader.readAsArrayBuffer(imageFile);
+      }
+
+      setPreviewSource(null);
+      setImageFile(null);
+      setLoading(false);
+    } catch (error) {
+      console.log("ERROR MESSAGE - ", error.message);
+    }
+  };
+
+  useEffect(() => {
+    if (imageFile) {
+      previewFile(imageFile);
+    }
+  }, [imageFile]);
 
   return (
-    <StyledInput
-      inputRef={inputRef}
-      value={value}
-      onChange={(event) => {
-        setValue(event.target.value);
-      }}
-      fullWidth
-      placeholder="Write a message..."
-      variant="filled"
-      InputProps={{
-        disableUnderline: true,
-        startAdornment: (
-          <Stack sx={{ width: "max-content" }}>
-            <Stack
-              sx={{
-                position: "relative",
-                display: openActions ? "inline-block" : "none",
-              }}
-            >
-              {Actions.map((el) => (
-                <Tooltip placement="right" title={el.title}>
-                  <Fab
-                    onClick={() => {
-                      setOpenActions(!openActions);
-                    }}
-                    sx={{
-                      position: "absolute",
-                      top: -el.y,
-                      backgroundColor: el.color,
-                    }}
-                    aria-label="add"
-                  >
-                    {el.icon}
-                  </Fab>
-                </Tooltip>
-              ))}
-            </Stack>
+    <Box sx={{ position: "relative" }}>
+      <StyledInput
+        inputRef={inputRef}
+        value={value}
+        onChange={(event) => {
+          setValue(event.target.value);
+        }}
+        // disabled= {openActions?true:false}
 
-            <InputAdornment>
-              <IconButton
-                onClick={() => {
-                  setOpenActions(!openActions);
+        fullWidth
+        placeholder="Write a message..."
+        variant="filled"
+        InputProps={{
+          disableUnderline: true,
+          startAdornment: (
+            <Stack sx={{ width: "max-content" }}>
+              <Stack
+                sx={{
+                  position: "relative",
+                  display: openActions ? "inline-block" : "none",
                 }}
               >
-                <LinkSimple />
-              </IconButton>
-            </InputAdornment>
-          </Stack>
-        ),
-        endAdornment: (
-          <Stack sx={{ position: "relative" }}>
-            <InputAdornment>
-              <IconButton
-                onClick={() => {
-                  setOpenPicker(!openPicker);
-                }}
-              >
-                <Smiley />
-              </IconButton>
-            </InputAdornment>
-          </Stack>
-        ),
-      }}
-    />
+                {Actions.map((el) => (
+                  <Tooltip placement="right" title={el.title}>
+                    <Fab
+                      onClick={handleClick}
+                      sx={{
+                        position: "absolute",
+                        top: -el.y,
+                        backgroundColor: el.color,
+                      }}
+                      aria-label="add"
+                    >
+                      {el.icon}
+                    </Fab>
+                  </Tooltip>
+                ))}
+              </Stack>
+
+              <InputAdornment>
+                <IconButton
+                  onClick={() => {
+                    setOpenActions(!openActions);
+                  }}
+                >
+                  <LinkSimple />
+                </IconButton>
+              </InputAdornment>
+            </Stack>
+          ),
+          endAdornment: (
+            <Stack sx={{ position: "relative" }}>
+              <InputAdornment>
+                <IconButton
+                  onClick={() => {
+                    setOpenPicker(!openPicker);
+                  }}
+                >
+                  <Smiley />
+                </IconButton>
+              </InputAdornment>
+            </Stack>
+          ),
+        }}
+      />
+      <input
+        type="file"
+        ref={fileInputRef} //!NOTE
+        onChange={handleFileChange}
+        style={{ display: "none" }} // Inline style to hide the element
+        // accept="image/png, image/gif, image/jpeg"
+      />
+      <Box
+        sx={{
+          display: previewSource ? "block" : "none", // Conditionally set display
+          color: "red", // Text color
+          width: "550px", // Width of the box
+          height: "430px", // Height of the box
+          border: "1px solid black", // Border style
+          position: "absolute",
+          top: "-450px",
+        }}
+      >
+        <img
+          src={previewSource}
+          // src="https://images.unsplash.com/photo-1502657877623-f66bf489d236?auto=format&fit=crop&w=800"
+          style={{ objectFit: "cover" }}
+          width={550}
+          height={366}
+        />
+
+        <Stack
+          direction={"row"}
+          justifyContent={"space-between"}
+          sx={{
+            height: 45,
+            width: 100,
+            backgroundColor: theme.palette.primary.main,
+            borderRadius: 1.5,
+            marginTop: "10px",
+            color: "#fff",
+          }}
+        >
+          <IconButton onClick={handleFileUpload} sx={{ color: "#fff" }}>
+            {!loading ? "Send" : "Sending..."}
+            {!loading && <UploadSimple size={32} />}
+          </IconButton>
+        </Stack>
+      </Box>
+    </Box>
   );
 };
 
@@ -192,26 +336,25 @@ const Footer = () => {
     }
   }
 
-
   useEffect(() => {
     const handleKeyPress = (event) => {
-      if (event.key === 'Enter' && value !== '') {
+      if (event.key === "Enter" && value !== "") {
         // Trigger button click event
-        document.getElementById('sendButton').click();
+        document.getElementById("sendButton").click();
       }
     };
 
-    const inputElement = inputRef.current;//when the room_id is set to null then this component is unmount so the <chatElement/> is not rendered so the ref of it is also not there 
+    const inputElement = inputRef.current; //when the room_id is set to null then this component is unmount so the <chatElement/> is not rendered so the ref of it is also not there
 
     // Attach event listener to listen for 'Enter' key press
     if (inputElement) {
-      inputElement.addEventListener('keydown', handleKeyPress);
+      inputElement.addEventListener("keydown", handleKeyPress);
     }
 
     return () => {
       // Clean up event listener on component unmount
       if (inputElement) {
-        inputElement.removeEventListener('keydown', handleKeyPress);
+        inputElement.removeEventListener("keydown", handleKeyPress);
       }
     };
   }, [value]);
@@ -266,7 +409,8 @@ const Footer = () => {
             sx={{
               height: 48,
               width: 48,
-              backgroundColor: value ==""? "#899" : theme.palette.primary.main,
+              backgroundColor:
+                value == "" ? "#899" : theme.palette.primary.main,
               borderRadius: 1.5,
             }}
           >
@@ -277,11 +421,10 @@ const Footer = () => {
             >
               <IconButton
                 id="sendButton"
-                disabled={value==""}
+                disabled={value == ""}
                 onClick={() => {
-                  if(value=="")
-                    return;
-                  console.log("clicked...")
+                  if (value == "") return;
+                  console.log("clicked...");
                   socket.emit("text_message", {
                     message: linkify(value),
                     conversation_id: room_id,
@@ -289,10 +432,10 @@ const Footer = () => {
                     to: current_conversation?.user_id,
                     type: containsUrl(value) ? "Link" : "Text",
                   });
-                  setValue("")
+                  setValue("");
                 }}
               >
-                <PaperPlaneTilt color= "#ffffff" />
+                <PaperPlaneTilt color="#ffffff" />
               </IconButton>
             </Stack>
           </Box>

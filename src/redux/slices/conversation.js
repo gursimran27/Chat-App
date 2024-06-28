@@ -106,8 +106,10 @@ const slice = createSlice({
         incoming: el.to === user_id,
         outgoing: el.from === user_id,
         status: el?.status,
+        src:el?.file,
       }));
       state.direct_chat.current_messages = formatted_messages;
+      console.log("ssss",messages.file);
     },
     addDirectMessage(state, action) {
       state.direct_chat.current_messages.push(action.payload.message);

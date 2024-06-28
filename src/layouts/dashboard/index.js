@@ -159,6 +159,7 @@ const DashboardLayout = () => {
               incoming: message.to === user_id,
               outgoing: message.from === user_id,
               status: message?.status,
+              src: message?.file,
             })
           );
         }

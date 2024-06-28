@@ -2,7 +2,8 @@ const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 dotenv.config({ path: "./config.env" });
-const { ObjectId } = mongoose.Types;
+const { cloudinaryConnect } = require("./config/cloudinary");
+const fileUpload = require("express-fileupload");
 
 const path = require("path");
 
@@ -35,6 +36,7 @@ const FriendRequest = require("./models/friendRequest");
 const OneToOneMessage = require("./models/OneToOneMessage");
 const AudioCall = require("./models/audioCall");
 const VideoCall = require("./models/videoCall");
+const { uploadImageToCloudinary } = require("./utils/imageUploader");
 
 // Add this
 // Create an io server and allow for CORS from http://localhost:3000 with GET and POST methods
@@ -60,6 +62,16 @@ mongoose
   .then((con) => {
     console.log("DB Connection successful");
   });
+
+app.use(
+  fileUpload({
+    useTempFiles: true,
+    tempFileDir: "/tmp",
+  })
+);
+
+// cloudinary connect
+cloudinaryConnect();
 
 const port = process.env.PORT || 8000;
 
@@ -298,19 +310,102 @@ io.on("connection", async (socket) => {
     });
   });
 
+  // -------------------------file_message-----------------------------------------//
+  const fs = require("fs");
+  const path = require("path");
+
   // handle Media/Document Message
-  socket.on("file_message", (data) => {
-    console.log("Received message:", data);
+  socket.on("file_message", async (fileData, callback) => {
+    console.log("Received file message:", fileData, "dir", __dirname);
+
+    const uploadsDir = path.join(__dirname, "uploads");
+
+    // Ensure the uploads directory exists
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir);
+    }
+    const buffer = Buffer.from(fileData.data);
+    const timestamp = Date.now();
+    const fileName = `${timestamp}-${fileData.name}`;
+    const filePath = path.join(uploadsDir, fileName);
+
+    fs.writeFileSync(filePath, buffer);
 
     // data: {to, from, text, file}
+    const { conversation_id, to, from, type } = fileData;
+    let mediaUrl = null;
 
-    // Get the file extension
-    const fileExtension = path.extname(data.file.name);
+    if (filePath) {
+      const cloud = await uploadImageToCloudinary(
+        filePath,
+        `${process.env.FOLDER_NAME}-${conversation_id}`,
+        1000,
+        1000
+      );
+      mediaUrl = cloud.secure_url;
+    }
 
-    // Generate a unique filename
-    const filename = `${Date.now()}_${Math.floor(
-      Math.random() * 10000
-    )}${fileExtension}`;
+    fs.unlinkSync(filePath); // Clean up the temporary file
+
+    const to_user = await User.findById(to);
+    const from_user = await User.findById(from);
+
+    let new_message = null;
+
+    if (to_user?.status == "Online") {
+      new_message = {
+        to: to,
+        from: from,
+        type: type,
+        created_at: Date.now(),
+        text: fileData.name,
+        status: "Delivered", // Update the status to Delivered if the conversation IDs do not match
+        file: mediaUrl,
+      };
+      // }
+    } else {
+      new_message = {
+        to: to,
+        from: from,
+        type: type,
+        created_at: Date.now(),
+        text: fileData.name,
+        status: "Sent",
+        file: mediaUrl,
+      };
+    }
+
+    // fetch OneToOneMessage Doc & push a new message to existing conversation
+    const chat = await OneToOneMessage.findById(conversation_id);
+    chat.messages.push(new_message);
+    // Increment the unreadCount for the recipient
+    chat.unreadCount.set(to, (chat.unreadCount.get(to) || 0) + 1);
+    // save to db`
+    await chat.save({ new: true, validateModifiedOnly: true });
+
+    // TODO create a room and subsscribe the uses to that rooms and them when we emit an event it would fire to all user joined to that room
+
+    // emit to t incoming_message -user
+
+    io.to(to_user?.socket_id).emit("new_message", {
+      conversation_id,
+      message: new_message,
+      unread: chat.unreadCount.get(to),
+    });
+
+    // emit outgoing_message -> from user
+    io.to(from_user?.socket_id).emit("new_message", {
+      conversation_id,
+      message: new_message,
+    });
+
+    // // Get the file extension
+    // const fileExtension = path.extname(data.file.name);
+
+    // // Generate a unique filename
+    // const filename = `${Date.now()}_${Math.floor(
+    //   Math.random() * 10000
+    // )}${fileExtension}`;
 
     // upload file to AWS s3
 
@@ -362,6 +457,8 @@ io.on("connection", async (socket) => {
   //     console.error(error);
   //   }
   // });
+
+  // ---------------------------markMessagesDelivered----------------------------//
 
   socket.on("markMessagesDelivered", async (data) => {
     let userId = data.current_id;
@@ -416,6 +513,8 @@ io.on("connection", async (socket) => {
       console.error(`Error updating message statuses: ${err.message}`);
     }
   });
+
+  // ----------------------------markMsgAsSeen---------------------------------------//
 
   socket.on("markMsgAsSeen", async ({ conversationId, sender_id, user_id }) => {
     try {
