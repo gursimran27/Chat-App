@@ -17,6 +17,7 @@ import {
   Sticker,
   UploadSimple,
   User,
+  X,
 } from "phosphor-react";
 import { useTheme, styled } from "@mui/material/styles";
 import React, { useEffect, useRef, useState } from "react";
@@ -82,9 +83,12 @@ const ChatInput = ({
   const user_id = window.localStorage.getItem("user_id");
   const { room_id } = useSelector((state) => state.app);
 
+  const [msg, setMsg] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState(null); // to store the uploaded file-obj
   const [previewSource, setPreviewSource] = useState(null); // to store the dataURL representation of uploaded file obj
+  const [fileType, setFileType] = useState("");
 
   const fileInputRef = useRef(null); //to access the hidden <input> field
 
@@ -108,6 +112,7 @@ const ChatInput = ({
     const reader = new FileReader(); // initiate a reader constructor
     reader.readAsDataURL(file); //convert to dataURl string format
     reader.onloadend = () => {
+      setFileType(file.type);
       // after converting this is executed
       setPreviewSource(reader.result); //store the dataURL format of file-obj in  previewSource
     };
@@ -135,6 +140,7 @@ const ChatInput = ({
 
       if (imageFile) {
         const reader = new FileReader();
+        reader.readAsArrayBuffer(imageFile);
         reader.onload = (event) => {
           const buffer = event.target.result;
           socket.emit(
@@ -145,7 +151,12 @@ const ChatInput = ({
               to: current_conversation?.user_id,
               from: user_id,
               conversation_id: room_id,
-              type: "img",
+              type: fileType.startsWith("image/")
+                ? "img"
+                : fileType.startsWith("video/")
+                ? "video"
+                : "doc",
+              msg: msg,
             },
             (response) => {
               if (response.success) {
@@ -156,14 +167,18 @@ const ChatInput = ({
             }
           );
         };
-        reader.readAsArrayBuffer(imageFile);
       }
 
       setPreviewSource(null);
       setImageFile(null);
       setLoading(false);
+      setFileType("");
     } catch (error) {
       console.log("ERROR MESSAGE - ", error.message);
+      setPreviewSource(null);
+      setImageFile(null);
+      setLoading(false);
+      setFileType("");
     }
   };
 
@@ -246,6 +261,7 @@ const ChatInput = ({
         style={{ display: "none" }} // Inline style to hide the element
         // accept="image/png, image/gif, image/jpeg"
       />
+      {/* preview dialoag */}
       <Box
         sx={{
           display: previewSource ? "block" : "none", // Conditionally set display
@@ -255,17 +271,88 @@ const ChatInput = ({
           border: "1px solid black", // Border style
           position: "absolute",
           top: "-450px",
+          overflow: "auto", // Add scrollbar when content overflows
+          backgroundColor:
+            theme.palette.mode === "light"
+              ? "#F8FAFF"
+              : theme.palette.background.default,
+          boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.25)",
         }}
       >
-        <img
-          src={previewSource}
-          // src="https://images.unsplash.com/photo-1502657877623-f66bf489d236?auto=format&fit=crop&w=800"
-          style={{ objectFit: "cover" }}
-          width={550}
-          height={366}
-        />
+        <IconButton
+          aria-label="Close modal"
+          onClick={() => {
+            setPreviewSource(null);
+            setImageFile(null);
+            setMsg("");
+            setFileType("");
+          }}
+          sx={{
+            position: "absolute",
+            top: 0,
+            right: 8,
+            color: "black",
+            zIndex: "1",
+            backgroundColor: "red",
+            "&:hover": {
+              backgroundColor: "red",
+              color: "black",
+              scale: "0.9",
+              transition: "all 300ms",
+            },
+          }}
+          style={{}}
+        >
+          <X />
+        </IconButton>
+        {fileType.startsWith("image/") && (
+          <img
+            src={previewSource}
+            // src="https://images.unsplash.com/photo-1502657877623-f66bf489d236?auto=format&fit=crop&w=800"
+            style={{ objectFit: "contain" }}
+            width={550}
+            height={366}
+          />
+        )}
+        {fileType.startsWith("video/") && (
+          <video
+            controls
+            autoPlay
+            loop
+            muted
+            controlsList="nodownload"
+            style={{ width: "100%", height: "87%" }}
+          >
+            <source src={previewSource} type={fileType} />
+            Your browser does not support the video tag.
+          </video>
+        )}
+        {fileType === "application/pdf" && (
+          <iframe
+            src={previewSource}
+            style={{ width: "100%", height: "87%" }}
+            title="PDF preview"
+          />
+        )}
+        {fileType === "text/plain" && (
+          <iframe
+            src={previewSource}
+            style={{ width: "100%", height: "87%" }}
+            title="Text File preview"
+          />
+        )}
 
-        <Stack
+        {/* {(fileType === "application/msword" ||
+          fileType ===
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document") && (
+          <iframe
+            src={`https://view.officeapps.live.com/op/embed.aspx?src${previewSource}`}
+            style={{ width: "100%", height: "87%" }}
+            title="Word Document preview"
+          />
+        )} */}
+
+        {/* <Stack
           direction={"row"}
           justifyContent={"space-between"}
           sx={{
@@ -281,6 +368,49 @@ const ChatInput = ({
             {!loading ? "Send" : "Sending..."}
             {!loading && <UploadSimple size={32} />}
           </IconButton>
+        </Stack> */}
+        <Stack direction="row" alignItems={"center"} gap={"17px"}>
+          <StyledInput
+            // inputRef={inputref}
+            value={msg}
+            onChange={(event) => {
+              setMsg(event.target.value);
+            }}
+            // disabled= {openActions?true:false}
+
+            fullWidth
+            placeholder="Write a message..."
+            variant="filled"
+            InputProps={{
+              disableUnderline: true,
+            }}
+          />
+          <Box
+            sx={{
+              height: 48,
+              width: 48,
+              backgroundColor: !imageFile ? "#899" : theme.palette.primary.main,
+              borderRadius: 1.5,
+            }}
+          >
+            <Stack
+              sx={{ height: "100%" }}
+              alignItems={"center"}
+              justifyContent="center"
+            >
+              <IconButton
+                disabled={!imageFile}
+                onClick={() => {
+                  if (!imageFile) return;
+                  console.log("uploading...!");
+                  handleFileUpload();
+                  setMsg("");
+                }}
+              >
+                <PaperPlaneTilt color="#ffffff" />
+              </IconButton>
+            </Stack>
+          </Box>
         </Stack>
       </Box>
     </Box>
@@ -291,7 +421,8 @@ function linkify(text) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   return text.replace(
     urlRegex,
-    (url) => `<a href="${url}" target="_blank">${url}</a>`
+    // (url) => `<a href="${url}" target="_blank">${url}</a>`
+    (url) => `${url}`
   );
 }
 

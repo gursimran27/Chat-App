@@ -9,6 +9,7 @@ import {
   ReplyMsg,
   TextMsg,
   Timeline,
+  VideoMsg,
 } from "./MsgTypes";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -59,6 +60,12 @@ const Message = ({ isMobile, menu }) => {
                   return (
                     // Media Message
                     <MediaMsg el={el} menu={menu} />
+                  );
+
+                case "video":
+                  return (
+                    // Media Message
+                    <VideoMsg el={el} menu={menu} />
                   );
 
                 case "doc":

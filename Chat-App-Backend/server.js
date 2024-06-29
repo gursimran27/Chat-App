@@ -332,7 +332,7 @@ io.on("connection", async (socket) => {
     fs.writeFileSync(filePath, buffer);
 
     // data: {to, from, text, file}
-    const { conversation_id, to, from, type } = fileData;
+    const { conversation_id, to, from, type, msg } = fileData;
     let mediaUrl = null;
 
     if (filePath) {
@@ -358,7 +358,7 @@ io.on("connection", async (socket) => {
         from: from,
         type: type,
         created_at: Date.now(),
-        text: fileData.name,
+        text: msg? msg: fileData.name,
         status: "Delivered", // Update the status to Delivered if the conversation IDs do not match
         file: mediaUrl,
       };
@@ -369,7 +369,7 @@ io.on("connection", async (socket) => {
         from: from,
         type: type,
         created_at: Date.now(),
-        text: fileData.name,
+        text: msg? msg: fileData.name,
         status: "Sent",
         file: mediaUrl,
       };
