@@ -8,7 +8,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { LogoutUser } from "../../redux/slices/auth";
 import { socket } from "../../socket";
 import { useNavigate } from "react-router-dom";
-import { ClearCurrentMessagesAndCurrentConversation } from "../../redux/slices/conversation";
+import { ClearCurrentMessagesAndCurrentConversation, UpdateReply_msg } from "../../redux/slices/conversation";
 // import { AWS_S3_REGION, S3_BUCKET_NAME } from "../../config";
 
 const ProfileMenu = () => {
@@ -74,6 +74,7 @@ const ProfileMenu = () => {
                     }
                     else {
                       dispatch(ClearCurrentMessagesAndCurrentConversation());
+                      dispatch(UpdateReply_msg({reply:false, replyToMsg: null}))
                       dispatch(LogoutUser());
                       socket.emit("end", {user_id});
                     }

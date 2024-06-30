@@ -227,7 +227,7 @@ io.on("connection", async (socket) => {
 
     // data: {to, from, text/link}
 
-    const { message, conversation_id, from, to, type } = data;
+    const { message, conversation_id, from, to, type, replyToMsg } = data;
 
     const to_user = await User.findById(to);
     const from_user = await User.findById(from);
@@ -265,6 +265,7 @@ io.on("connection", async (socket) => {
         created_at: Date.now(),
         text: message,
         status: "Delivered", // Update the status to Delivered if the conversation IDs do not match
+        replyToMsg: replyToMsg
       };
       // }
     } else {
@@ -275,6 +276,7 @@ io.on("connection", async (socket) => {
         created_at: Date.now(),
         text: message,
         status: "Sent",
+        replyToMsg: replyToMsg
       };
     }
 
@@ -289,6 +291,8 @@ io.on("connection", async (socket) => {
     // TODO create a room and subsscribe the uses to that rooms and them when we emit an event it would fire to all user joined to that room
 
     // emit to t incoming_message -user
+    const savedMessage = chat.messages[chat.messages.length - 1];//last saved msg
+    new_message._id = savedMessage._id;
 
     io.to(to_user?.socket_id).emit("new_message", {
       conversation_id,
@@ -379,6 +383,8 @@ io.on("connection", async (socket) => {
     // TODO create a room and subsscribe the uses to that rooms and them when we emit an event it would fire to all user joined to that room
 
     // emit to t incoming_message -user
+    const savedMessage = chat.messages[chat.messages.length - 1];
+    new_message._id = savedMessage._id;
 
     io.to(to_user?.socket_id).emit("new_message", {
       conversation_id,

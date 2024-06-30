@@ -12,6 +12,10 @@ const initialState = {
     current_messages: [],
   },
   group_chat: {},
+  reply_msg: {
+    reply: false,
+    replyToMsg: null,
+  }
 };
 
 const slice = createSlice({
@@ -107,6 +111,7 @@ const slice = createSlice({
         outgoing: el.from === user_id,
         status: el?.status,
         src:el?.file,
+        replyToMsg: el?.replyToMsg,
       }));
       state.direct_chat.current_messages = formatted_messages;
       console.log("ssss",messages.file);
@@ -195,6 +200,11 @@ const slice = createSlice({
           }
         });
     },
+    updateReply_msg(state,action) {
+      console.log("reply msg")
+      state.reply_msg.reply = action.payload.reply;
+      state.reply_msg.replyToMsg = action.payload.replyToMsg;
+    }
   },
 });
 
@@ -284,5 +294,10 @@ export const ClearCurrentMessagesAndCurrentConversation = () => {
 export const UpdateMessageStatus = ({ status }) => {
   return async (dispatch, getState) => {
     dispatch(slice.actions.updateMessageStatus({ status: status }));
+  };
+};
+export const UpdateReply_msg = ({ reply, replyToMsg }) => {
+  return async (dispatch, getState) => {
+    dispatch(slice.actions.updateReply_msg({ reply: reply, replyToMsg: replyToMsg }));
   };
 };

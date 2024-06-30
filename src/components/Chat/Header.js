@@ -29,7 +29,7 @@ import { StartVideoCall } from "../../redux/slices/videoCall";
 import axios from "../../utils/axios";
 import { format, isToday, isYesterday } from "date-fns";
 import "./UserLastSeen.css"; // Import CSS file
-import { ClearCurrentMessagesAndCurrentConversation } from "../../redux/slices/conversation";
+import { ClearCurrentMessagesAndCurrentConversation, UpdateReply_msg } from "../../redux/slices/conversation";
 
 const StyledBadge = styled(Badge)(({ theme }) => ({
   "& .MuiBadge-badge": {
@@ -153,6 +153,7 @@ const ChatHeader = () => {
     console.log("close chat clicked");
     dispatch(SelectConversation({room_id:null}));
     dispatch(ClearCurrentMessagesAndCurrentConversation());
+    dispatch(UpdateReply_msg({reply:false, replyToMsg: null}))
   }
 
   return (

@@ -20,11 +20,14 @@ import {
   X,
 } from "phosphor-react";
 import { Message_options } from "../../data";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { UpdateReply_msg } from "../../redux/slices/conversation";
+import { showSnackbar } from "../../redux/slices/app";
 
 // TODO HOF
 
-const MessageOption = () => {
+const MessageOption = ({ replyToMsg }) => {
+  const dispatch = useDispatch();
   const [anchorEl, setAnchorEl] = useState(null); //store referance
   const open = Boolean(anchorEl); //convert referance to boollean
   const handleClick = (event) => {
@@ -53,9 +56,28 @@ const MessageOption = () => {
         }}
       >
         <Stack spacing={1} px={1}>
-          {Message_options.map((el) => (
-            <MenuItem onClick={handleClose}>{el.title}</MenuItem>
-          ))}
+          {Message_options.map((el) =>
+            el?.title == "Reply" ? (
+              <MenuItem
+                onClick={() => {
+                  dispatch(
+                    UpdateReply_msg({ reply: true, replyToMsg: replyToMsg })
+                  );
+                  handleClose();
+                  dispatch(
+                    showSnackbar({
+                      severity: "success",
+                      message: `Replying to ${replyToMsg}...`,
+                    })
+                  );
+                }}
+              >
+                {el.title}
+              </MenuItem>
+            ) : (
+              <MenuItem onClick={handleClose}>{el.title}</MenuItem>
+            )
+          )}
         </Stack>
       </Menu>
     </>
@@ -75,26 +97,38 @@ const DocMsg = ({ el, menu }) => {
     setOpenModal(false);
   };
 
-  const handleDownload = async() => {
+  const handleDownload = async () => {
     // Check if the URL already contains /upload/ or /v
-  const uploadIndex = el?.src.indexOf('/upload/');
-  const versionIndex = el?.src.indexOf('/v');
+    const uploadIndex = el?.src.indexOf("/upload/");
+    const versionIndex = el?.src.indexOf("/v");
 
-  // Determine where to insert /fl_attachment/
-  let insertIndex = uploadIndex !== -1 ? uploadIndex + 8 : versionIndex !== -1 ? versionIndex : 0;
+    // Determine where to insert /fl_attachment/
+    let insertIndex =
+      uploadIndex !== -1
+        ? uploadIndex + 8
+        : versionIndex !== -1
+        ? versionIndex
+        : 0;
 
-  // Insert /fl_attachment/
-  const url = el?.src.slice(0, insertIndex) + '/fl_attachment/' + el?.src.slice(insertIndex);
-  const link = document.createElement('a');
+    // Insert /fl_attachment/
+    const url =
+      el?.src.slice(0, insertIndex) +
+      "/fl_attachment/" +
+      el?.src.slice(insertIndex);
+    const link = document.createElement("a");
     link.href = url; // Set the href to the document URL
-    link.setAttribute('download', el?.message || 'document'); // Set the download attribute to initiate download
+    link.setAttribute("download", el?.message || "document"); // Set the download attribute to initiate download
     document.body.appendChild(link); // Append the anchor element to the body
     link.click(); // Programmatically click the link to trigger download
-    document.body.removeChild(link); 
+    document.body.removeChild(link);
   };
 
   return (
-    <Stack direction="row" justifyContent={el.incoming ? "start" : "end"} sx={{ position: "relative" }}>
+    <Stack
+      direction="row"
+      justifyContent={el.incoming ? "start" : "end"}
+      sx={{ position: "relative" }}
+    >
       <Box
         px={1.5}
         py={1.5}
@@ -122,7 +156,12 @@ const DocMsg = ({ el, menu }) => {
             <Image size={48} />
             <Typography variant="caption">{el?.message}</Typography>
             <IconButton>
-              <DownloadSimple onClick={(e) => { e.stopPropagation(); handleDownload(); }}/>
+              <DownloadSimple
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDownload();
+                }}
+              />
             </IconButton>
           </Stack>
           <Typography
@@ -148,7 +187,7 @@ const DocMsg = ({ el, menu }) => {
             <Checks size={22} color="#0949dc" />
           ))}
       </Stack>
-      {menu && <MessageOption />}
+      {menu && <MessageOption replyToMsg={el?.message} />}
 
       <Modal
         open={openModal}
@@ -164,8 +203,8 @@ const DocMsg = ({ el, menu }) => {
             transform: "translate(-50%, -50%)",
             maxWidth: "90vw",
             maxHeight: "90vh",
-            width:'70%',
-            height:'90%',
+            width: "70%",
+            height: "90%",
             backgroundColor: "#fff",
             boxShadow: 24,
             p: 4,
@@ -198,11 +237,11 @@ const DocMsg = ({ el, menu }) => {
               color: "black",
               backgroundColor: "red",
               "&:hover": {
-              backgroundColor: "red",
-              color: "black",
-              scale:'0.9',
-              transition:'all 300ms'
-            },
+                backgroundColor: "red",
+                color: "black",
+                scale: "0.9",
+                transition: "all 300ms",
+              },
             }}
           >
             <X />
@@ -216,7 +255,11 @@ const DocMsg = ({ el, menu }) => {
 const LinkMsg = ({ el, menu }) => {
   const theme = useTheme();
   return (
-    <Stack direction="row" justifyContent={el.incoming ? "start" : "end"} sx={{ position: "relative" }}>
+    <Stack
+      direction="row"
+      justifyContent={el.incoming ? "start" : "end"}
+      sx={{ position: "relative" }}
+    >
       <Box
         px={1.5}
         py={1.5}
@@ -258,7 +301,9 @@ const LinkMsg = ({ el, menu }) => {
                 www.linkedin.com
               </Typography>
             </Stack> */}
-            <a style={{color:"blue"}} href={el?.message} target="_blank">Click Here To Open</a>
+            <a style={{ color: "blue" }} href={el?.message} target="_blank">
+              Click Here To Open
+            </a>
             <Typography
               variant="body2"
               color={el.incoming ? theme.palette.text : "#fff"}
@@ -268,7 +313,7 @@ const LinkMsg = ({ el, menu }) => {
           </Stack>
         </Stack>
       </Box>
-      {menu && <MessageOption />}
+      {menu && <MessageOption replyToMsg={el?.message} />}
       <Stack
         justifyContent={"flex-end"}
         sx={{ position: "absolute", bottom: "0px", right: "-7px" }}
@@ -289,7 +334,11 @@ const LinkMsg = ({ el, menu }) => {
 const ReplyMsg = ({ el, menu }) => {
   const theme = useTheme();
   return (
-    <Stack direction="row" justifyContent={el.incoming ? "start" : "end"}>
+    <Stack
+      direction="row"
+      justifyContent={el.incoming ? "start" : "end"}
+      sx={{ position: "relative" }}
+    >
       <Box
         px={1.5}
         py={1.5}
@@ -313,18 +362,31 @@ const ReplyMsg = ({ el, menu }) => {
             }}
           >
             <Typography variant="body2" color={theme.palette.text}>
-              {el.message}
+              {el?.replyToMsg}
             </Typography>
           </Stack>
           <Typography
             variant="body2"
             color={el.incoming ? theme.palette.text : "#fff"}
           >
-            {el.reply}
+            {el?.message}
           </Typography>
         </Stack>
       </Box>
-      {menu && <MessageOption />}
+      {menu && <MessageOption replyToMsg={el?.message} />}
+      <Stack
+        justifyContent={"flex-end"}
+        sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
+      >
+        {!el.incoming &&
+          (el?.status == "Sent" ? (
+            <Check size={22} color="#908989" />
+          ) : el?.status == "Delivered" ? (
+            <Checks size={22} color="#908989" />
+          ) : (
+            <Checks size={22} color="#0949dc" />
+          ))}
+      </Stack>
     </Stack>
   );
 };
@@ -360,7 +422,7 @@ const MediaMsg = ({ el, menu }) => {
           width: "max-content",
         }}
       >
-        <Stack spacing={1} sx={{ maxWidth: "100%",width:"210px" }}>
+        <Stack spacing={1} sx={{ maxWidth: "100%", width: "210px" }}>
           <img
             src={el?.src}
             alt={el.message}
@@ -382,7 +444,7 @@ const MediaMsg = ({ el, menu }) => {
           </Typography>
         </Stack>
       </Box>
-      {menu && <MessageOption />}
+      {menu && <MessageOption replyToMsg={el?.message} />}
       <Stack
         justifyContent={"flex-end"}
         sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
@@ -492,7 +554,7 @@ const VideoMsg = ({ el, menu }) => {
           width: "250px",
         }}
       >
-        <Stack spacing={1} sx={{ maxWidth: "100%",width:"250px" }}>
+        <Stack spacing={1} sx={{ maxWidth: "100%", width: "250px" }}>
           <video
             src={el?.src}
             type={el?.type} // Specify the video type if known
@@ -514,7 +576,7 @@ const VideoMsg = ({ el, menu }) => {
           </Typography>
         </Stack>
       </Box>
-      {menu && <MessageOption />}
+      {menu && <MessageOption replyToMsg={el?.message} />}
       <Stack
         justifyContent="flex-end"
         sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
@@ -623,7 +685,7 @@ const TextMsg = ({ el, menu }) => {
           {el.message}
         </Typography>
       </Box>
-      {menu && <MessageOption />}
+      {menu && <MessageOption replyToMsg={el?.message} />}
       <Stack
         justifyContent={"flex-end"}
         sx={{ position: "absolute", bottom: "0px", right: "-5px" }}

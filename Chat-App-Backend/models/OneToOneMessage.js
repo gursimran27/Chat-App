@@ -30,12 +30,17 @@ const oneToOneMessageSchema = new mongoose.Schema({
       },
       file: {
         type: String,
+        default: null,
       },
       status: {
         type: String,
         enum: ["Sent", "Delivered","Seen"],
         default: "Sent",
       },
+      replyToMsg: {
+        type: String,
+        default: null,
+      }
     },
   ],
   unreadCount: {

@@ -160,6 +160,7 @@ const DashboardLayout = () => {
               outgoing: message.from === user_id,
               status: message?.status,
               src: message?.file,
+              replyToMsg: message?.replyToMsg,
             })
           );
         }

@@ -26,10 +26,11 @@ import useResponsive from "../../hooks/useResponsive";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import { socket } from "../../socket";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import axios from "../../utils/axios";
 import UseAnimations from "react-useanimations";
 import loader from "react-useanimations/lib/loading";
+import { UpdateReply_msg } from "../../redux/slices/conversation";
 
 const StyledInput = styled(TextField)(({ theme }) => ({
   "& .MuiInputBase-input": {
@@ -491,6 +492,10 @@ const Footer = () => {
 
   const { sideBar, room_id } = useSelector((state) => state.app);
 
+  const { reply, replyToMsg } = useSelector((state)=>state.conversation.reply_msg)
+
+  const dispatch = useDispatch()
+
   const [openPicker, setOpenPicker] = React.useState(false);
 
   const [value, setValue] = useState("");
@@ -608,9 +613,13 @@ const Footer = () => {
                     conversation_id: room_id,
                     from: user_id,
                     to: current_conversation?.user_id,
-                    type: containsUrl(value) ? "Link" : "Text",
+                    type: containsUrl(value) ? "Link" : (reply) ? "reply" : "Text",
+                    replyToMsg: (reply) ? replyToMsg : null,
                   });
                   setValue("");
+                  if(reply){
+                    dispatch(UpdateReply_msg({reply:false, replyToMsg: null}))
+                  }
                 }}
               >
                 <PaperPlaneTilt color="#ffffff" />

@@ -15,6 +15,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   FetchCurrentMessages,
   SetCurrentConversation,
+  UpdateReply_msg,
 } from "../../redux/slices/conversation";
 import { socket } from "../../socket";
 
@@ -42,6 +43,7 @@ const Message = ({ isMobile, menu }) => {
     });
 
     dispatch(SetCurrentConversation(current));
+    dispatch(UpdateReply_msg({reply:false, replyToMsg: null}))
   }, [room_id]);
   return (
     <Box p={isMobile ? 1 : 3}>
