@@ -7,11 +7,11 @@ import AuthLayout from "../layouts/auth";
 
 // config
 import { DEFAULT_PATH } from "../config";
-import LoadingScreen from "../components/LoadingScreen";
+import Spinner from "../components/Spinner";
 
 const Loadable = (Component) => (props) => {
   return (
-    <Suspense fallback={<LoadingScreen />}>
+    <Suspense fallback={<Spinner />}>
       <Component {...props} />
     </Suspense>
   );

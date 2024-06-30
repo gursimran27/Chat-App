@@ -360,7 +360,7 @@ const MediaMsg = ({ el, menu }) => {
           width: "max-content",
         }}
       >
-        <Stack spacing={1} sx={{ maxWidth: "100%" }}>
+        <Stack spacing={1} sx={{ maxWidth: "100%",width:"210px" }}>
           <img
             src={el?.src}
             alt={el.message}
@@ -368,7 +368,7 @@ const MediaMsg = ({ el, menu }) => {
             style={{
               width: "100%",
               height: "210px",
-              objectFit: "cover",
+              objectFit: "contain",
               borderRadius: "10px",
               cursor: "pointer", // Add cursor pointer to indicate clickable
             }}
@@ -489,10 +489,10 @@ const VideoMsg = ({ el, menu }) => {
             ? theme.palette.background.default
             : theme.palette.primary.main,
           borderRadius: 1.5,
-          width: "max-content",
+          width: "250px",
         }}
       >
-        <Stack spacing={1} sx={{ maxWidth: "100%" }}>
+        <Stack spacing={1} sx={{ maxWidth: "100%",width:"250px" }}>
           <video
             src={el?.src}
             type={el?.type} // Specify the video type if known

@@ -4,6 +4,7 @@ const User = require("../models/user");
 const VideoCall = require("../models/videoCall");
 const catchAsync = require("../utils/catchAsync");
 const filterObj = require("../utils/filterObj");
+const { uploadImageToCloudinary } = require("../utils/imageUploader");
 
 const { generateToken04 } = require("./zegoServerAssistant");
 
@@ -26,11 +27,11 @@ exports.lastSeen = catchAsync(async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) {
-      return res.status(404).send('User not found');
+      return res.status(404).send("User not found");
     }
     res.status(200).json({ lastSeen: user?.lastSeen });
   } catch (error) {
-    res.status(500).send('Server error');
+    res.status(500).send("Server error");
   }
 });
 
@@ -52,17 +53,51 @@ exports.updateMe = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.upload = async (req, res) => {
+  try {
+    // console.log(req.body.conversation_id);
+    // console.log(req.files.file)
+    // fetch the data from req
+    const { conversation_id } = req.body;
+
+    const file = req.files.file;
+    //  the imageFile represent the key/name of the  file that is snet in http request
+    console.log(file);
+
+    let mediaUrl = null;
+
+    const cloud = await uploadImageToCloudinary(
+      file,
+      `${process.env.FOLDER_NAME}-${conversation_id}`,
+      1000,
+      1000
+    );
+    mediaUrl = cloud.secure_url;
+
+    res.status(200).json({
+      success: true,
+      mediaUrl: mediaUrl,
+      message: "uploaded successfully to cloudinary",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 exports.getUsers = catchAsync(async (req, res, next) => {
   const all_users = await User.find({
     verified: true,
   }).select("firstName lastName _id");
 
-  const this_user = req.user;//it is _id
+  const this_user = req.user; //it is _id
 
   const remaining_users = all_users.filter(
     (user) =>
       !this_user.friends.includes(user._id) &&
-      user._id.toString() !== req.user._id.toString()//exclude all the friends of a user and also exclude the user itself
+      user._id.toString() !== req.user._id.toString() //exclude all the friends of a user and also exclude the user itself
   );
 
   res.status(200).json({

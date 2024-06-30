@@ -27,6 +27,9 @@ import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import { socket } from "../../socket";
 import { useSelector } from "react-redux";
+import axios from "../../utils/axios";
+import UseAnimations from "react-useanimations";
+import loader from "react-useanimations/lib/loading";
 
 const StyledInput = styled(TextField)(({ theme }) => ({
   "& .MuiInputBase-input": {
@@ -83,6 +86,8 @@ const ChatInput = ({
   const user_id = window.localStorage.getItem("user_id");
   const { room_id } = useSelector((state) => state.app);
 
+  const { token } = useSelector((state)=>state.auth);
+
   const [msg, setMsg] = useState("");
 
   const [loading, setLoading] = useState(false);
@@ -118,56 +123,90 @@ const ChatInput = ({
     };
   };
 
-  const handleFileUpload = () => {
+  const handleFileUpload = async () => {
     console.log(imageFile, previewFile);
     try {
       if (imageFile == null) return;
       console.log("uploading...");
       setLoading(true);
-      // const formData = new FormData(); //used to gather form data from HTML forms.
+      const formData = new FormData(); //used to gather form data from HTML forms.
+      formData.append('conversation_id', room_id);
       // if(imageFile){
-      //   formData.append("file", imageFile); // make a key-value pair so to send it in form-data section of request
+        formData.append("file", imageFile); // make a key-value pair so to send it in form-data section of request
       // }
+
+      await axios
+      .put(
+        "/user/upload",
+          formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+      .then((response) => {
+        console.log(response);
+        socket.emit(
+                "file_message",
+                {
+                  name: imageFile.name,
+                  to: current_conversation?.user_id,
+                  from: user_id,
+                  conversation_id: room_id,
+                  type: fileType.startsWith("image/")
+                    ? "img"
+                    : fileType.startsWith("video/")
+                    ? "video"
+                    : "doc",
+                  msg: msg,
+                  mediaUrl: response?.data?.mediaUrl,
+                })
+        
+      })
+      .catch((err) => {
+        console.log(err);
+      });
       // // formData.append('message', message);
       // formData.append('to', current_conversation?.user_id);
       // formData.append('from', user_id);
-      // formData.append('conversation_id', room_id);
       // formData.append('type', "img");
 
       // for (let pair of formData.entries()) {
       //   console.log(pair[0] + ', ' + pair[1]);
       // }
 
-      if (imageFile) {
-        const reader = new FileReader();
-        reader.readAsArrayBuffer(imageFile);
-        reader.onload = (event) => {
-          const buffer = event.target.result;
-          socket.emit(
-            "file_message",
-            {
-              data: buffer,
-              name: imageFile.name,
-              to: current_conversation?.user_id,
-              from: user_id,
-              conversation_id: room_id,
-              type: fileType.startsWith("image/")
-                ? "img"
-                : fileType.startsWith("video/")
-                ? "video"
-                : "doc",
-              msg: msg,
-            },
-            (response) => {
-              if (response.success) {
-                console.log("File uploaded successfully:", response.url);
-              } else {
-                console.error("File upload failed:", response.error);
-              }
-            }
-          );
-        };
-      }
+      // if (imageFile) {
+      //   const reader = new FileReader();
+      //   reader.readAsArrayBuffer(imageFile);
+      //   reader.onload = (event) => {
+      //     const buffer = event.target.result;
+      //     socket.emit(
+      //       "file_message",
+      //       {
+      //         data: buffer,
+      //         name: imageFile.name,
+      //         to: current_conversation?.user_id,
+      //         from: user_id,
+      //         conversation_id: room_id,
+      //         type: fileType.startsWith("image/")
+      //           ? "img"
+      //           : fileType.startsWith("video/")
+      //           ? "video"
+      //           : "doc",
+      //         msg: msg,
+      //       },
+      //       (response) => {
+      //         if (response.success) {
+      //           console.log("File uploaded successfully:", response.url);
+      //         } else {
+      //           console.error("File upload failed:", response.error);
+      //         }
+      //       }
+      //     );
+      //   };
+      // }
 
       setPreviewSource(null);
       setImageFile(null);
@@ -385,7 +424,10 @@ const ChatInput = ({
               disableUnderline: true,
             }}
           />
-          <Box
+          {
+            !loading ?
+            (
+              <Box
             sx={{
               height: 48,
               width: 48,
@@ -411,6 +453,11 @@ const ChatInput = ({
               </IconButton>
             </Stack>
           </Box>
+            ) :
+            (
+              <UseAnimations animation={loader} strokeColor="#0E96D8" size={60}/>
+            )
+          }
         </Stack>
       </Box>
     </Box>

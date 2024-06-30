@@ -3,7 +3,6 @@ const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 dotenv.config({ path: "./config.env" });
 const { cloudinaryConnect } = require("./config/cloudinary");
-const fileUpload = require("express-fileupload");
 
 const path = require("path");
 
@@ -63,12 +62,6 @@ mongoose
     console.log("DB Connection successful");
   });
 
-app.use(
-  fileUpload({
-    useTempFiles: true,
-    tempFileDir: "/tmp",
-  })
-);
 
 // cloudinary connect
 cloudinaryConnect();
@@ -311,41 +304,41 @@ io.on("connection", async (socket) => {
   });
 
   // -------------------------file_message-----------------------------------------//
-  const fs = require("fs");
-  const path = require("path");
+  // const fs = require("fs");
+  // const path = require("path");
 
   // handle Media/Document Message
   socket.on("file_message", async (fileData, callback) => {
-    console.log("Received file message:", fileData, "dir", __dirname);
+    // console.log("Received file message:", fileData, "dir", __dirname);
 
-    const uploadsDir = path.join(__dirname, "uploads");
+    // const uploadsDir = path.join(__dirname, "uploads");
 
     // Ensure the uploads directory exists
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir);
-    }
-    const buffer = Buffer.from(fileData.data);
-    const timestamp = Date.now();
-    const fileName = `${timestamp}-${fileData.name}`;
-    const filePath = path.join(uploadsDir, fileName);
+    // if (!fs.existsSync(uploadsDir)) {
+    //   fs.mkdirSync(uploadsDir);
+    // }
+    // const buffer = Buffer.from(fileData.data);
+    // const timestamp = Date.now();
+    // const fileName = `${timestamp}-${fileData.name}`;
+    // const filePath = path.join(uploadsDir, fileName);
 
-    fs.writeFileSync(filePath, buffer);
+    // fs.writeFileSync(filePath, buffer);
 
     // data: {to, from, text, file}
-    const { conversation_id, to, from, type, msg } = fileData;
-    let mediaUrl = null;
+    const { conversation_id, to, from, type, msg, mediaUrl } = fileData;
+    // let mediaUrl = null;
 
-    if (filePath) {
-      const cloud = await uploadImageToCloudinary(
-        filePath,
-        `${process.env.FOLDER_NAME}-${conversation_id}`,
-        1000,
-        1000
-      );
-      mediaUrl = cloud.secure_url;
-    }
+    // if (filePath) {
+    //   const cloud = await uploadImageToCloudinary(
+    //     filePath,
+    //     `${process.env.FOLDER_NAME}-${conversation_id}`,
+    //     1000,
+    //     1000
+    //   );
+    //   mediaUrl = cloud.secure_url;
+    // }
 
-    fs.unlinkSync(filePath); // Clean up the temporary file
+    // fs.unlinkSync(filePath); // Clean up the temporary file
 
     const to_user = await User.findById(to);
     const from_user = await User.findById(from);

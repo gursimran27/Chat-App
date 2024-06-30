@@ -20,5 +20,7 @@ router.get("/:id/lastSeen", authController.protect, userController.lastSeen);
 router.post("/start-audio-call", authController.protect, userController.startAudioCall);
 router.post("/start-video-call", authController.protect, userController.startVideoCall);
 
+router.put("/upload", authController.protect, userController.upload);
+
 
 module.exports = router;
