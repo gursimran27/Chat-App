@@ -320,3 +320,42 @@ exports.getCallLogs = catchAsync(async (req, res, next) => {
     data: call_logs,
   });
 });
+
+
+exports.pin = catchAsync(async (req, res, next) => {
+  try {
+    const userId = req.user._id; // Assuming you have user authentication and can get the user ID from the request
+    const conversationId = req.params.id;
+    
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $addToSet: { pinnedChats: conversationId } }, // Add to set ensures no duplicates
+      { new: true }
+    );
+    
+    res.status(200).json(user.pinnedChats);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to pin conversation' });
+  }
+});
+
+
+exports.unpin = catchAsync(async (req, res, next) => {
+  try {
+    const userId = req.user.id; // Assuming you have user authentication and can get the user ID from the request
+    const conversationId = req.params.id;
+    
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $pull: { pinnedChats: conversationId } }, // Remove the conversation ID from pinnedChats
+      { new: true }
+    );
+    
+    res.status(200).json(user.pinnedChats);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to unpin conversation' });
+  }
+});
+
+
+

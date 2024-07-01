@@ -24,10 +24,15 @@ const slice = createSlice({
   reducers: {
     fetchDirectConversations(state, action) {
       console.log("hola", action.payload.conversations);
+      const pinnedChats = action.payload.pinnedChats;
+
       const list = action.payload.conversations.map((el) => {
         const user = el.participants.find(
           (elm) => elm._id.toString() !== user_id
         );
+
+        const isPinned = pinnedChats.includes(el._id.toString());
+
         return {
           id: el._id,//conversationid
           user_id: user?._id,//userid
@@ -39,7 +44,7 @@ const slice = createSlice({
           msg: el.messages[el.messages.length - 1].text,
           time: "9:36",
           unread: el?.unreadCount[user_id.toString()] || 0,
-          pinned: false,
+          pinned: isPinned,
           about: user?.about,
         };
       });
@@ -69,6 +74,22 @@ const slice = createSlice({
               time: "9:36",
               unread: el?.unreadCount[user_id.toString()] || 0,
               pinned: false,
+            };
+          }
+        }
+      );
+    },
+
+    updateDirectConversationForPinnedChat(state, action) {
+      const this_conversation_id = action.payload.this_conversation_id;
+      state.direct_chat.conversations = state.direct_chat.conversations.map(
+        (el) => {
+          if (el?.id !== this_conversation_id) {
+            return el;
+          } else {
+            return {
+              ...el,
+              pinned: action.payload.pinned,
             };
           }
         }
@@ -213,9 +234,9 @@ export default slice.reducer;
 
 // ----------------------------------------------------------------------
 
-export const FetchDirectConversations = ({ conversations }) => {
+export const FetchDirectConversations = ({ conversations, pinnedChats }) => {
   return async (dispatch, getState) => {
-    dispatch(slice.actions.fetchDirectConversations({ conversations }));
+    dispatch(slice.actions.fetchDirectConversations({ conversations: conversations ,pinnedChats: pinnedChats }));
   };
 };
 export const AddDirectConversation = ({ conversation }) => {
@@ -226,6 +247,11 @@ export const AddDirectConversation = ({ conversation }) => {
 export const UpdateDirectConversation = ({ conversation }) => {
   return async (dispatch, getState) => {
     dispatch(slice.actions.updateDirectConversation({ conversation }));
+  };
+};
+export const UpdateDirectConversationForPinnedChat = ({ this_conversation_id, pinned }) => {
+  return async (dispatch, getState) => {
+    dispatch(slice.actions.updateDirectConversationForPinnedChat({ this_conversation_id: this_conversation_id, pinned: pinned }));
   };
 };
 

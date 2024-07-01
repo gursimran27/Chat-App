@@ -31,6 +31,7 @@ import axios from "../../utils/axios";
 import UseAnimations from "react-useanimations";
 import loader from "react-useanimations/lib/loading";
 import { UpdateReply_msg } from "../../redux/slices/conversation";
+import unSupport from "../../assets/OIP.jpeg"
 
 const StyledInput = styled(TextField)(({ theme }) => ({
   "& .MuiInputBase-input": {
@@ -231,6 +232,7 @@ const ChatInput = ({
   return (
     <Box sx={{ position: "relative" }}>
       <StyledInput
+        disabled={previewSource}
         inputRef={inputRef}
         value={value}
         onChange={(event) => {
@@ -317,6 +319,7 @@ const ChatInput = ({
               ? "#F8FAFF"
               : theme.palette.background.default,
           boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.25)",
+          borderRadius: 1.5
         }}
       >
         <IconButton
@@ -381,6 +384,11 @@ const ChatInput = ({
             title="Text File preview"
           />
         )}
+        {/* unsupported Types */}
+        {
+          ( fileType !== "text/plain" && fileType !== "application/pdf" && !fileType.startsWith("video/") && !fileType.startsWith("image/") ) &&
+          <img src={unSupport} style={{marginTop:"40px", width:"90%",height:"70%", marginLeft:"auto", marginRight:"auto", marginBottom:"30px"}}/>
+        }
 
         {/* {(fileType === "application/msword" ||
           fileType ===
@@ -416,7 +424,7 @@ const ChatInput = ({
             onChange={(event) => {
               setMsg(event.target.value);
             }}
-            // disabled= {openActions?true:false}
+            disabled= {( fileType !== "text/plain" && fileType !== "application/pdf" && !fileType.startsWith("video/") && !fileType.startsWith("image/") )}
 
             fullWidth
             placeholder="Write a message..."
@@ -432,8 +440,12 @@ const ChatInput = ({
             sx={{
               height: 48,
               width: 48,
-              backgroundColor: !imageFile ? "#899" : theme.palette.primary.main,
+              backgroundColor: ( fileType !== "text/plain" && fileType !== "application/pdf" && !fileType.startsWith("video/") && !fileType.startsWith("image/") ) ? "#899" : theme.palette.primary.main,
               borderRadius: 1.5,
+              "&:hover": {
+              scale: "0.9",
+              transition: "all 300ms",
+            },
             }}
           >
             <Stack
@@ -442,7 +454,7 @@ const ChatInput = ({
               justifyContent="center"
             >
               <IconButton
-                disabled={!imageFile}
+                disabled={( fileType !== "text/plain" && fileType !== "application/pdf" && !fileType.startsWith("video/") && !fileType.startsWith("image/") )}
                 onClick={() => {
                   if (!imageFile) return;
                   console.log("uploading...!");
@@ -595,6 +607,10 @@ const Footer = () => {
               backgroundColor:
                 value == "" ? "#899" : theme.palette.primary.main,
               borderRadius: 1.5,
+              "&:hover": {
+              scale: "0.9",
+              transition: "all 300ms",
+            },
             }}
           >
             <Stack

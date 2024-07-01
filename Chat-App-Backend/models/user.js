@@ -81,6 +81,12 @@ const userSchema = new mongoose.Schema({
   lastSeen: {
     type: Date
   },
+  pinnedChats: [
+    {
+      type: mongoose.Schema.ObjectId,
+      ref: "OneToOneMessage",
+    },
+  ],
 });
 
 

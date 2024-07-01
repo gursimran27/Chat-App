@@ -151,7 +151,7 @@ const DocMsg = ({ el, menu }) => {
               borderRadius: 1,
               cursor: "pointer", // Add cursor pointer to indicate clickable
             }}
-            onClick={handleOpenModal} // Open modal on click of document preview area
+            onClick={(e)=>{e.stopPropagation(); handleOpenModal();}} // Open modal on click of document preview area
           >
             <Image size={48} />
             <Typography variant="caption">{el?.message}</Typography>

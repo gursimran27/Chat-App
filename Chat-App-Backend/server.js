@@ -169,9 +169,12 @@ io.on("connection", async (socket) => {
 
     // db.books.find({ authors: { $elemMatch: { name: "John Smith" } } })
 
+    const user = await User.findById(user_id)
+    const pinnedChats = user.pinnedChats || [];
+
     console.log(existing_conversations);
 
-    callback(existing_conversations);
+    callback(existing_conversations,pinnedChats);
   });
 
   socket.on("start_conversation", async (data) => {

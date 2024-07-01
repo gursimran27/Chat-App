@@ -42,11 +42,11 @@ const Chats = () => {
   // const sortedConversations = [...conversations].sort((a, b) => b.unread - a.unread);
 
   useEffect(() => {
-    socket.emit("get_direct_conversations", { user_id }, (data) => {
+    socket.emit("get_direct_conversations", { user_id }, (data,pinnedChats) => {
       console.log(data); // this data is the list of conversations
       // dispatch action
 
-      dispatch(FetchDirectConversations({ conversations: data }));
+      dispatch(FetchDirectConversations({ conversations: data,pinnedChats:  pinnedChats }));
     });
   }, []);
 
@@ -122,13 +122,13 @@ const Chats = () => {
           <Stack sx={{ flexGrow: 1, overflowY: "scroll", height: "100%" }}>
             <SimpleBarStyle timeout={500} clickOnTrack={false}>
               <Stack spacing={2.4}>
-                {/* <Typography variant="subtitle2" sx={{ color: "#676667" }}>
+                <Typography variant="subtitle2" sx={{ color: "#676667" }}>
                   Pinned
-                </Typography> */}
+                </Typography>
                 {/* Chat List */}
-                {/* {ChatList.filter((el) => el.pinned).map((el, idx) => {
+                {conversations.filter((el) => el.pinned).map((el, idx) => {
                   return <ChatElement {...el} />;
-                })} */}
+                })}
                 <Typography variant="subtitle2" sx={{ color: "#676667" }}>
                   All Chats
                 </Typography>
