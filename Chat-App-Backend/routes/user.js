@@ -21,8 +21,11 @@ router.post("/start-audio-call", authController.protect, userController.startAud
 router.post("/start-video-call", authController.protect, userController.startVideoCall);
 
 router.put("/upload", authController.protect, userController.upload);
+
 router.put("/conversations/:id/unpin", authController.protect, userController.unpin);
 router.put("/conversations/:id/pin", authController.protect, userController.pin);
+
+router.put("/conversations/:conversationId/:messageId/star", authController.protect, userController.star);
 
 
 module.exports = router;

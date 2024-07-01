@@ -311,13 +311,13 @@ const Message_options = [
     title: "Reply",
   },
   {
+    title: "Star message",
+  },
+  {
     title: "React to message",
   },
   {
     title: "Forward message",
-  },
-  {
-    title: "Star message",
   },
   {
     title: "Report",

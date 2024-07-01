@@ -38,7 +38,7 @@ const ProfileMenu = () => {
         aria-expanded={openMenu ? "true" : undefined}
         alt={user_name}
         // src={user_img}
-        src={faker.image.avatar()}
+        src={ `https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`}
         onClick={handleClick}
       />
       <Menu

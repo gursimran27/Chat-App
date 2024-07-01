@@ -17,16 +17,18 @@ import {
   DotsThreeVertical,
   DownloadSimple,
   Image,
+  Star,
   X,
 } from "phosphor-react";
 import { Message_options } from "../../data";
 import { useDispatch, useSelector } from "react-redux";
-import { UpdateReply_msg } from "../../redux/slices/conversation";
-import { showSnackbar } from "../../redux/slices/app";
+import { UpdateMessagesForStar, UpdateReply_msg } from "../../redux/slices/conversation";
+import { closeSnackBar, showSnackbar } from "../../redux/slices/app";
+import axios from "../../utils/axios";
 
 // TODO HOF
 
-const MessageOption = ({ replyToMsg }) => {
+const MessageOption = ({ replyToMsg, messageId, star }) => {
   const dispatch = useDispatch();
   const [anchorEl, setAnchorEl] = useState(null); //store referance
   const open = Boolean(anchorEl); //convert referance to boollean
@@ -36,6 +38,43 @@ const MessageOption = ({ replyToMsg }) => {
   const handleClose = () => {
     setAnchorEl(null);
   };
+
+  const { token } = useSelector((state)=>state.auth);
+
+  const conversationId = useSelector((state)=>state.conversation.direct_chat.current_conversation.id);
+
+
+
+  const handleStar = async (conversationId)=>{
+    try {
+      console.log("staring message")
+      dispatch(
+        showSnackbar({
+          severity: "success",
+          message: !star ? `Message Stared` : 'Message Unstared',
+        })
+      );
+      const { data } = await axios.put(
+        `/user/conversations/${conversationId}/${messageId}/star`,
+        {star:!star}, // Empty data object as second parameter
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      dispatch(UpdateMessagesForStar({messageId: messageId, star: !star}));
+      dispatch(closeSnackBar);
+
+      console.log('pinned chat sucess',data)
+    } catch (error) {
+      console.error('Failed to pin conversation', error);
+    }
+    handleClose();
+  }
+
+
   return (
     <>
       <DotsThreeVertical
@@ -75,7 +114,21 @@ const MessageOption = ({ replyToMsg }) => {
                 {el.title}
               </MenuItem>
             ) : (
+              el?.title == "Star message" ? 
+              (
+                <MenuItem
+                onClick={() => {
+                  handleStar(conversationId);
+                }}
+              >
+                {
+                  !star ? 'Star message' : 'Unstar message'
+                }
+              </MenuItem>
+            ) :
+            (
               <MenuItem onClick={handleClose}>{el.title}</MenuItem>
+            )
             )
           )}
         </Stack>
@@ -172,6 +225,12 @@ const DocMsg = ({ el, menu }) => {
           >
             {el.message}
           </Typography>
+        </Stack>
+        <Stack direction={'row'} alignItems={'center'} justifyContent={'end'} >
+          {
+            el?.star &&
+            (<Star size={13} color="black" weight="duotone" />)
+          }
         </Stack>
       </Box>
       <Stack
@@ -312,8 +371,14 @@ const LinkMsg = ({ el, menu }) => {
             </Typography>
           </Stack>
         </Stack>
+        <Stack direction={'row'} alignItems={'center'} justifyContent={'end'} >
+          {
+            el?.star &&
+            (<Star size={13} color="black" weight="duotone" />)
+          }
+        </Stack>
       </Box>
-      {menu && <MessageOption replyToMsg={el?.message} />}
+      {menu && <MessageOption replyToMsg={el?.message} messageId={el?.id} star={el?.star}/>}
       <Stack
         justifyContent={"flex-end"}
         sx={{ position: "absolute", bottom: "0px", right: "-7px" }}
@@ -372,8 +437,14 @@ const ReplyMsg = ({ el, menu }) => {
             {el?.message}
           </Typography>
         </Stack>
+        <Stack direction={'row'} alignItems={'center'} justifyContent={'end'} >
+          {
+            el?.star &&
+            (<Star size={13} color="black" weight="duotone" />)
+          }
+        </Stack>
       </Box>
-      {menu && <MessageOption replyToMsg={el?.message} />}
+      {menu && <MessageOption replyToMsg={el?.message} messageId={el?.id} star={el?.star}/>}
       <Stack
         justifyContent={"flex-end"}
         sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
@@ -443,8 +514,14 @@ const MediaMsg = ({ el, menu }) => {
             {el.message}
           </Typography>
         </Stack>
+        <Stack direction={'row'} alignItems={'center'} justifyContent={'end'} >
+          {
+            el?.star &&
+            (<Star size={13} color="black" weight="duotone" />)
+          }
+        </Stack>
       </Box>
-      {menu && <MessageOption replyToMsg={el?.message} />}
+      {menu && <MessageOption replyToMsg={el?.message} messageId={el?.id} star={el?.star}/>}
       <Stack
         justifyContent={"flex-end"}
         sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
@@ -575,8 +652,14 @@ const VideoMsg = ({ el, menu }) => {
             {el.message}
           </Typography>
         </Stack>
+        <Stack direction={'row'} alignItems={'center'} justifyContent={'end'} >
+          {
+            el?.star &&
+            (<Star size={13} color="black" weight="duotone" />)
+          }
+        </Stack>
       </Box>
-      {menu && <MessageOption replyToMsg={el?.message} />}
+      {menu && <MessageOption replyToMsg={el?.message} messageId={el?.id} star={el?.star}/>}
       <Stack
         justifyContent="flex-end"
         sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
@@ -684,8 +767,14 @@ const TextMsg = ({ el, menu }) => {
         >
           {el.message}
         </Typography>
+        <Stack direction={'row'} alignItems={'center'} justifyContent={'end'} >
+          {
+            el?.star &&
+            (<Star size={13} color="black" weight="duotone" />)
+          }
+        </Stack>
       </Box>
-      {menu && <MessageOption replyToMsg={el?.message} />}
+      {menu && <MessageOption replyToMsg={el?.message} messageId={el?.id} star={el?.star}/>}
       <Stack
         justifyContent={"flex-end"}
         sx={{ position: "absolute", bottom: "0px", right: "-5px" }}

@@ -2,6 +2,7 @@ const AudioCall = require("../models/audioCall");
 const FriendRequest = require("../models/friendRequest");
 const User = require("../models/user");
 const VideoCall = require("../models/videoCall");
+const OneToOneMessage = require("../models/OneToOneMessage");
 const catchAsync = require("../utils/catchAsync");
 const filterObj = require("../utils/filterObj");
 const { uploadImageToCloudinary } = require("../utils/imageUploader");
@@ -354,6 +355,36 @@ exports.unpin = catchAsync(async (req, res, next) => {
     res.status(200).json(user.pinnedChats);
   } catch (error) {
     res.status(500).json({ error: 'Failed to unpin conversation' });
+  }
+});
+
+
+exports.star = catchAsync(async (req, res, next) => {
+  try {
+    const { conversationId, messageId } = req.params;
+    const { star } = req.body;
+    const userId = req.user.id; 
+
+    const conversation = await OneToOneMessage.findById(conversationId);
+
+    if (!conversation) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    const message = conversation.messages.id(messageId);//Mongoose method to find a subdocument
+
+    if (!message) { 
+      return res.status(404).json({ error:'Message not found' });
+    }
+
+    // Update the star status for the user
+    message.star.set(userId, star);
+
+    await conversation.save();
+
+    res.status(200).json({ success: true, message: 'Star status updated as ',star });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error',message: error.message });
   }
 });
 

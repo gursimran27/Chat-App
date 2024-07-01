@@ -39,7 +39,7 @@ const slice = createSlice({
           name: `${user?.firstName} ${user?.lastName}`,
           online: user?.status === "Online",
           //   img: `https://${S3_BUCKET_NAME}.s3.${AWS_S3_REGION}.amazonaws.com/${user?.avatar}`,
-          img: faker.image.avatar(),
+          img: `https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`,
           //   msg: el.messages.slice(-1)[0].text,
           msg: el.messages[el.messages.length - 1].text,
           time: "9:36",
@@ -67,7 +67,7 @@ const slice = createSlice({
               user_id: user?._id, //onetoonemsssage's _id
               name: `${user?.firstName} ${user?.lastName}`,
               online: user?.status === "Online",
-              img: faker.image.avatar(),
+              img:  `https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`,
               msg: this_conversation.messages[
                 this_conversation.messages.length - 1
               ].text,
@@ -110,7 +110,7 @@ const slice = createSlice({
         user_id: user?._id,
         name: `${user?.firstName} ${user?.lastName}`,
         online: user?.status === "Online",
-        img: faker.image.avatar(),
+        img:  `https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`,
         msg: user?.text,
         time: "9:36",
         unread: this_conversation?.unreadCount[user_id.toString()] || 0,
@@ -133,6 +133,7 @@ const slice = createSlice({
         status: el?.status,
         src:el?.file,
         replyToMsg: el?.replyToMsg,
+        star: el?.star[user_id.toString()] || false,
       }));
       state.direct_chat.current_messages = formatted_messages;
       console.log("ssss",messages.file);
@@ -143,6 +144,20 @@ const slice = createSlice({
         "inside addDirect messages",
         state.direct_chat.current_messages
       );
+    },
+    updateMessagesForStar(state, action) {
+      state.direct_chat.current_messages = state.direct_chat.current_messages.map( (el)=>{
+        if(el?.id != action.payload.messageId){
+          return el;
+        }
+        else{
+          return {
+            ...el,
+            star: action.payload.star,
+          }
+        }
+      })
+      
     },
     updateCurrent_conversationOnlineStatus(state, action) {
       state.direct_chat.current_conversation = {
@@ -325,5 +340,10 @@ export const UpdateMessageStatus = ({ status }) => {
 export const UpdateReply_msg = ({ reply, replyToMsg }) => {
   return async (dispatch, getState) => {
     dispatch(slice.actions.updateReply_msg({ reply: reply, replyToMsg: replyToMsg }));
+  };
+};
+export const UpdateMessagesForStar = ({ messageId, star }) => {
+  return async (dispatch, getState) => {
+    dispatch(slice.actions.updateMessagesForStar({ messageId: messageId, star: star }));
   };
 };

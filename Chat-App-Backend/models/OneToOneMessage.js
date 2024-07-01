@@ -40,7 +40,12 @@ const oneToOneMessageSchema = new mongoose.Schema({
       replyToMsg: {
         type: String,
         default: null,
-      }
+      },
+      star: {
+        type: Map,
+        of: Boolean,
+        default: {},
+      },
     },
   ],
   unreadCount: {
