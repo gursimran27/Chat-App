@@ -20,7 +20,7 @@ const serverSecret = process.env.ZEGO_SERVER_SECRET; // type: 32 byte length str
 exports.getMe = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: "success",
-    data: req.user,
+    data: req.user,//as added while jwt verification
   });
 });
 
@@ -37,15 +37,40 @@ exports.lastSeen = catchAsync(async (req, res, next) => {
 });
 
 exports.updateMe = catchAsync(async (req, res, next) => {
-  const filteredBody = filterObj(
-    req.body,
-    "firstName",
-    "lastName",
-    "about",
-    "avatar"
-  );
+  // const filteredBody = filterObj(
+  //   req.body,
+  //   "firstName",
+  //   "lastName",
+  //   "about",
+  //   "avatar"
+  // );
 
-  const userDoc = await User.findByIdAndUpdate(req.user._id, filteredBody);
+  const { firstName, about }= req.body;
+  if(!firstName && !about){
+    return res.status(400).json({
+      status:"Error",
+      Message:'All fields are required'
+    })
+  }
+  const file = req.files?.file;
+
+  let mediaUrl = null;
+
+  if(file){
+    const cloud = await uploadImageToCloudinary(
+      file,
+      `${process.env.FOLDER_NAME}-${req.user._id}-avatar`,
+      1000,
+      1000
+    );
+    mediaUrl = cloud.secure_url;
+  }
+
+  const userDoc = await User.findByIdAndUpdate(req.user._id, {
+    firstName,
+    about,
+    avatar: mediaUrl,
+  },{new:true});
 
   res.status(200).json({
     status: "success",

@@ -165,7 +165,7 @@ io.on("connection", async (socket) => {
     // *for chat list rendering
     const existing_conversations = await OneToOneMessage.find({
       participants: { $all: [user_id] },
-    }).populate("participants", "firstName lastName avatar _id email status");
+    }).populate("participants", "firstName lastName avatar _id email status about");
 
     // db.books.find({ authors: { $elemMatch: { name: "John Smith" } } })
 
@@ -187,7 +187,7 @@ io.on("connection", async (socket) => {
 
     const existing_conversations = await OneToOneMessage.find({
       participants: { $size: 2, $all: [to, from] },
-    }).populate("participants", "firstName lastName _id email status");
+    }).populate("participants", "firstName lastName _id email status about");
 
     console.log(existing_conversations[0], "Existing Conversation");
 
@@ -199,7 +199,7 @@ io.on("connection", async (socket) => {
 
       new_chat = await OneToOneMessage.findById(new_chat).populate(
         "participants",
-        "firstName lastName _id email status"
+        "firstName lastName _id email status about"
       );
 
       console.log(new_chat);

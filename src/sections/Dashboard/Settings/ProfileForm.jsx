@@ -17,6 +17,8 @@ const ProfileForm = () => {
   const [file, setFile] = useState();
   const { user } = useSelector((state) => state.app);
 
+  const [ loading, setLoading ] = useState(false);
+
   const ProfileSchema = Yup.object().shape({
     firstName: Yup.string().required("Name is required"),
     about: Yup.string().required("About is required"),
@@ -29,7 +31,7 @@ const ProfileForm = () => {
     // avatar: `https://${S3_BUCKET_NAME}.s3.${AWS_S3_REGION}.amazonaws.com/${user?.avatar}`,
     // firstName: faker.name.firstName(), 
     // about: "hey there i am lucky",
-    avatar: faker.image.avatar(),
+    avatar: user?.avatar ||`https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`,
   };
 
   const methods = useForm({
@@ -49,16 +51,18 @@ const ProfileForm = () => {
   const values = watch();
 
   const onSubmit = async (data) => {
+    setLoading(true);
     try {
         // Send API request
       console.log("DATA", data);
-      // dispatch(
-      //   UpdateUserProfile({
-      //     firstName: data?.firstName,
-      //     about: data?.about,
-      //     avatar: file,
-      //   })
-      // );
+      dispatch(
+        UpdateUserProfile({
+          firstName: data?.firstName,
+          about: data?.about,
+          avatar: file,
+          setLoading,
+        })
+      );
     } catch (error) {
       console.error(error);
     }
@@ -99,11 +103,11 @@ const ProfileForm = () => {
             size="large"
             type="submit"
             variant="contained"
-            loading={isSubmitSuccessful || isSubmitting}
-            disabled={isSubmitSuccessful || isSubmitting}
+            loading={loading}
+            disabled={loading}
             loadingPosition="center"
           >
-             <span>{isSubmitting ? "":"Save"}</span>
+             <span>{loading ? "Updating":"Save"}</span>
           </LoadingButton>
           {/* <Button 
             color="primary"

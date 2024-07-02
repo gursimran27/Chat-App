@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useTheme } from "@mui/material/styles";
 import {
   Box,
@@ -8,19 +8,22 @@ import {
   Tabs,
   Tab,
   Grid,
+  Modal,
 } from "@mui/material";
-import { ArrowLeft } from "phosphor-react";
+import { ArrowLeft, X } from "phosphor-react";
 import useResponsive from "../hooks/useResponsive";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { UpdateSidebarType } from "../redux/slices/app";
 import { faker } from "@faker-js/faker";
 import { DocMsg, LinkMsg } from "../components/Conversation/MsgTypes";
 import { Shared_docs, Shared_links } from "../data";
 
-
-
 const Media = () => {
   const dispatch = useDispatch();
+
+  const { current_messages } = useSelector(
+    (state) => state.conversation.direct_chat
+  );
 
   const theme = useTheme();
 
@@ -32,9 +35,35 @@ const Media = () => {
     setValue(newValue);
   };
 
+  const [openModal, setOpenModal] = useState(false);
+
+  const handleOpenModal = () => {
+    setOpenModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+    setSrc(null);
+    SetTitle(null);
+    setType(null);
+  };
+
+  const [src, setSrc] = useState(null);
+  const [title, SetTitle] = useState(null);
+  const [type, setType] = useState(null);
+
+  const handleClick = (el) => {
+    setSrc(el?.src);
+    SetTitle(el?.message);
+    setType(el?.subtype);
+    handleOpenModal();
+  };
+
+  let count=1
+
   return (
-    <Box sx={{ width: !isDesktop ? "100vw" : 320, maxHeight: "100vh"}}>
-      <Stack sx={{ height: "100%" , overflowX:'hidden'}}>
+    <Box style={{borderLeft:'1px solid grey', borderRadius:'15px'}} sx={{ width: !isDesktop ? "100vw" : 320, maxHeight: "100vh" }}>
+      <Stack sx={{ height: "100%", overflowX: "hidden" }}>
         <Box
           sx={{
             boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.25)",
@@ -52,7 +81,7 @@ const Media = () => {
             spacing={3}
           >
             <IconButton
-               onClick={() => {
+              onClick={() => {
                 dispatch(UpdateSidebarType("CONTACT"));
               }}
             >
@@ -73,7 +102,11 @@ const Media = () => {
             position: "relative",
             flexGrow: 1,
             overflowY: "scroll",
-            overflowX:'hidden'
+            overflowX: "hidden",
+            backgroundColor:
+            theme.palette.mode === "light"
+              ? "#F9F1FA"
+              : '#212B36',
           }}
           spacing={3}
           padding={value === 1 ? 1 : 3}
@@ -84,21 +117,77 @@ const Media = () => {
               case 0:
                 return (
                   <Grid container spacing={2}>
-                    {[0, 1, 2, 3, 4, 5, 6].map((el) => (
-                      <Grid item xs={4}>
-                        <img
-                          src={faker.image.city()}
-                          alt={faker.internet.userName()}
-                        />
-                      </Grid>
-                    ))}
+                    {current_messages.map((el) =>
+                      el?.subtype == "img" ? (
+                        <Grid item xs={4}>
+                          <img
+                            src={el?.src}
+                            alt={el?.message}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              borderRadius: "10px",
+                              cursor: "pointer", // Add cursor pointer to indicate clickable
+                            }}
+                            onClick={() => handleClick(el)} // Open modal on image click
+                          />
+                        </Grid>
+                      ) : el?.subtype == "video" ? (
+                        <Grid item xs={4}>
+                          <video
+                            src={el?.src}
+                            type={el?.type} // Specify the video type if known
+                            // controls
+                            autoPlay
+                            loop
+                            style={{
+                              maxWidth: "100%",
+                              maxHeight: "100%",
+                              width: "100%",
+                              height: "100%",
+                              // objectFit: "contain",
+                              borderRadius: "10px",
+                              cursor: "pointer",
+                            }}
+                            onClick={() => handleClick(el)}
+                          />
+                        </Grid>
+                      ) : null
+                    )}
                   </Grid>
                 );
               case 1:
-                return Shared_links.map((el) => <LinkMsg el={el} menu={false}/>);
+                return current_messages.map(
+                  (el) =>
+                    el?.subtype == "Link" && (
+                      <Stack
+                        direction={"row"}
+                        justifyContent={"start"}
+                        sx={{
+                          // width: "10%",
+                          wordBreak: "break-all", // ensures long words break and wrap
+                          overflowWrap: "break-word", // ensures lines break at appropriate points
+                          whiteSpace: "normal",
+                        }}
+                      >{`${count++})`}
+                        <a
+                          style={{ color: "blue" }}
+                          href={el?.message}
+                          target="_blank"
+                        >
+                          {el?.message}
+                        </a>
+                      </Stack>
+                    )
+                );
 
               case 2:
-                return Shared_docs.map((el) => <DocMsg el={el} menu={false}/>);
+                return current_messages.map((el) =>(
+                  el?.subtype == "doc" &&
+                  <div style={{marginRight:'-20px'}}>
+                  <DocMsg el={el} menu={false} />
+                  </div>
+                ));
 
               default:
                 break;
@@ -106,6 +195,86 @@ const Media = () => {
           })()}
         </Stack>
       </Stack>
+
+      {/* Modal for displaying larger image */}
+      <Modal
+        open={openModal}
+        onClose={handleCloseModal}
+        aria-labelledby="image-modal-title"
+        aria-describedby="image-modal-description"
+      >
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            maxWidth: "90vw",
+            maxHeight: "90vh",
+            width: "70%",
+            height: "90%",
+            backgroundColor: "#fff",
+            boxShadow: 24,
+            p: 4,
+            borderRadius: "10px",
+            outline: "none",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            overflow: "auto", // Add scrollbar when content overflows
+          }}
+        >
+          {type == "img" ? (
+            <img
+              src={src}
+              alt={title}
+              loading="lazy"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                borderRadius: "10px",
+              }}
+            />
+          ) : (
+            <video
+              src={src}
+              type={title} // Specify the video type if known
+              controls
+              autoPlay
+              style={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                borderRadius: "10px",
+              }}
+            />
+          )}
+          <IconButton
+            aria-label="Close modal"
+            onClick={handleCloseModal}
+            sx={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              color: "black",
+              backgroundColor: "red",
+              "&:hover": {
+                backgroundColor: "red",
+                color: "black",
+                scale: "0.9",
+                transition: "all 300ms",
+              },
+            }}
+          >
+            <X />
+          </IconButton>
+        </Box>
+      </Modal>
     </Box>
   );
 };

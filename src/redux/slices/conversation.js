@@ -39,13 +39,14 @@ const slice = createSlice({
           name: `${user?.firstName} ${user?.lastName}`,
           online: user?.status === "Online",
           //   img: `https://${S3_BUCKET_NAME}.s3.${AWS_S3_REGION}.amazonaws.com/${user?.avatar}`,
-          img: `https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`,
+          img: user?.avatar || `https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`,
           //   msg: el.messages.slice(-1)[0].text,
           msg: el.messages[el.messages.length - 1].text,
           time: "9:36",
           unread: el?.unreadCount[user_id.toString()] || 0,
           pinned: isPinned,
-          about: user?.about,
+          about: user?.about || "No Discription",
+          email: user?.email,
         };
       });
 
@@ -67,13 +68,15 @@ const slice = createSlice({
               user_id: user?._id, //onetoonemsssage's _id
               name: `${user?.firstName} ${user?.lastName}`,
               online: user?.status === "Online",
-              img:  `https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`,
+              img:  user?.avatar || `https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`,
+             about: user?.about || "No Discription",
               msg: this_conversation.messages[
                 this_conversation.messages.length - 1
               ].text,
               time: "9:36",
               unread: el?.unreadCount[user_id.toString()] || 0,
               pinned: false,
+              email: user?.email,
             };
           }
         }
@@ -110,11 +113,13 @@ const slice = createSlice({
         user_id: user?._id,
         name: `${user?.firstName} ${user?.lastName}`,
         online: user?.status === "Online",
-        img:  `https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`,
+        img: user?.avatar || `https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`,
+        about: user?.about || "No Discription",
         msg: user?.text,
         time: "9:36",
         unread: this_conversation?.unreadCount[user_id.toString()] || 0,
         pinned: false,
+        email: user?.email,
       });
     },
 

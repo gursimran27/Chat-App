@@ -27,6 +27,12 @@ export default function AvatarPreview({ file }) {
         width: `calc(100% - 16px)`,
         height: `calc(100% - 16px)`,
       }}
+      style={{
+      width: '100%',
+      height: '100%',
+      objectFit: 'contain',
+      borderRadius: 'inherit', // Ensures the image takes the borderRadius of the parent
+    }}
     />
   );
 }

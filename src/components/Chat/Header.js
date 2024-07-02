@@ -148,12 +148,17 @@ const ChatHeader = () => {
     }
   };
 
+  const { sideBar } = useSelector((state)=>state.app)
+
 
   const handleCloseChat = ()=>{
     console.log("close chat clicked");
     dispatch(SelectConversation({room_id:null}));
     dispatch(ClearCurrentMessagesAndCurrentConversation());
     dispatch(UpdateReply_msg({reply:false, replyToMsg: null}))
+    if(sideBar.open){
+      dispatch(ToggleSidebar());
+    }
   }
 
   return (
@@ -176,6 +181,7 @@ const ChatHeader = () => {
           justifyContent="space-between"
         >
           <Stack
+          style={{cursor:'pointer'}}
             onClick={() => {
               dispatch(ToggleSidebar());
             }}

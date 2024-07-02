@@ -12,6 +12,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  styled,
+  Badge,
 } from "@mui/material";
 import { faker } from "@faker-js/faker";
 import React, { useState } from "react";
@@ -27,11 +29,9 @@ import {
   X,
 } from "phosphor-react";
 import useResponsive from "../hooks/useResponsive";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { ToggleSidebar, UpdateSidebarType } from "../redux/slices/app";
 import AntSwitch from "../components/AntSwitch";
-
-
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -83,16 +83,43 @@ const DeleteChatDialog = ({ open, handleClose }) => {
   );
 };
 
-
-
-
-
+const StyledBadge = styled(Badge)(({ theme }) => ({
+  "& .MuiBadge-badge": {
+    backgroundColor: "#44b700",
+    color: "#44b700",
+    boxShadow: `0 0 0 2px ${theme.palette.background.paper}`,
+    "&::after": {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      borderRadius: "50%",
+      animation: "ripple 1.2s infinite ease-in-out",
+      border: "1px solid currentColor",
+      content: '""',
+    },
+  },
+  "@keyframes ripple": {
+    "0%": {
+      transform: "scale(.8)",
+      opacity: 1,
+    },
+    "100%": {
+      transform: "scale(2.4)",
+      opacity: 0,
+    },
+  },
+}));
 
 const Contact = () => {
   const theme = useTheme();
 
-  const dispatch = useDispatch();
+  const { current_conversation } = useSelector(
+    (state) => state.conversation.direct_chat
+  );
 
+  const dispatch = useDispatch();
 
   const isDesktop = useResponsive("up", "md");
 
@@ -101,15 +128,28 @@ const Contact = () => {
 
   const handleCloseBlock = () => {
     setOpenBlock(false);
-  }
+  };
   const handleCloseDelete = () => {
     setOpenDelete(false);
-  }
+  };
+
+  const { current_messages } = useSelector(
+    (state) => state.conversation.direct_chat
+  );
+
+  const lastThreeImages = current_messages
+  .filter(msg => msg.subtype === 'img')
+  .slice(-3)  // Get the last three elements
+  .map(msg => msg.src);
+
+console.log(lastThreeImages);
+
 
   return (
     <Box
       sx={{
-        width: !isDesktop ? "100vw" : 320, maxHeight: "100vh" 
+        width: !isDesktop ? "100vw" : 320,
+        maxHeight: "100vh",
       }}
     >
       <Stack sx={{ height: "100%" }}>
@@ -155,17 +195,41 @@ const Contact = () => {
           spacing={3}
         >
           <Stack alignItems="center" direction="row" spacing={2}>
-            <Avatar
-              src={faker.image.avatar()}
-              alt={faker.name.firstName()}
-              sx={{ height: 64, width: 64 }}
-            />
+            {current_conversation?.online ? (
+              <StyledBadge
+                overlap="circular"
+                anchorOrigin={{
+                  vertical: "bottom",
+                  horizontal: "right",
+                }}
+                variant="dot"
+              >
+                <Avatar
+                  alt={current_conversation?.name}
+                  src={current_conversation?.img}
+                />
+              </StyledBadge>
+            ) : (
+              <Avatar
+                src={current_conversation?.img}
+                alt={current_conversation?.name}
+                sx={{ height: 64, width: 64 }}
+              />
+            )}
             <Stack spacing={0.5}>
               <Typography variant="article" fontWeight={600}>
-                {faker.name.fullName()}
+                {current_conversation?.name}
               </Typography>
-              <Typography variant="body2" fontWeight={500}>
-                {"+91 62543 28 739"}
+              <Typography
+                variant="body2"
+                fontWeight={500}
+                sx={{
+                  wordBreak: "break-all", // ensures long words break and wrap
+                  overflowWrap: "break-word", // ensures lines break at appropriate points
+                  whiteSpace: "normal", // allows text to wrap normally
+                }}
+              >
+                {current_conversation?.email}
               </Typography>
             </Stack>
           </Stack>
@@ -194,7 +258,7 @@ const Contact = () => {
               About
             </Typography>
             <Typography variant="body2" fontWeight={500}>
-              hey there i am using this app
+              {current_conversation?.about}
             </Typography>
           </Stack>
           <Divider />
@@ -210,13 +274,13 @@ const Contact = () => {
               }}
               endIcon={<CaretRight />}
             >
-              401
+              {current_messages.length}
             </Button>
           </Stack>
           <Stack direction={"row"} alignItems="center" spacing={2}>
-            {[1, 2, 3].map((el) => (
+            {lastThreeImages.map((el) => (
               <Box>
-                <img src={faker.image.city()} alt={faker.internet.userName()} />
+                <img src={el} alt={'Error'}/>
               </Box>
             ))}
           </Stack>
@@ -266,9 +330,9 @@ const Contact = () => {
           <Divider />
           <Stack direction="row" alignItems={"center"} spacing={2}>
             <Button
-                onClick={() => {
-                  setOpenBlock(true);
-                }}
+              onClick={() => {
+                setOpenBlock(true);
+              }}
               fullWidth
               startIcon={<Prohibit />}
               variant="outlined"
@@ -276,9 +340,9 @@ const Contact = () => {
               Block
             </Button>
             <Button
-                onClick={() => {
-                  setOpenDelete(true);
-                }}
+              onClick={() => {
+                setOpenDelete(true);
+              }}
               fullWidth
               startIcon={<Trash />}
               variant="outlined"
@@ -288,9 +352,13 @@ const Contact = () => {
           </Stack>
         </Stack>
       </Stack>
-      {openBlock && <BlockDialog open={openBlock} handleClose={handleCloseBlock} />}
+      {openBlock && (
+        <BlockDialog open={openBlock} handleClose={handleCloseBlock} />
+      )}
 
-      {openDelete && <DeleteChatDialog open={openDelete} handleClose={handleCloseDelete} />}
+      {openDelete && (
+        <DeleteChatDialog open={openDelete} handleClose={handleCloseDelete} />
+      )}
     </Box>
   );
 };

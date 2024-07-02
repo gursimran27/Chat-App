@@ -84,6 +84,7 @@ const MessageOption = ({ replyToMsg, messageId, star }) => {
         aria-haspopup="true"
         aria-expanded={open ? "true" : undefined}
         onClick={handleClick}
+        style={{cursor:'pointer'}}
       />
       <Menu
         id="basic-menu"
@@ -187,10 +188,28 @@ const DocMsg = ({ el, menu }) => {
         py={1.5}
         sx={{
           backgroundColor: el.incoming
-            ? theme.palette.background.default
+            ? alpha(theme.palette.background.default, 1)
             : theme.palette.primary.main,
           borderRadius: 1.5,
           width: "max-content",
+          position: "relative",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: "-2px",
+            width: 0,
+            height: 0,
+            borderStyle: "solid",
+            borderWidth: el.incoming
+              ? "0 22px 22px 0"
+              : "0 0 20px 20px",
+            borderColor: el.incoming
+              ? `transparent ${alpha(theme.palette.background.default, 1)} transparent transparent`
+              : `transparent transparent transparent ${theme.palette.primary.main}`,
+            left: el.incoming ? "-8px" : "unset",
+            right: el.incoming ? "unset" : "-8px",
+            transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
+          },
         }}
       >
         <Stack spacing={2}>
@@ -233,7 +252,10 @@ const DocMsg = ({ el, menu }) => {
           }
         </Stack>
       </Box>
-      <Stack
+      {
+        menu &&
+        (
+          <Stack
         justifyContent={"flex-end"}
         sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
       >
@@ -246,7 +268,9 @@ const DocMsg = ({ el, menu }) => {
             <Checks size={22} color="#0949dc" />
           ))}
       </Stack>
-      {menu && <MessageOption replyToMsg={el?.message} />}
+        )
+      }
+      {menu && <MessageOption replyToMsg={el?.message} messageId={el?.id} star={el?.star}/>}
 
       <Modal
         open={openModal}
@@ -328,6 +352,24 @@ const LinkMsg = ({ el, menu }) => {
             : theme.palette.primary.main,
           borderRadius: 1.5,
           width: "max-content",
+          position: "relative",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: "-2px",
+            width: 0,
+            height: 0,
+            borderStyle: "solid",
+            borderWidth: el.incoming
+              ? "0 22px 22px 0"
+              : "0 0 20px 20px",
+            borderColor: el.incoming
+              ? `transparent ${alpha(theme.palette.background.default, 1)} transparent transparent`
+              : `transparent transparent transparent ${theme.palette.primary.main}`,
+            left: el.incoming ? "-8px" : "unset",
+            right: el.incoming ? "unset" : "-8px",
+            transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
+          },
         }}
       >
         <Stack spacing={2}>
@@ -379,9 +421,12 @@ const LinkMsg = ({ el, menu }) => {
         </Stack>
       </Box>
       {menu && <MessageOption replyToMsg={el?.message} messageId={el?.id} star={el?.star}/>}
-      <Stack
+      {
+        menu &&
+        (
+          <Stack
         justifyContent={"flex-end"}
-        sx={{ position: "absolute", bottom: "0px", right: "-7px" }}
+        sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
       >
         {!el.incoming &&
           (el?.status == "Sent" ? (
@@ -392,6 +437,8 @@ const LinkMsg = ({ el, menu }) => {
             <Checks size={22} color="#0949dc" />
           ))}
       </Stack>
+        )
+      }
     </Stack>
   );
 };
@@ -413,6 +460,24 @@ const ReplyMsg = ({ el, menu }) => {
             : theme.palette.primary.main,
           borderRadius: 1.5,
           width: "max-content",
+          position: "relative",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: "-2px",
+            width: 0,
+            height: 0,
+            borderStyle: "solid",
+            borderWidth: el.incoming
+              ? "0 22px 22px 0"
+              : "0 0 20px 20px",
+            borderColor: el.incoming
+              ? `transparent ${alpha(theme.palette.background.default, 1)} transparent transparent`
+              : `transparent transparent transparent ${theme.palette.primary.main}`,
+            left: el.incoming ? "-8px" : "unset",
+            right: el.incoming ? "unset" : "-8px",
+            transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
+          },
         }}
       >
         <Stack spacing={2}>
@@ -445,7 +510,10 @@ const ReplyMsg = ({ el, menu }) => {
         </Stack>
       </Box>
       {menu && <MessageOption replyToMsg={el?.message} messageId={el?.id} star={el?.star}/>}
-      <Stack
+      {
+        menu &&
+        (
+          <Stack
         justifyContent={"flex-end"}
         sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
       >
@@ -458,6 +526,8 @@ const ReplyMsg = ({ el, menu }) => {
             <Checks size={22} color="#0949dc" />
           ))}
       </Stack>
+        )
+      }
     </Stack>
   );
 };
@@ -491,6 +561,24 @@ const MediaMsg = ({ el, menu }) => {
             : theme.palette.primary.main,
           borderRadius: 1.5,
           width: "max-content",
+          position: "relative",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: "-2px",
+            width: 0,
+            height: 0,
+            borderStyle: "solid",
+            borderWidth: el.incoming
+              ? "0 22px 22px 0"
+              : "0 0 20px 20px",
+            borderColor: el.incoming
+              ? `transparent ${alpha(theme.palette.background.default, 1)} transparent transparent`
+              : `transparent transparent transparent ${theme.palette.primary.main}`,
+            left: el.incoming ? "-8px" : "unset",
+            right: el.incoming ? "unset" : "-8px",
+            transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
+          },
         }}
       >
         <Stack spacing={1} sx={{ maxWidth: "100%", width: "210px" }}>
@@ -522,7 +610,10 @@ const MediaMsg = ({ el, menu }) => {
         </Stack>
       </Box>
       {menu && <MessageOption replyToMsg={el?.message} messageId={el?.id} star={el?.star}/>}
-      <Stack
+      {
+        menu &&
+        (
+          <Stack
         justifyContent={"flex-end"}
         sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
       >
@@ -535,6 +626,8 @@ const MediaMsg = ({ el, menu }) => {
             <Checks size={22} color="#0949dc" />
           ))}
       </Stack>
+        )
+      }
 
       {/* Modal for displaying larger image */}
       <Modal
@@ -625,10 +718,28 @@ const VideoMsg = ({ el, menu }) => {
         py={1.5}
         sx={{
           backgroundColor: el.incoming
-            ? theme.palette.background.default
+            ? alpha(theme.palette.background.default, 1)
             : theme.palette.primary.main,
           borderRadius: 1.5,
-          width: "250px",
+          width: "max-content",
+          position: "relative",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: "-2px",
+            width: 0,
+            height: 0,
+            borderStyle: "solid",
+            borderWidth: el.incoming
+              ? "0 22px 22px 0"
+              : "0 0 20px 20px",
+            borderColor: el.incoming
+              ? `transparent ${alpha(theme.palette.background.default, 1)} transparent transparent`
+              : `transparent transparent transparent ${theme.palette.primary.main}`,
+            left: el.incoming ? "-8px" : "unset",
+            right: el.incoming ? "unset" : "-8px",
+            transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
+          },
         }}
       >
         <Stack spacing={1} sx={{ maxWidth: "100%", width: "250px" }}>
@@ -660,19 +771,24 @@ const VideoMsg = ({ el, menu }) => {
         </Stack>
       </Box>
       {menu && <MessageOption replyToMsg={el?.message} messageId={el?.id} star={el?.star}/>}
-      <Stack
-        justifyContent="flex-end"
+      {
+        menu &&
+        (
+          <Stack
+        justifyContent={"flex-end"}
         sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
       >
         {!el.incoming &&
-          (el?.status === "Sent" ? (
+          (el?.status == "Sent" ? (
             <Check size={22} color="#908989" />
-          ) : el?.status === "Delivered" ? (
+          ) : el?.status == "Delivered" ? (
             <Checks size={22} color="#908989" />
           ) : (
             <Checks size={22} color="#0949dc" />
           ))}
       </Stack>
+        )
+      }
 
       {/* Modal for displaying larger video */}
       <Modal
@@ -759,7 +875,26 @@ const TextMsg = ({ el, menu }) => {
             : theme.palette.primary.main,
           borderRadius: 1.5,
           width: "max-content",
+          position: "relative",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: "-2px",
+            width: 0,
+            height: 0,
+            borderStyle: "solid",
+            borderWidth: el.incoming
+              ? "0 22px 22px 0"
+              : "0 0 20px 20px",
+            borderColor: el.incoming
+              ? `transparent ${alpha(theme.palette.background.default, 1)} transparent transparent`
+              : `transparent transparent transparent ${theme.palette.primary.main}`,
+            left: el.incoming ? "-8px" : "unset",
+            right: el.incoming ? "unset" : "-8px",
+            transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
+          },
         }}
+
       >
         <Typography
           variant="body2"
@@ -775,7 +910,10 @@ const TextMsg = ({ el, menu }) => {
         </Stack>
       </Box>
       {menu && <MessageOption replyToMsg={el?.message} messageId={el?.id} star={el?.star}/>}
-      <Stack
+      {
+        menu &&
+        (
+          <Stack
         justifyContent={"flex-end"}
         sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
       >
@@ -788,6 +926,8 @@ const TextMsg = ({ el, menu }) => {
             <Checks size={22} color="#0949dc" />
           ))}
       </Stack>
+        )
+      }
     </Stack>
   );
 };

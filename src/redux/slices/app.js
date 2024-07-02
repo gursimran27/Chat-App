@@ -259,52 +259,63 @@ export const FetchUserProfile = () => {
       });
   };
 };
-// export const UpdateUserProfile = (formValues) => {
-//   return async (dispatch, getState) => {
-//     const file = formValues.avatar;
 
-//     const key = v4();
 
-//     try{
-//       S3.getSignedUrl(
-//         "putObject",
-//         { Bucket: S3_BUCKET_NAME, Key: key, ContentType: `image/${file.type}` },
-//         async (_err, presignedURL) => {
-//           await fetch(presignedURL, {
-//             method: "PUT",
+export const UpdateUserProfile = ({ firstName, about, avatar, setLoading }) => {
+  return async (dispatch, getState) => {
+    // const file = formValues.avatar;
+
+    // const key = v4();
+
+    // try{
+    //   S3.getSignedUrl(
+    //     "putObject",
+    //     { Bucket: S3_BUCKET_NAME, Key: key, ContentType: `image/${file.type}` },
+    //     async (_err, presignedURL) => {
+    //       await fetch(presignedURL, {
+    //         method: "PUT",
   
-//             body: file,
+    //         body: file,
   
-//             headers: {
-//               "Content-Type": file.type,
-//             },
-//           });
-//         }
-//       );
-//     }
-//     catch(error) {
-//       console.log(error);
-//     }
+    //         headers: {
+    //           "Content-Type": file.type,
+    //         },
+    //       });
+    //     }
+    //   );
+    // }
+    // catch(error) {
+    //   console.log(error);
+    // }
+
+
+    const formData = new FormData();
+    formData.append("file", avatar);
+    formData.append("firstName", firstName);
+    formData.append("about",about);
+
 
     
 
-//     axios
-//       .patch(
-//         "/user/update-me",
-//         { ...formValues, avatar: key },
-//         {
-//           headers: {
-//             "Content-Type": "application/json",
-//             Authorization: `Bearer ${getState().auth.token}`,
-//           },
-//         }
-//       )
-//       .then((response) => {
-//         console.log(response);
-//         dispatch(slice.actions.updateUser({ user: response.data.data }));
-//       })
-//       .catch((err) => {
-//         console.log(err);
-//       });
-//   };
-// };
+    axios
+      .patch(
+        "/user/update-me",
+        formData,
+        {
+          headers: {
+            "Content-Type": 'multipart/form-data',
+            Authorization: `Bearer ${getState().auth.token}`,
+          },
+        }
+      )
+      .then((response) => {
+        console.log(response);
+        dispatch(slice.actions.updateUser({ user: response.data.data }));
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.log(err.message);
+        setLoading(false);
+      });
+  };
+};

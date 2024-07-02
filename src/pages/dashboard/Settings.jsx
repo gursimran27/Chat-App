@@ -25,10 +25,13 @@ import { faker } from "@faker-js/faker";
 import ThemeDialog from "../../sections/Dashboard/Settings/ThemeDialog";
 import ShortcutDialog from "../../sections/Dashboard/Settings/ShortcutDialog";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 
 const Settings = () => {
     const navigate = useNavigate();
+
+    const { user } = useSelector((state) => state.app);
 
   const theme = useTheme();
 
@@ -135,12 +138,13 @@ const Settings = () => {
             {/* Profile */}
             <Stack direction="row" spacing={3}>
               <Avatar
-                src={faker.image.avatar()}
+                src={user?.avatar || `https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`}
                 sx={{ height: 56, width: 56 }}
               />
               <Stack spacing={0.5}>
-                <Typography variant="article">{`${faker.name.firstName()} ${faker.name.lastName()}`}</Typography>
-                <Typography variant="body2">{faker.random.words()}</Typography>
+                <Typography variant="article">{`${user?.firstName} ${user?.lastName}`}</Typography>
+                <Typography variant="body2">{user?.about || 'No  description'}</Typography>
+
               </Stack>
             </Stack>
             {/* List */}
