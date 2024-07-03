@@ -554,6 +554,12 @@ const Footer = () => {
     };
   }, [value]);
 
+  const handleOpenClick = ()=>{
+    if(openPicker){
+      setOpenPicker(false);
+    }
+  }
+
   return (
     <Box
       sx={{
@@ -584,8 +590,12 @@ const Footer = () => {
               }}
             >
               <Picker
-                theme={theme.palette.mode}
+              // perLine={9} //The number of emojis to show per line
+              // previewPosition={'none'}
+              // searchPosition={'none'}
                 data={data}
+              onClickOutside={()=> handleOpenClick()}
+                theme={theme.palette.mode}
                 onEmojiSelect={(emoji) => {
                   handleEmojiClick(emoji.native);
                 }}

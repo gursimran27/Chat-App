@@ -15,7 +15,7 @@ const initialState = {
   reply_msg: {
     reply: false,
     replyToMsg: null,
-  }
+  },
 };
 
 const slice = createSlice({
@@ -34,12 +34,14 @@ const slice = createSlice({
         const isPinned = pinnedChats.includes(el._id.toString());
 
         return {
-          id: el._id,//conversationid
-          user_id: user?._id,//userid
+          id: el._id, //conversationid
+          user_id: user?._id, //userid
           name: `${user?.firstName} ${user?.lastName}`,
           online: user?.status === "Online",
           //   img: `https://${S3_BUCKET_NAME}.s3.${AWS_S3_REGION}.amazonaws.com/${user?.avatar}`,
-          img: user?.avatar || `https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`,
+          img:
+            user?.avatar ||
+            `https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`,
           //   msg: el.messages.slice(-1)[0].text,
           msg: el.messages[el.messages.length - 1].text,
           time: "9:36",
@@ -68,8 +70,10 @@ const slice = createSlice({
               user_id: user?._id, //onetoonemsssage's _id
               name: `${user?.firstName} ${user?.lastName}`,
               online: user?.status === "Online",
-              img:  user?.avatar || `https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`,
-             about: user?.about || "No Discription",
+              img:
+                user?.avatar ||
+                `https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`,
+              about: user?.about || "No Discription",
               msg: this_conversation.messages[
                 this_conversation.messages.length - 1
               ].text,
@@ -113,7 +117,9 @@ const slice = createSlice({
         user_id: user?._id,
         name: `${user?.firstName} ${user?.lastName}`,
         online: user?.status === "Online",
-        img: user?.avatar || `https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`,
+        img:
+          user?.avatar ||
+          `https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`,
         about: user?.about || "No Discription",
         msg: user?.text,
         time: "9:36",
@@ -128,20 +134,37 @@ const slice = createSlice({
     },
     fetchCurrentMessages(state, action) {
       const messages = action.payload.messages;
-      const formatted_messages = messages.map((el) => ({
-        id: el._id,
-        type: "msg",
-        subtype: el.type,
-        message: el.text,
-        incoming: el.to === user_id,
-        outgoing: el.from === user_id,
-        status: el?.status,
-        src:el?.file,
-        replyToMsg: el?.replyToMsg,
-        star: el?.star[user_id.toString()] || false,
-      }));
+
+      const formatted_messages = messages.map((el) => {
+        const reaction = el?.reaction;
+        let myReaction = null;
+        let otherReaction = null;
+
+        Object.keys(reaction).forEach((key) => {
+          if (key === user_id.toString()) {
+            myReaction = reaction[key];
+          } else {
+            otherReaction = reaction[key];
+          }
+        });
+
+        return {
+          id: el._id,
+          type: "msg",
+          subtype: el.type,
+          message: el.text,
+          incoming: el.to === user_id,
+          outgoing: el.from === user_id,
+          status: el?.status,
+          src: el?.file,
+          replyToMsg: el?.replyToMsg,
+          star: el?.star[user_id.toString()] || false,
+          myReaction: myReaction,
+          otherReaction: otherReaction,
+        };
+      });
       state.direct_chat.current_messages = formatted_messages;
-      console.log("ssss",messages.file);
+      console.log("ssss", messages.file);
     },
     addDirectMessage(state, action) {
       state.direct_chat.current_messages.push(action.payload.message);
@@ -151,18 +174,43 @@ const slice = createSlice({
       );
     },
     updateMessagesForStar(state, action) {
-      state.direct_chat.current_messages = state.direct_chat.current_messages.map( (el)=>{
-        if(el?.id != action.payload.messageId){
-          return el;
-        }
-        else{
-          return {
-            ...el,
-            star: action.payload.star,
+      state.direct_chat.current_messages =
+        state.direct_chat.current_messages.map((el) => {
+          if (el?.id != action.payload.messageId) {
+            return el;
+          } else {
+            return {
+              ...el,
+              star: action.payload.star,
+            };
           }
+        });
+    },
+    updateMessagesForReaction(state, action) {
+      const reaction = action.payload.reaction;
+      let myReaction = null;
+      let otherReaction = null;
+
+      Object.keys(reaction).forEach((key) => {
+        if (key === user_id.toString()) {
+          myReaction = reaction[key];
+        } else {
+          otherReaction = reaction[key];
         }
-      })
-      
+      });
+      console.log(myReaction, otherReaction);
+      state.direct_chat.current_messages =
+        state.direct_chat.current_messages.map((el) => {
+          if (el?.id != action.payload.messageId) {
+            return el;
+          } else {
+            return {
+              ...el,
+              myReaction: myReaction,
+              otherReaction: otherReaction,
+            };
+          }
+        });
     },
     updateCurrent_conversationOnlineStatus(state, action) {
       state.direct_chat.current_conversation = {
@@ -214,11 +262,11 @@ const slice = createSlice({
       state.direct_chat.current_conversation = null;
     },
     updateMessageStatus(state, action) {
-      console.log("marking to ",action.payload.status);
+      console.log("marking to ", action.payload.status);
       state.direct_chat.current_messages =
         state.direct_chat.current_messages.map((el) => {
           const status = action.payload.status;
-          console.log("status",status)
+          console.log("status", status);
           if (status == "Delivered") {
             if (el.status == "Sent") {
               return {
@@ -228,24 +276,23 @@ const slice = createSlice({
             } else {
               return el;
             }
-          }else{
-            if(el.status=="Sent" || el.status=="Delivered"){
+          } else {
+            if (el.status == "Sent" || el.status == "Delivered") {
               return {
                 ...el,
-                status:"Seen",
-              }
-            }
-            else{
+                status: "Seen",
+              };
+            } else {
               return el;
             }
           }
         });
     },
-    updateReply_msg(state,action) {
-      console.log("reply msg")
+    updateReply_msg(state, action) {
+      console.log("reply msg");
       state.reply_msg.reply = action.payload.reply;
       state.reply_msg.replyToMsg = action.payload.replyToMsg;
-    }
+    },
   },
 });
 
@@ -256,7 +303,12 @@ export default slice.reducer;
 
 export const FetchDirectConversations = ({ conversations, pinnedChats }) => {
   return async (dispatch, getState) => {
-    dispatch(slice.actions.fetchDirectConversations({ conversations: conversations ,pinnedChats: pinnedChats }));
+    dispatch(
+      slice.actions.fetchDirectConversations({
+        conversations: conversations,
+        pinnedChats: pinnedChats,
+      })
+    );
   };
 };
 export const AddDirectConversation = ({ conversation }) => {
@@ -269,9 +321,17 @@ export const UpdateDirectConversation = ({ conversation }) => {
     dispatch(slice.actions.updateDirectConversation({ conversation }));
   };
 };
-export const UpdateDirectConversationForPinnedChat = ({ this_conversation_id, pinned }) => {
+export const UpdateDirectConversationForPinnedChat = ({
+  this_conversation_id,
+  pinned,
+}) => {
   return async (dispatch, getState) => {
-    dispatch(slice.actions.updateDirectConversationForPinnedChat({ this_conversation_id: this_conversation_id, pinned: pinned }));
+    dispatch(
+      slice.actions.updateDirectConversationForPinnedChat({
+        this_conversation_id: this_conversation_id,
+        pinned: pinned,
+      })
+    );
   };
 };
 
@@ -344,11 +404,25 @@ export const UpdateMessageStatus = ({ status }) => {
 };
 export const UpdateReply_msg = ({ reply, replyToMsg }) => {
   return async (dispatch, getState) => {
-    dispatch(slice.actions.updateReply_msg({ reply: reply, replyToMsg: replyToMsg }));
+    dispatch(
+      slice.actions.updateReply_msg({ reply: reply, replyToMsg: replyToMsg })
+    );
   };
 };
 export const UpdateMessagesForStar = ({ messageId, star }) => {
   return async (dispatch, getState) => {
-    dispatch(slice.actions.updateMessagesForStar({ messageId: messageId, star: star }));
+    dispatch(
+      slice.actions.updateMessagesForStar({ messageId: messageId, star: star })
+    );
+  };
+};
+export const UpdateMessagesForReaction = ({ messageId, reaction }) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.updateMessagesForReaction({
+        messageId: messageId,
+        reaction: reaction,
+      })
+    );
   };
 };

@@ -8,6 +8,8 @@ import {
   Menu,
   MenuItem,
   Modal,
+  Tooltip,
+  Fab,
 } from "@mui/material";
 import React, { useState } from "react";
 import { alpha, useTheme } from "@mui/material/styles";
@@ -22,13 +24,28 @@ import {
 } from "phosphor-react";
 import { Message_options } from "../../data";
 import { useDispatch, useSelector } from "react-redux";
-import { UpdateMessagesForStar, UpdateReply_msg } from "../../redux/slices/conversation";
+import {
+  UpdateMessagesForStar,
+  UpdateReply_msg,
+} from "../../redux/slices/conversation";
 import { closeSnackBar, showSnackbar } from "../../redux/slices/app";
 import axios from "../../utils/axios";
 
+import data from "@emoji-mart/data";
+import Picker from "@emoji-mart/react";
+import useResponsive from "../../hooks/useResponsive";
+import { socket } from "../../socket";
+// import "./MsgTypes.css"
+
 // TODO HOF
 
-const MessageOption = ({ replyToMsg, messageId, star }) => {
+const MessageOption = ({
+  openPicker,
+  setOpenPicker,
+  replyToMsg,
+  messageId,
+  star,
+}) => {
   const dispatch = useDispatch();
   const [anchorEl, setAnchorEl] = useState(null); //store referance
   const open = Boolean(anchorEl); //convert referance to boollean
@@ -39,24 +56,24 @@ const MessageOption = ({ replyToMsg, messageId, star }) => {
     setAnchorEl(null);
   };
 
-  const { token } = useSelector((state)=>state.auth);
+  const { token } = useSelector((state) => state.auth);
 
-  const conversationId = useSelector((state)=>state.conversation.direct_chat.current_conversation.id);
+  const conversationId = useSelector(
+    (state) => state.conversation.direct_chat.current_conversation.id
+  );
 
-
-
-  const handleStar = async (conversationId)=>{
+  const handleStar = async (conversationId) => {
     try {
-      console.log("staring message")
+      console.log("staring message");
       dispatch(
         showSnackbar({
           severity: "success",
-          message: !star ? `Message Stared` : 'Message Unstared',
+          message: !star ? `Message Stared` : "Message Unstared",
         })
       );
       const { data } = await axios.put(
         `/user/conversations/${conversationId}/${messageId}/star`,
-        {star:!star}, // Empty data object as second parameter
+        { star: !star }, // Empty data object as second parameter
         {
           headers: {
             "Content-Type": "application/json",
@@ -64,16 +81,15 @@ const MessageOption = ({ replyToMsg, messageId, star }) => {
           },
         }
       );
-      dispatch(UpdateMessagesForStar({messageId: messageId, star: !star}));
+      dispatch(UpdateMessagesForStar({ messageId: messageId, star: !star }));
       dispatch(closeSnackBar);
 
-      console.log('pinned chat sucess',data)
+      console.log("pinned chat sucess", data);
     } catch (error) {
-      console.error('Failed to pin conversation', error);
+      console.error("Failed to pin conversation", error);
     }
     handleClose();
-  }
-
+  };
 
   return (
     <>
@@ -84,7 +100,7 @@ const MessageOption = ({ replyToMsg, messageId, star }) => {
         aria-haspopup="true"
         aria-expanded={open ? "true" : undefined}
         onClick={handleClick}
-        style={{cursor:'pointer'}}
+        style={{ cursor: "pointer" }}
       />
       <Menu
         id="basic-menu"
@@ -114,22 +130,26 @@ const MessageOption = ({ replyToMsg, messageId, star }) => {
               >
                 {el.title}
               </MenuItem>
-            ) : (
-              el?.title == "Star message" ? 
-              (
-                <MenuItem
+            ) : el?.title == "Star message" ? (
+              <MenuItem
                 onClick={() => {
                   handleStar(conversationId);
                 }}
               >
-                {
-                  !star ? 'Star message' : 'Unstar message'
-                }
+                {!star ? "Star message" : "Unstar message"}
               </MenuItem>
-            ) :
-            (
+            ) : el?.title == "React to message" ? (
+              <MenuItem
+                onClick={() => {
+                  console.log("menu");
+                  setOpenPicker(!openPicker);
+                  handleClose();
+                }}
+              >
+                {el.title}
+              </MenuItem>
+            ) : (
               <MenuItem onClick={handleClose}>{el.title}</MenuItem>
-            )
             )
           )}
         </Stack>
@@ -141,7 +161,6 @@ const MessageOption = ({ replyToMsg, messageId, star }) => {
 const DocMsg = ({ el, menu }) => {
   const theme = useTheme();
   const [openModal, setOpenModal] = useState(false);
-  const { room_id } = useSelector((state) => state.app);
 
   const handleOpenModal = () => {
     setOpenModal(true);
@@ -177,6 +196,32 @@ const DocMsg = ({ el, menu }) => {
     document.body.removeChild(link);
   };
 
+  const [openPicker, setOpenPicker] = useState(false);
+  const isMobile = useResponsive("between", "md", "xs", "sm");
+  const { sideBar } = useSelector((state) => state.app);
+  const { room_id } = useSelector((state) => state.app);
+  const user_id = window.localStorage.getItem("user_id");
+  const { current_conversation } = useSelector(
+    (state) => state.conversation.direct_chat
+  );
+
+  function handleEmojiClick(emoji, messageId) {
+    socket.emit("react_to_message", {
+      conversationId: room_id,
+      from: user_id,
+      to: current_conversation?.user_id,
+      messageId: messageId,
+      reaction: emoji,
+    });
+    setOpenPicker(!openPicker);
+  }
+
+  const handleOpenClick = () => {
+    if (openPicker) {
+      setOpenPicker(false);
+    }
+  };
+
   return (
     <Stack
       direction="row"
@@ -200,11 +245,12 @@ const DocMsg = ({ el, menu }) => {
             width: 0,
             height: 0,
             borderStyle: "solid",
-            borderWidth: el.incoming
-              ? "0 22px 22px 0"
-              : "0 0 20px 20px",
+            borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
             borderColor: el.incoming
-              ? `transparent ${alpha(theme.palette.background.default, 1)} transparent transparent`
+              ? `transparent ${alpha(
+                  theme.palette.background.default,
+                  1
+                )} transparent transparent`
               : `transparent transparent transparent ${theme.palette.primary.main}`,
             left: el.incoming ? "-8px" : "unset",
             right: el.incoming ? "unset" : "-8px",
@@ -212,6 +258,28 @@ const DocMsg = ({ el, menu }) => {
           },
         }}
       >
+        <div
+          className="reactions"
+          style={{
+            zIndex: 10,
+            position: "fixed",
+            display: openPicker ? "inline" : "none",
+            bottom: 100,
+            right: isMobile ? 20 : sideBar.open ? 420 : 100,
+          }}
+        >
+          <Picker
+            data={data}
+            // perLine={9} //The number of emojis to show per line
+            previewPosition={"none"}
+            searchPosition={"none"}
+            onClickOutside={() => handleOpenClick()}
+            theme={theme.palette.mode}
+            onEmojiSelect={(emoji) => {
+              handleEmojiClick(emoji.native, el?.id);
+            }}
+          />
+        </div>
         <Stack spacing={2}>
           <Stack
             p={2}
@@ -223,7 +291,10 @@ const DocMsg = ({ el, menu }) => {
               borderRadius: 1,
               cursor: "pointer", // Add cursor pointer to indicate clickable
             }}
-            onClick={(e)=>{e.stopPropagation(); handleOpenModal();}} // Open modal on click of document preview area
+            onClick={(e) => {
+              e.stopPropagation();
+              handleOpenModal();
+            }} // Open modal on click of document preview area
           >
             <Image size={48} />
             <Typography variant="caption">{el?.message}</Typography>
@@ -245,32 +316,83 @@ const DocMsg = ({ el, menu }) => {
             {el.message}
           </Typography>
         </Stack>
-        <Stack direction={'row'} alignItems={'center'} justifyContent={'end'} >
-          {
-            el?.star &&
-            (<Star size={13} color="black" weight="duotone" />)
-          }
+        <Stack
+          direction={"row"}
+          alignItems={"center"}
+          justifyContent={"end"}
+          sx={{ marginTop: "3px" }}
+        >
+          {el?.star && <Star size={13} color="black" weight="duotone" />}
         </Stack>
-      </Box>
-      {
-        menu &&
-        (
+        {(el?.myReaction || el?.otherReaction) && (
           <Stack
-        justifyContent={"flex-end"}
-        sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
-      >
-        {!el.incoming &&
-          (el?.status == "Sent" ? (
-            <Check size={22} color="#908989" />
-          ) : el?.status == "Delivered" ? (
-            <Checks size={22} color="#908989" />
-          ) : (
-            <Checks size={22} color="#0949dc" />
-          ))}
-      </Stack>
-        )
-      }
-      {menu && <MessageOption replyToMsg={el?.message} messageId={el?.id} star={el?.star}/>}
+            direction={"row"}
+            alignItems={"center"}
+            justifyContent={"center"}
+            gap={"1px"}
+            style={{
+              position: "absolute",
+              bottom: "-20px",
+              left: "0px",
+              fontSize: "1.5rem",
+            }}
+          >
+            <Box
+              sx={{ cursor: "pointer" }}
+              onClick={() => {
+                socket.emit("react_to_message", {
+                  conversationId: room_id,
+                  from: user_id,
+                  to: current_conversation?.user_id,
+                  messageId: el?.id,
+                  reaction: null,
+                });
+              }}
+            >
+              {el?.myReaction && (
+                <Tooltip placement="left-end" title={"remove my reaction"}>
+                  {el?.myReaction}
+                </Tooltip>
+              )}
+            </Box>
+
+            <Box>
+              {el?.otherReaction && (
+                <Tooltip
+                  placement="right-end"
+                  title={`${current_conversation?.name.split(" ")[0]} reaction`}
+                >
+                  {el?.otherReaction}
+                </Tooltip>
+              )}
+            </Box>
+          </Stack>
+        )}
+      </Box>
+      {menu && (
+        <Stack
+          justifyContent={"flex-end"}
+          sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
+        >
+          {!el.incoming &&
+            (el?.status == "Sent" ? (
+              <Check size={22} color="#908989" />
+            ) : el?.status == "Delivered" ? (
+              <Checks size={22} color="#908989" />
+            ) : (
+              <Checks size={22} color="#0949dc" />
+            ))}
+        </Stack>
+      )}
+      {menu && (
+        <MessageOption
+          replyToMsg={el?.message}
+          messageId={el?.id}
+          star={el?.star}
+          openPicker={openPicker}
+          setOpenPicker={setOpenPicker}
+        />
+      )}
 
       <Modal
         open={openModal}
@@ -337,6 +459,32 @@ const DocMsg = ({ el, menu }) => {
 
 const LinkMsg = ({ el, menu }) => {
   const theme = useTheme();
+  const [openPicker, setOpenPicker] = useState(false);
+  const isMobile = useResponsive("between", "md", "xs", "sm");
+  const { sideBar } = useSelector((state) => state.app);
+  const { room_id } = useSelector((state) => state.app);
+  const user_id = window.localStorage.getItem("user_id");
+  const { current_conversation } = useSelector(
+    (state) => state.conversation.direct_chat
+  );
+
+  function handleEmojiClick(emoji, messageId) {
+    socket.emit("react_to_message", {
+      conversationId: room_id,
+      from: user_id,
+      to: current_conversation?.user_id,
+      messageId: messageId,
+      reaction: emoji,
+    });
+    setOpenPicker(!openPicker);
+  }
+
+  const handleOpenClick = () => {
+    if (openPicker) {
+      setOpenPicker(false);
+    }
+  };
+
   return (
     <Stack
       direction="row"
@@ -360,11 +508,12 @@ const LinkMsg = ({ el, menu }) => {
             width: 0,
             height: 0,
             borderStyle: "solid",
-            borderWidth: el.incoming
-              ? "0 22px 22px 0"
-              : "0 0 20px 20px",
+            borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
             borderColor: el.incoming
-              ? `transparent ${alpha(theme.palette.background.default, 1)} transparent transparent`
+              ? `transparent ${alpha(
+                  theme.palette.background.default,
+                  1
+                )} transparent transparent`
               : `transparent transparent transparent ${theme.palette.primary.main}`,
             left: el.incoming ? "-8px" : "unset",
             right: el.incoming ? "unset" : "-8px",
@@ -372,6 +521,28 @@ const LinkMsg = ({ el, menu }) => {
           },
         }}
       >
+        <div
+          className="reactions"
+          style={{
+            zIndex: 10,
+            position: "fixed",
+            display: openPicker ? "inline" : "none",
+            bottom: 100,
+            right: isMobile ? 20 : sideBar.open ? 420 : 100,
+          }}
+        >
+          <Picker
+            data={data}
+            // perLine={9} //The number of emojis to show per line
+            previewPosition={"none"}
+            searchPosition={"none"}
+            onClickOutside={() => handleOpenClick()}
+            theme={theme.palette.mode}
+            onEmojiSelect={(emoji) => {
+              handleEmojiClick(emoji.native, el?.id);
+            }}
+          />
+        </div>
         <Stack spacing={2}>
           <Stack
             p={2}
@@ -413,38 +584,116 @@ const LinkMsg = ({ el, menu }) => {
             </Typography>
           </Stack>
         </Stack>
-        <Stack direction={'row'} alignItems={'center'} justifyContent={'end'} >
-          {
-            el?.star &&
-            (<Star size={13} color="black" weight="duotone" />)
-          }
+        <Stack
+          direction={"row"}
+          alignItems={"center"}
+          justifyContent={"end"}
+          sx={{ marginTop: "3px" }}
+        >
+          {el?.star && <Star size={13} color="black" weight="duotone" />}
         </Stack>
-      </Box>
-      {menu && <MessageOption replyToMsg={el?.message} messageId={el?.id} star={el?.star}/>}
-      {
-        menu &&
-        (
+        {(el?.myReaction || el?.otherReaction) && (
           <Stack
-        justifyContent={"flex-end"}
-        sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
-      >
-        {!el.incoming &&
-          (el?.status == "Sent" ? (
-            <Check size={22} color="#908989" />
-          ) : el?.status == "Delivered" ? (
-            <Checks size={22} color="#908989" />
-          ) : (
-            <Checks size={22} color="#0949dc" />
-          ))}
-      </Stack>
-        )
-      }
+            direction={"row"}
+            alignItems={"center"}
+            justifyContent={"center"}
+            gap={"1px"}
+            style={{
+              position: "absolute",
+              bottom: "-20px",
+              left: "0px",
+              fontSize: "1.5rem",
+            }}
+          >
+            <Box
+              sx={{ cursor: "pointer" }}
+              onClick={() => {
+                socket.emit("react_to_message", {
+                  conversationId: room_id,
+                  from: user_id,
+                  to: current_conversation?.user_id,
+                  messageId: el?.id,
+                  reaction: null,
+                });
+              }}
+            >
+              {el?.myReaction && (
+                <Tooltip placement="left-end" title={"remove my reaction"}>
+                  {el?.myReaction}
+                </Tooltip>
+              )}
+            </Box>
+
+            <Box>
+              {el?.otherReaction && (
+                <Tooltip
+                  placement="right-end"
+                  title={`${current_conversation?.name.split(" ")[0]} reaction`}
+                >
+                  {el?.otherReaction}
+                </Tooltip>
+              )}
+            </Box>
+          </Stack>
+        )}
+      </Box>
+      {menu && (
+        <MessageOption
+          replyToMsg={el?.message}
+          messageId={el?.id}
+          star={el?.star}
+          openPicker={openPicker}
+          setOpenPicker={setOpenPicker}
+        />
+      )}
+      {menu && (
+        <Stack
+          justifyContent={"flex-end"}
+          sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
+        >
+          {!el.incoming &&
+            (el?.status == "Sent" ? (
+              <Check size={22} color="#908989" />
+            ) : el?.status == "Delivered" ? (
+              <Checks size={22} color="#908989" />
+            ) : (
+              <Checks size={22} color="#0949dc" />
+            ))}
+        </Stack>
+      )}
     </Stack>
   );
 };
 
 const ReplyMsg = ({ el, menu }) => {
   const theme = useTheme();
+
+  const [openPicker, setOpenPicker] = useState(false);
+  const isMobile = useResponsive("between", "md", "xs", "sm");
+  const { sideBar } = useSelector((state) => state.app);
+  const { room_id } = useSelector((state) => state.app);
+  const user_id = window.localStorage.getItem("user_id");
+  const { current_conversation } = useSelector(
+    (state) => state.conversation.direct_chat
+  );
+
+  function handleEmojiClick(emoji, messageId) {
+    socket.emit("react_to_message", {
+      conversationId: room_id,
+      from: user_id,
+      to: current_conversation?.user_id,
+      messageId: messageId,
+      reaction: emoji,
+    });
+    setOpenPicker(!openPicker);
+  }
+
+  const handleOpenClick = () => {
+    if (openPicker) {
+      setOpenPicker(false);
+    }
+  };
+
   return (
     <Stack
       direction="row"
@@ -468,11 +717,12 @@ const ReplyMsg = ({ el, menu }) => {
             width: 0,
             height: 0,
             borderStyle: "solid",
-            borderWidth: el.incoming
-              ? "0 22px 22px 0"
-              : "0 0 20px 20px",
+            borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
             borderColor: el.incoming
-              ? `transparent ${alpha(theme.palette.background.default, 1)} transparent transparent`
+              ? `transparent ${alpha(
+                  theme.palette.background.default,
+                  1
+                )} transparent transparent`
               : `transparent transparent transparent ${theme.palette.primary.main}`,
             left: el.incoming ? "-8px" : "unset",
             right: el.incoming ? "unset" : "-8px",
@@ -480,6 +730,28 @@ const ReplyMsg = ({ el, menu }) => {
           },
         }}
       >
+        <div
+          className="reactions"
+          style={{
+            zIndex: 10,
+            position: "fixed",
+            display: openPicker ? "inline" : "none",
+            bottom: 100,
+            right: isMobile ? 20 : sideBar.open ? 420 : 100,
+          }}
+        >
+          <Picker
+            data={data}
+            // perLine={9} //The number of emojis to show per line
+            previewPosition={"none"}
+            searchPosition={"none"}
+            onClickOutside={() => handleOpenClick()}
+            theme={theme.palette.mode}
+            onEmojiSelect={(emoji) => {
+              handleEmojiClick(emoji.native, el?.id);
+            }}
+          />
+        </div>
         <Stack spacing={2}>
           <Stack
             p={2}
@@ -502,32 +774,83 @@ const ReplyMsg = ({ el, menu }) => {
             {el?.message}
           </Typography>
         </Stack>
-        <Stack direction={'row'} alignItems={'center'} justifyContent={'end'} >
-          {
-            el?.star &&
-            (<Star size={13} color="black" weight="duotone" />)
-          }
+        <Stack
+          direction={"row"}
+          alignItems={"center"}
+          justifyContent={"end"}
+          sx={{ marginTop: "3px" }}
+        >
+          {el?.star && <Star size={13} color="black" weight="duotone" />}
         </Stack>
-      </Box>
-      {menu && <MessageOption replyToMsg={el?.message} messageId={el?.id} star={el?.star}/>}
-      {
-        menu &&
-        (
+        {(el?.myReaction || el?.otherReaction) && (
           <Stack
-        justifyContent={"flex-end"}
-        sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
-      >
-        {!el.incoming &&
-          (el?.status == "Sent" ? (
-            <Check size={22} color="#908989" />
-          ) : el?.status == "Delivered" ? (
-            <Checks size={22} color="#908989" />
-          ) : (
-            <Checks size={22} color="#0949dc" />
-          ))}
-      </Stack>
-        )
-      }
+            direction={"row"}
+            alignItems={"center"}
+            justifyContent={"center"}
+            gap={"1px"}
+            style={{
+              position: "absolute",
+              bottom: "-20px",
+              left: "0px",
+              fontSize: "1.5rem",
+            }}
+          >
+            <Box
+              sx={{ cursor: "pointer" }}
+              onClick={() => {
+                socket.emit("react_to_message", {
+                  conversationId: room_id,
+                  from: user_id,
+                  to: current_conversation?.user_id,
+                  messageId: el?.id,
+                  reaction: null,
+                });
+              }}
+            >
+              {el?.myReaction && (
+                <Tooltip placement="left-end" title={"remove my reaction"}>
+                  {el?.myReaction}
+                </Tooltip>
+              )}
+            </Box>
+
+            <Box>
+              {el?.otherReaction && (
+                <Tooltip
+                  placement="right-end"
+                  title={`${current_conversation?.name.split(" ")[0]} reaction`}
+                >
+                  {el?.otherReaction}
+                </Tooltip>
+              )}
+            </Box>
+          </Stack>
+        )}
+      </Box>
+      {menu && (
+        <MessageOption
+          replyToMsg={el?.message}
+          messageId={el?.id}
+          star={el?.star}
+          openPicker={openPicker}
+          setOpenPicker={setOpenPicker}
+        />
+      )}
+      {menu && (
+        <Stack
+          justifyContent={"flex-end"}
+          sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
+        >
+          {!el.incoming &&
+            (el?.status == "Sent" ? (
+              <Check size={22} color="#908989" />
+            ) : el?.status == "Delivered" ? (
+              <Checks size={22} color="#908989" />
+            ) : (
+              <Checks size={22} color="#0949dc" />
+            ))}
+        </Stack>
+      )}
     </Stack>
   );
 };
@@ -544,6 +867,32 @@ const MediaMsg = ({ el, menu }) => {
 
   const handleCloseModal = () => {
     setOpenModal(false);
+  };
+
+  const [openPicker, setOpenPicker] = useState(false);
+  const isMobile = useResponsive("between", "md", "xs", "sm");
+  const { sideBar } = useSelector((state) => state.app);
+  const { room_id } = useSelector((state) => state.app);
+  const user_id = window.localStorage.getItem("user_id");
+  const { current_conversation } = useSelector(
+    (state) => state.conversation.direct_chat
+  );
+
+  function handleEmojiClick(emoji, messageId) {
+    socket.emit("react_to_message", {
+      conversationId: room_id,
+      from: user_id,
+      to: current_conversation?.user_id,
+      messageId: messageId,
+      reaction: emoji,
+    });
+    setOpenPicker(!openPicker);
+  }
+
+  const handleOpenClick = () => {
+    if (openPicker) {
+      setOpenPicker(false);
+    }
   };
 
   return (
@@ -569,11 +918,12 @@ const MediaMsg = ({ el, menu }) => {
             width: 0,
             height: 0,
             borderStyle: "solid",
-            borderWidth: el.incoming
-              ? "0 22px 22px 0"
-              : "0 0 20px 20px",
+            borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
             borderColor: el.incoming
-              ? `transparent ${alpha(theme.palette.background.default, 1)} transparent transparent`
+              ? `transparent ${alpha(
+                  theme.palette.background.default,
+                  1
+                )} transparent transparent`
               : `transparent transparent transparent ${theme.palette.primary.main}`,
             left: el.incoming ? "-8px" : "unset",
             right: el.incoming ? "unset" : "-8px",
@@ -581,6 +931,28 @@ const MediaMsg = ({ el, menu }) => {
           },
         }}
       >
+        <div
+          className="reactions"
+          style={{
+            zIndex: 10,
+            position: "fixed",
+            display: openPicker ? "inline" : "none",
+            bottom: 100,
+            right: isMobile ? 20 : sideBar.open ? 420 : 100,
+          }}
+        >
+          <Picker
+            data={data}
+            // perLine={9} //The number of emojis to show per line
+            previewPosition={"none"}
+            searchPosition={"none"}
+            onClickOutside={() => handleOpenClick()}
+            theme={theme.palette.mode}
+            onEmojiSelect={(emoji) => {
+              handleEmojiClick(emoji.native, el?.id);
+            }}
+          />
+        </div>
         <Stack spacing={1} sx={{ maxWidth: "100%", width: "210px" }}>
           <img
             src={el?.src}
@@ -602,32 +974,83 @@ const MediaMsg = ({ el, menu }) => {
             {el.message}
           </Typography>
         </Stack>
-        <Stack direction={'row'} alignItems={'center'} justifyContent={'end'} >
-          {
-            el?.star &&
-            (<Star size={13} color="black" weight="duotone" />)
-          }
+        <Stack
+          direction={"row"}
+          alignItems={"center"}
+          justifyContent={"end"}
+          sx={{ marginTop: "3px" }}
+        >
+          {el?.star && <Star size={13} color="black" weight="duotone" />}
         </Stack>
-      </Box>
-      {menu && <MessageOption replyToMsg={el?.message} messageId={el?.id} star={el?.star}/>}
-      {
-        menu &&
-        (
+        {(el?.myReaction || el?.otherReaction) && (
           <Stack
-        justifyContent={"flex-end"}
-        sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
-      >
-        {!el.incoming &&
-          (el?.status == "Sent" ? (
-            <Check size={22} color="#908989" />
-          ) : el?.status == "Delivered" ? (
-            <Checks size={22} color="#908989" />
-          ) : (
-            <Checks size={22} color="#0949dc" />
-          ))}
-      </Stack>
-        )
-      }
+            direction={"row"}
+            alignItems={"center"}
+            justifyContent={"center"}
+            gap={"1px"}
+            style={{
+              position: "absolute",
+              bottom: "-20px",
+              left: "0px",
+              fontSize: "1.5rem",
+            }}
+          >
+            <Box
+              sx={{ cursor: "pointer" }}
+              onClick={() => {
+                socket.emit("react_to_message", {
+                  conversationId: room_id,
+                  from: user_id,
+                  to: current_conversation?.user_id,
+                  messageId: el?.id,
+                  reaction: null,
+                });
+              }}
+            >
+              {el?.myReaction && (
+                <Tooltip placement="left-end" title={"remove my reaction"}>
+                  {el?.myReaction}
+                </Tooltip>
+              )}
+            </Box>
+
+            <Box>
+              {el?.otherReaction && (
+                <Tooltip
+                  placement="right-end"
+                  title={`${current_conversation?.name.split(" ")[0]} reaction`}
+                >
+                  {el?.otherReaction}
+                </Tooltip>
+              )}
+            </Box>
+          </Stack>
+        )}
+      </Box>
+      {menu && (
+        <MessageOption
+          replyToMsg={el?.message}
+          messageId={el?.id}
+          star={el?.star}
+          openPicker={openPicker}
+          setOpenPicker={setOpenPicker}
+        />
+      )}
+      {menu && (
+        <Stack
+          justifyContent={"flex-end"}
+          sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
+        >
+          {!el.incoming &&
+            (el?.status == "Sent" ? (
+              <Check size={22} color="#908989" />
+            ) : el?.status == "Delivered" ? (
+              <Checks size={22} color="#908989" />
+            ) : (
+              <Checks size={22} color="#0949dc" />
+            ))}
+        </Stack>
+      )}
 
       {/* Modal for displaying larger image */}
       <Modal
@@ -707,6 +1130,32 @@ const VideoMsg = ({ el, menu }) => {
     setOpenModal(false);
   };
 
+  const [openPicker, setOpenPicker] = useState(false);
+  const isMobile = useResponsive("between", "md", "xs", "sm");
+  const { sideBar } = useSelector((state) => state.app);
+  const { room_id } = useSelector((state) => state.app);
+  const user_id = window.localStorage.getItem("user_id");
+  const { current_conversation } = useSelector(
+    (state) => state.conversation.direct_chat
+  );
+
+  function handleEmojiClick(emoji, messageId) {
+    socket.emit("react_to_message", {
+      conversationId: room_id,
+      from: user_id,
+      to: current_conversation?.user_id,
+      messageId: messageId,
+      reaction: emoji,
+    });
+    setOpenPicker(!openPicker);
+  }
+
+  const handleOpenClick = () => {
+    if (openPicker) {
+      setOpenPicker(false);
+    }
+  };
+
   return (
     <Stack
       direction="row"
@@ -730,11 +1179,12 @@ const VideoMsg = ({ el, menu }) => {
             width: 0,
             height: 0,
             borderStyle: "solid",
-            borderWidth: el.incoming
-              ? "0 22px 22px 0"
-              : "0 0 20px 20px",
+            borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
             borderColor: el.incoming
-              ? `transparent ${alpha(theme.palette.background.default, 1)} transparent transparent`
+              ? `transparent ${alpha(
+                  theme.palette.background.default,
+                  1
+                )} transparent transparent`
               : `transparent transparent transparent ${theme.palette.primary.main}`,
             left: el.incoming ? "-8px" : "unset",
             right: el.incoming ? "unset" : "-8px",
@@ -742,6 +1192,28 @@ const VideoMsg = ({ el, menu }) => {
           },
         }}
       >
+        <div
+          className="reactions"
+          style={{
+            zIndex: 10,
+            position: "fixed",
+            display: openPicker ? "inline" : "none",
+            bottom: 100,
+            right: isMobile ? 20 : sideBar.open ? 420 : 100,
+          }}
+        >
+          <Picker
+            data={data}
+            // perLine={9} //The number of emojis to show per line
+            previewPosition={"none"}
+            searchPosition={"none"}
+            onClickOutside={() => handleOpenClick()}
+            theme={theme.palette.mode}
+            onEmojiSelect={(emoji) => {
+              handleEmojiClick(emoji.native, el?.id);
+            }}
+          />
+        </div>
         <Stack spacing={1} sx={{ maxWidth: "100%", width: "250px" }}>
           <video
             src={el?.src}
@@ -763,32 +1235,83 @@ const VideoMsg = ({ el, menu }) => {
             {el.message}
           </Typography>
         </Stack>
-        <Stack direction={'row'} alignItems={'center'} justifyContent={'end'} >
-          {
-            el?.star &&
-            (<Star size={13} color="black" weight="duotone" />)
-          }
+        <Stack
+          direction={"row"}
+          alignItems={"center"}
+          justifyContent={"end"}
+          sx={{ marginTop: "3px" }}
+        >
+          {el?.star && <Star size={13} color="black" weight="duotone" />}
         </Stack>
-      </Box>
-      {menu && <MessageOption replyToMsg={el?.message} messageId={el?.id} star={el?.star}/>}
-      {
-        menu &&
-        (
+        {(el?.myReaction || el?.otherReaction) && (
           <Stack
-        justifyContent={"flex-end"}
-        sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
-      >
-        {!el.incoming &&
-          (el?.status == "Sent" ? (
-            <Check size={22} color="#908989" />
-          ) : el?.status == "Delivered" ? (
-            <Checks size={22} color="#908989" />
-          ) : (
-            <Checks size={22} color="#0949dc" />
-          ))}
-      </Stack>
-        )
-      }
+            direction={"row"}
+            alignItems={"center"}
+            justifyContent={"center"}
+            gap={"1px"}
+            style={{
+              position: "absolute",
+              bottom: "-20px",
+              left: "0px",
+              fontSize: "1.5rem",
+            }}
+          >
+            <Box
+              sx={{ cursor: "pointer" }}
+              onClick={() => {
+                socket.emit("react_to_message", {
+                  conversationId: room_id,
+                  from: user_id,
+                  to: current_conversation?.user_id,
+                  messageId: el?.id,
+                  reaction: null,
+                });
+              }}
+            >
+              {el?.myReaction && (
+                <Tooltip placement="left-end" title={"remove my reaction"}>
+                  {el?.myReaction}
+                </Tooltip>
+              )}
+            </Box>
+
+            <Box>
+              {el?.otherReaction && (
+                <Tooltip
+                  placement="right-end"
+                  title={`${current_conversation?.name.split(" ")[0]} reaction`}
+                >
+                  {el?.otherReaction}
+                </Tooltip>
+              )}
+            </Box>
+          </Stack>
+        )}
+      </Box>
+      {menu && (
+        <MessageOption
+          replyToMsg={el?.message}
+          messageId={el?.id}
+          star={el?.star}
+          openPicker={openPicker}
+          setOpenPicker={setOpenPicker}
+        />
+      )}
+      {menu && (
+        <Stack
+          justifyContent={"flex-end"}
+          sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
+        >
+          {!el.incoming &&
+            (el?.status == "Sent" ? (
+              <Check size={22} color="#908989" />
+            ) : el?.status == "Delivered" ? (
+              <Checks size={22} color="#908989" />
+            ) : (
+              <Checks size={22} color="#0949dc" />
+            ))}
+        </Stack>
+      )}
 
       {/* Modal for displaying larger video */}
       <Modal
@@ -860,6 +1383,33 @@ const VideoMsg = ({ el, menu }) => {
 const TextMsg = ({ el, menu }) => {
   // console.log("test message pushed");
   const theme = useTheme();
+
+  const [openPicker, setOpenPicker] = useState(false);
+  const isMobile = useResponsive("between", "md", "xs", "sm");
+  const { sideBar } = useSelector((state) => state.app);
+  const { room_id } = useSelector((state) => state.app);
+  const user_id = window.localStorage.getItem("user_id");
+  const { current_conversation } = useSelector(
+    (state) => state.conversation.direct_chat
+  );
+
+  function handleEmojiClick(emoji, messageId) {
+    socket.emit("react_to_message", {
+      conversationId: room_id,
+      from: user_id,
+      to: current_conversation?.user_id,
+      messageId: messageId,
+      reaction: emoji,
+    });
+    setOpenPicker(!openPicker);
+  }
+
+  const handleOpenClick = () => {
+    if (openPicker) {
+      setOpenPicker(false);
+    }
+  };
+
   return (
     <Stack
       direction="row"
@@ -883,51 +1433,124 @@ const TextMsg = ({ el, menu }) => {
             width: 0,
             height: 0,
             borderStyle: "solid",
-            borderWidth: el.incoming
-              ? "0 22px 22px 0"
-              : "0 0 20px 20px",
+            borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
             borderColor: el.incoming
-              ? `transparent ${alpha(theme.palette.background.default, 1)} transparent transparent`
+              ? `transparent ${alpha(
+                  theme.palette.background.default,
+                  1
+                )} transparent transparent`
               : `transparent transparent transparent ${theme.palette.primary.main}`,
             left: el.incoming ? "-8px" : "unset",
             right: el.incoming ? "unset" : "-8px",
             transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
           },
         }}
-
       >
+        <div
+          className="reactions"
+          style={{
+            zIndex: 10,
+            position: "fixed",
+            display: openPicker ? "inline" : "none",
+            bottom: 100,
+            right: isMobile ? 20 : sideBar.open ? 420 : 100,
+          }}
+        >
+          <Picker
+            data={data}
+            // perLine={9} //The number of emojis to show per line
+            previewPosition={"none"}
+            searchPosition={"none"}
+            onClickOutside={() => handleOpenClick()}
+            theme={theme.palette.mode}
+            onEmojiSelect={(emoji) => {
+              handleEmojiClick(emoji.native, el?.id);
+            }}
+          />
+        </div>
         <Typography
           variant="body2"
           color={el.incoming ? theme.palette.text : "#fff"}
         >
           {el.message}
         </Typography>
-        <Stack direction={'row'} alignItems={'center'} justifyContent={'end'} >
-          {
-            el?.star &&
-            (<Star size={13} color="black" weight="duotone" />)
-          }
+        <Stack
+          direction={"row"}
+          alignItems={"center"}
+          justifyContent={"end"}
+          sx={{ marginTop: "3px" }}
+        >
+          {el?.star && <Star size={13} color="black" weight="duotone" />}
         </Stack>
-      </Box>
-      {menu && <MessageOption replyToMsg={el?.message} messageId={el?.id} star={el?.star}/>}
-      {
-        menu &&
-        (
+        {(el?.myReaction || el?.otherReaction) && (
           <Stack
-        justifyContent={"flex-end"}
-        sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
-      >
-        {!el.incoming &&
-          (el?.status == "Sent" ? (
-            <Check size={22} color="#908989" />
-          ) : el?.status == "Delivered" ? (
-            <Checks size={22} color="#908989" />
-          ) : (
-            <Checks size={22} color="#0949dc" />
-          ))}
-      </Stack>
-        )
-      }
+            direction={"row"}
+            alignItems={"center"}
+            justifyContent={"center"}
+            gap={"1px"}
+            style={{
+              position: "absolute",
+              bottom: "-20px",
+              left: "0px",
+              fontSize: "1.5rem",
+            }}
+          >
+            <Box
+              sx={{ cursor: "pointer" }}
+              onClick={() => {
+                socket.emit("react_to_message", {
+                  conversationId: room_id,
+                  from: user_id,
+                  to: current_conversation?.user_id,
+                  messageId: el?.id,
+                  reaction: null,
+                });
+              }}
+            >
+              {el?.myReaction && (
+                <Tooltip placement="left-end" title={"remove my reaction"}>
+                  {el?.myReaction}
+                </Tooltip>
+              )}
+            </Box>
+
+            <Box>
+              {el?.otherReaction && (
+                <Tooltip
+                  placement="right-end"
+                  title={`${current_conversation?.name.split(" ")[0]} reaction`}
+                >
+                  {el?.otherReaction}
+                </Tooltip>
+              )}
+            </Box>
+          </Stack>
+        )}
+      </Box>
+      {menu && (
+        <MessageOption
+          replyToMsg={el?.message}
+          messageId={el?.id}
+          star={el?.star}
+          openPicker={openPicker}
+          setOpenPicker={setOpenPicker}
+        />
+      )}
+      {menu && (
+        <Stack
+          justifyContent={"flex-end"}
+          sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
+        >
+          {!el.incoming &&
+            (el?.status == "Sent" ? (
+              <Check size={22} color="#908989" />
+            ) : el?.status == "Delivered" ? (
+              <Checks size={22} color="#908989" />
+            ) : (
+              <Checks size={22} color="#0949dc" />
+            ))}
+        </Stack>
+      )}
     </Stack>
   );
 };

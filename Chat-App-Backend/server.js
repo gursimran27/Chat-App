@@ -62,7 +62,6 @@ mongoose
     console.log("DB Connection successful");
   });
 
-
 // cloudinary connect
 cloudinaryConnect();
 
@@ -165,16 +164,19 @@ io.on("connection", async (socket) => {
     // *for chat list rendering
     const existing_conversations = await OneToOneMessage.find({
       participants: { $all: [user_id] },
-    }).populate("participants", "firstName lastName avatar _id email status about");
+    }).populate(
+      "participants",
+      "firstName lastName avatar _id email status about"
+    );
 
     // db.books.find({ authors: { $elemMatch: { name: "John Smith" } } })
 
-    const user = await User.findById(user_id)
+    const user = await User.findById(user_id);
     const pinnedChats = user.pinnedChats || [];
 
     console.log(existing_conversations);
 
-    callback(existing_conversations,pinnedChats);
+    callback(existing_conversations, pinnedChats);
   });
 
   socket.on("start_conversation", async (data) => {
@@ -268,7 +270,7 @@ io.on("connection", async (socket) => {
         created_at: Date.now(),
         text: message,
         status: "Delivered", // Update the status to Delivered if the conversation IDs do not match
-        replyToMsg: replyToMsg
+        replyToMsg: replyToMsg,
       };
       // }
     } else {
@@ -279,7 +281,7 @@ io.on("connection", async (socket) => {
         created_at: Date.now(),
         text: message,
         status: "Sent",
-        replyToMsg: replyToMsg
+        replyToMsg: replyToMsg,
       };
     }
 
@@ -294,7 +296,7 @@ io.on("connection", async (socket) => {
     // TODO create a room and subsscribe the uses to that rooms and them when we emit an event it would fire to all user joined to that room
 
     // emit to t incoming_message -user
-    const savedMessage = chat.messages[chat.messages.length - 1];//last saved msg
+    const savedMessage = chat.messages[chat.messages.length - 1]; //last saved msg
     new_message._id = savedMessage._id;
 
     io.to(to_user?.socket_id).emit("new_message", {
@@ -358,7 +360,7 @@ io.on("connection", async (socket) => {
         from: from,
         type: type,
         created_at: Date.now(),
-        text: msg? msg: fileData.name,
+        text: msg ? msg : fileData.name,
         status: "Delivered", // Update the status to Delivered if the conversation IDs do not match
         file: mediaUrl,
       };
@@ -369,7 +371,7 @@ io.on("connection", async (socket) => {
         from: from,
         type: type,
         created_at: Date.now(),
-        text: msg? msg: fileData.name,
+        text: msg ? msg : fileData.name,
         status: "Sent",
         file: mediaUrl,
       };
@@ -562,7 +564,51 @@ io.on("connection", async (socket) => {
     }
   });
 
-  // -------------- HANDLE AUDIO CALL SOCKET EVENTS ----------------- //
+  // *----------------------------Reacting Msg---------------------------------------//
+  socket.on("react_to_message", async (data) => {
+    const { conversationId, to, from, messageId, reaction } = data;
+
+    try {
+      // Find the conversation by ID
+      const conversation = await OneToOneMessage.findById(conversationId);
+
+      if (conversation) {
+        // Find the message by ID
+        const message = conversation.messages.id(messageId);
+
+        if (message) {
+          // Update the message with the new reaction
+          message.reaction.set(from,reaction);
+          await conversation.save({new: true});
+
+          const updatedReaction = message?.reaction;
+
+          const to_user = await User.findById(to);
+          const from_user = await User.findById(from);
+
+          // Emit an event to the recipient to update their UI
+          io.to(to_user?.socket_id).emit("message_reacted", {
+            conversationId,
+            messageId,
+            updatedReaction,
+          });
+          io.to(from_user?.socket_id).emit("message_reacted", {
+            conversationId,
+            messageId,
+            updatedReaction,
+          });
+        } else {
+          console.error("Message not found");
+        }
+      } else {
+        console.error("Conversation not found");
+      }
+    } catch (error) {
+      console.error("Error reacting to message:", error);
+    }
+  });
+
+  // *-------------- HANDLE AUDIO CALL SOCKET EVENTS ----------------- //
 
   // handle start_audio_call event
   socket.on("start_audio_call", async (data) => {

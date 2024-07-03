@@ -17,6 +17,7 @@ import {
   UpdateConversationForNewMessage,
   UpdateMessageStatus,
   UpdateConversationUnread,
+  UpdateMessagesForReaction,
 } from "../../redux/slices/conversation";
 import AudioCallNotification from "../../sections/Dashboard/Audio/CallNotification";
 import VideoCallNotification from "../../sections/Dashboard/video/CallNotification";
@@ -50,7 +51,9 @@ const DashboardLayout = () => {
     (state) => state.conversation.direct_chat
   );
   const current_id = useSelector((state) => state.app.user._id);
-  const currentMsg = useSelector((state)=> state.conversation.direct_chat.current_messages);
+  const currentMsg = useSelector(
+    (state) => state.conversation.direct_chat.current_messages
+  );
 
   // Using useRef to keep a mutable reference
   const currentConversationUserIDRef = useRef(current_conversation?.user_id);
@@ -59,7 +62,7 @@ const DashboardLayout = () => {
   const current_idRef = useRef(current_id);
   const currentMsgRef = useRef(currentMsg);
   const socketRef = useRef(socket);
-  console.log(currentMsgRef.current)
+  console.log(currentMsgRef.current);
 
   // Update the ref whenever current_conversation changes
   useEffect(() => {
@@ -77,29 +80,36 @@ const DashboardLayout = () => {
     dispatch(FetchUserProfile());
   }, []);
 
-  useEffect(()=>{
+  useEffect(() => {
     currentMsgRef.current = currentMsg;
     const currentMsgs = currentMsgRef.current;
     const conversationId = currentConversationIDRef.current;
     const sender_id = currentConversationUserIDRef.current;
-    const lastMessageIsFromOtherUser = (currentMsgs.length && currentMsgs[currentMsg.length-1]?.outgoing ===false && currentMsgs[currentMsg.length-1]?.status!="Seen")
+    const lastMessageIsFromOtherUser =
+      currentMsgs.length &&
+      currentMsgs[currentMsg.length - 1]?.outgoing === false &&
+      currentMsgs[currentMsg.length - 1]?.status != "Seen";
 
     if (!socket) {
       connectSocket(user_id);
       console.log("socket-connected");
     }
 
-    console.log("cal...",sender_id,lastMessageIsFromOtherUser,currentMsgs[currentMsgs.length-1])
-    if(lastMessageIsFromOtherUser && socket){
-      console.log("calling...")
-      socket.emit("markMsgAsSeen",{
+    console.log(
+      "cal...",
+      sender_id,
+      lastMessageIsFromOtherUser,
+      currentMsgs[currentMsgs.length - 1]
+    );
+    if (lastMessageIsFromOtherUser && socket) {
+      console.log("calling...");
+      socket.emit("markMsgAsSeen", {
         conversationId: conversationId,
         sender_id: sender_id,
         user_id: user_id,
       });
     }
-
-  },[socket,currentMsg,current_conversation])
+  }, [socket, currentMsg, current_conversation]);
 
   const handleCloseAudioDialog = () => {
     dispatch(UpdateAudioCallDialog({ state: false }));
@@ -107,7 +117,6 @@ const DashboardLayout = () => {
   const handleCloseVideoDialog = () => {
     dispatch(UpdateVideoCallDialog({ state: false }));
   };
-
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -126,7 +135,7 @@ const DashboardLayout = () => {
       }
 
       // !!!!!!!!!!!!!!!!!!!!!
-      const current_id = current_idRef.current;//it is current user's _id
+      const current_id = current_idRef.current; //it is current user's _id
       if (isLoggedIn && current_id != undefined) {
         console.log("ll", current_id);
 
@@ -149,6 +158,20 @@ const DashboardLayout = () => {
         console.log("current_conversation", current_conversation, "data", data);
         // check if msg we got is from currently selected conversation
 
+        // const reaction = message?.reaction;
+        let myReaction = null;
+        let otherReaction = null;
+
+        // if(reaction){
+        //   Object.keys(reaction).forEach((key) => {
+        //     if (key === user_id.toString()) {
+        //       myReaction = reaction[key];
+        //     } else {
+        //       otherReaction = reaction[key];
+        //     }
+        //   });
+        // }
+
         if (currentConversationID === data.conversation_id) {
           dispatch(
             AddDirectMessage({
@@ -161,6 +184,8 @@ const DashboardLayout = () => {
               status: message?.status,
               src: message?.file,
               replyToMsg: message?.replyToMsg,
+              myReaction: myReaction,
+              otherReaction: otherReaction,
             })
           );
         }
@@ -265,7 +290,7 @@ const DashboardLayout = () => {
       const currentConversationID = currentConversationIDRef.current;
       if (currentConversationID == conversationId) {
         console.log("entering.... ");
-        dispatch(UpdateMessageStatus({status:"Delivered"}));
+        dispatch(UpdateMessageStatus({ status: "Delivered" }));
       }
     });
 
@@ -273,24 +298,35 @@ const DashboardLayout = () => {
       const currentConversationID = currentConversationIDRef.current;
       if (currentConversationID == conversationId) {
         console.log("entering.... ");
-        dispatch(UpdateMessageStatus({status:"Seen"}));
+        dispatch(UpdateMessageStatus({ status: "Seen" }));
       }
     });
 
     socket.on("updateUnread", (conversationId) => {
-      dispatch(UpdateConversationUnread({conversationId:conversationId}));
+      dispatch(UpdateConversationUnread({ conversationId: conversationId }));
     });
 
+    socket.on("message_reacted", (data) => {
+      const currentConversationID = currentConversationIDRef.current;
+      if (currentConversationID == data.conversationId) {
+        // console.log("react",data.updatedReaction)
+        dispatch(
+          UpdateMessagesForReaction({
+            messageId: data?.messageId,
+            reaction: data?.updatedReaction,
+          })
+        );
+      }
+    });
     // // Listen for the 'isSeen' event from the server
     // socket.on("isSeen", () => {
-    //   // Get the current conversation ID 
+    //   // Get the current conversation ID
     //   const currentConversationid = currentConversationIDRef.current; // Adjust according to how you store it
-    
+
     //   // Emit the current conversation ID back to the server
     //   socket.emit("currentConversationId", { currentConversationid });
     //   console.log("seen", currentConversationid);
     // });
-    
 
     // Remove event listener on component unmount
     return () => {
@@ -305,6 +341,7 @@ const DashboardLayout = () => {
       socket?.off("messagesDelivered");
       socket?.off("messagesSeen");
       socket?.off("updateUnread");
+      socket?.off("message_reacted");
     };
   }, [isLoggedIn, socket]);
 

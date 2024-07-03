@@ -46,6 +46,11 @@ const oneToOneMessageSchema = new mongoose.Schema({
         of: Boolean,
         default: {},
       },
+      reaction: {
+        type: Map,
+        of: String,
+        default: {},
+      }
     },
   ],
   unreadCount: {
