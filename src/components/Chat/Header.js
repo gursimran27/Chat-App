@@ -22,14 +22,14 @@ import {
 } from "phosphor-react";
 import { faker } from "@faker-js/faker";
 import useResponsive from "../../hooks/useResponsive";
-import { SelectConversation, ToggleSidebar } from "../../redux/slices/app";
+import { SelectConversation, ToggleSidebar, UpdateSidebarType } from "../../redux/slices/app";
 import { useDispatch, useSelector } from "react-redux";
 import { StartAudioCall } from "../../redux/slices/audioCall";
 import { StartVideoCall } from "../../redux/slices/videoCall";
 import axios from "../../utils/axios";
 import { format, isToday, isYesterday } from "date-fns";
 import "./UserLastSeen.css"; // Import CSS file
-import { ClearCurrentMessagesAndCurrentConversation, UpdateReply_msg } from "../../redux/slices/conversation";
+import { ClearCurrentMessagesAndCurrentConversation, UpdateHasMore, UpdatePage, UpdateReply_msg } from "../../redux/slices/conversation";
 
 const StyledBadge = styled(Badge)(({ theme }) => ({
   "& .MuiBadge-badge": {
@@ -156,8 +156,11 @@ const ChatHeader = () => {
     dispatch(SelectConversation({room_id:null}));
     dispatch(ClearCurrentMessagesAndCurrentConversation());
     dispatch(UpdateReply_msg({reply:false, replyToMsg: null}))
+    dispatch(UpdatePage({page: 2}));
+    dispatch(UpdateHasMore({hasMore: true}));
     if(sideBar.open){
       dispatch(ToggleSidebar());
+      dispatch(UpdateSidebarType("CONTACT"));
     }
   }
 
@@ -184,6 +187,7 @@ const ChatHeader = () => {
           style={{cursor:'pointer'}}
             onClick={() => {
               dispatch(ToggleSidebar());
+              dispatch(UpdateSidebarType("CONTACT"));
             }}
             spacing={2}
             direction="row"

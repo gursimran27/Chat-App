@@ -145,6 +145,7 @@ const MessageOption = ({conversationId, name, pinned}) => {
         aria-haspopup="true"
         aria-expanded={open ? "true" : undefined}
         onClick={handleClick}
+        style={{cursor:'pointer'}}
       />
       <Menu
         id="basic-menu"

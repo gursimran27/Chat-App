@@ -59,7 +59,7 @@ const MessageOption = ({
   const { token } = useSelector((state) => state.auth);
 
   const conversationId = useSelector(
-    (state) => state.conversation.direct_chat.current_conversation.id
+    (state) => state.conversation.direct_chat.current_conversation?.id
   );
 
   const handleStar = async (conversationId) => {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTheme } from "@mui/material/styles";
 import {
   Box,
@@ -17,6 +17,8 @@ import { UpdateSidebarType } from "../redux/slices/app";
 import { faker } from "@faker-js/faker";
 import { DocMsg, LinkMsg } from "../components/Conversation/MsgTypes";
 import { Shared_docs, Shared_links } from "../data";
+import axios from "../utils/axios";
+import Loading from "./Conversation/Loading";
 
 const Media = () => {
   const dispatch = useDispatch();
@@ -59,142 +61,222 @@ const Media = () => {
     handleOpenModal();
   };
 
-  let count=1
+  let count = 1;
+
+  const conversationId = useSelector(
+    (state) => state.conversation.direct_chat.current_conversation?.id
+  );
+  const user_id = window.localStorage.getItem("user_id");
+  const { token } = useSelector((state) => state.auth);
+
+  const [loading, setLoading] = useState(false);
+  const [imageVideoMsg, setimageVideoMsg] = useState([]);
+  const [linkMsg, setLinkMsg] = useState([]);
+  const [docMsg, setDocMsg] = useState([]);
+
+  const currentConversationIDRef = useRef(conversationId);
+
+  const format = (msg) => {
+    const formatted_messages = msg.map((el) => {
+      const reaction = el?.reaction;
+      let myReaction = null;
+      let otherReaction = null;
+
+      Object.keys(reaction).forEach((key) => {
+        if (key === user_id.toString()) {
+          myReaction = reaction[key];
+        } else {
+          otherReaction = reaction[key];
+        }
+      });
+
+      return {
+        id: el._id,
+        type: "msg",
+        subtype: el.type,
+        message: el.text,
+        incoming: el.to === user_id,
+        outgoing: el.from === user_id,
+        status: el?.status,
+        src: el?.file,
+        replyToMsg: el?.replyToMsg,
+        star: el?.star[user_id.toString()] || false,
+        myReaction: myReaction,
+        otherReaction: otherReaction,
+      };
+    });
+    return formatted_messages;
+  };
+
+  useEffect(() => {
+    async function fetchData() {
+      const conversationID = currentConversationIDRef.current;
+      console.log("fetch-mediaMSg", conversationID);
+      setLoading(true);
+      const { data } = await axios.get(
+        `/user/mediamessages/${conversationID}`,
+        // {}, // Empty data object as second parameter not required in get request
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log("mediaMSg", data);
+
+      setDocMsg(format(data.docMsg));
+      setLinkMsg(format(data.linkMsg));
+      setimageVideoMsg(format(data.imageVideoMsg));
+
+      setLoading(false);
+    }
+
+    fetchData();
+  }, []); //first render
 
   return (
-    <Box style={{borderLeft:'1px solid grey', borderRadius:'15px'}} sx={{ width: !isDesktop ? "100vw" : 320, maxHeight: "100vh" }}>
-      <Stack sx={{ height: "100%", overflowX: "hidden" }}>
-        <Box
-          sx={{
-            boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.25)",
-            width: "100%",
-            backgroundColor:
-              theme.palette.mode === "light"
-                ? "#F8FAFF"
-                : theme.palette.background,
-          }}
-        >
-          <Stack
-            sx={{ height: "100%", p: 2 }}
-            direction="row"
-            alignItems={"center"}
-            spacing={3}
+    <Box
+      style={{ borderLeft: "1px solid grey", borderRadius: "15px" }}
+      sx={{ width: !isDesktop ? "100vw" : 320, maxHeight: "100vh" }}
+    >
+      {loading ? (
+        <Loading />
+      ) : (
+        <Stack sx={{ height: "100%", overflowX: "hidden" }}>
+          <Box
+            sx={{
+              boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.25)",
+              width: "100%",
+              backgroundColor:
+                theme.palette.mode === "light"
+                  ? "#F8FAFF"
+                  : theme.palette.background,
+            }}
           >
-            <IconButton
-              onClick={() => {
-                dispatch(UpdateSidebarType("CONTACT"));
-              }}
+            <Stack
+              sx={{ height: "100%", p: 2 }}
+              direction="row"
+              alignItems={"center"}
+              spacing={3}
             >
-              <ArrowLeft />
-            </IconButton>
-            <Typography variant="subtitle2">Shared</Typography>
-          </Stack>
-        </Box>
+              <IconButton
+                onClick={() => {
+                  dispatch(UpdateSidebarType("CONTACT"));
+                }}
+              >
+                <ArrowLeft />
+              </IconButton>
+              <Typography variant="subtitle2">Shared</Typography>
+            </Stack>
+          </Box>
 
-        <Tabs value={value} onChange={handleChange} centered>
-          <Tab label="Media" />
-          <Tab label="Links" />
-          <Tab label="Docs" />
-        </Tabs>
-        <Stack
-          sx={{
-            height: "100%",
-            position: "relative",
-            flexGrow: 1,
-            overflowY: "scroll",
-            overflowX: "hidden",
-            backgroundColor:
-            theme.palette.mode === "light"
-              ? "#F9F1FA"
-              : '#212B36',
-          }}
-          spacing={3}
-          padding={value === 1 ? 1 : 3}
-        >
-          {/* <Conversation starred={true} /> */}
-          {(() => {
-            switch (value) {
-              case 0:
-                return (
-                  <Grid container spacing={2}>
-                    {current_messages.map((el) =>
-                      el?.subtype == "img" ? (
-                        <Grid item xs={4}>
-                          <img
-                            src={el?.src}
-                            alt={el?.message}
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              borderRadius: "10px",
-                              cursor: "pointer", // Add cursor pointer to indicate clickable
-                            }}
-                            onClick={() => handleClick(el)} // Open modal on image click
-                          />
-                        </Grid>
-                      ) : el?.subtype == "video" ? (
-                        <Grid item xs={4}>
-                          <video
-                            src={el?.src}
-                            type={el?.type} // Specify the video type if known
-                            // controls
-                            autoPlay
-                            loop
-                            style={{
-                              maxWidth: "100%",
-                              maxHeight: "100%",
-                              width: "100%",
-                              height: "100%",
-                              // objectFit: "contain",
-                              borderRadius: "10px",
-                              cursor: "pointer",
-                            }}
-                            onClick={() => handleClick(el)}
-                          />
-                        </Grid>
-                      ) : null
-                    )}
-                  </Grid>
-                );
-              case 1:
-                return current_messages.map(
-                  (el) =>
-                    el?.subtype == "Link" && (
-                      <Stack
-                        direction={"row"}
-                        justifyContent={"start"}
-                        sx={{
-                          // width: "10%",
-                          wordBreak: "break-all", // ensures long words break and wrap
-                          overflowWrap: "break-word", // ensures lines break at appropriate points
-                          whiteSpace: "normal",
-                        }}
-                      >{`${count++})`}
-                        <a
-                          style={{ color: "blue" }}
-                          href={el?.message}
-                          target="_blank"
+          <Tabs value={value} onChange={handleChange} centered>
+            <Tab label="Media" />
+            <Tab label="Links" />
+            <Tab label="Docs" />
+          </Tabs>
+          <Stack
+            sx={{
+              height: "100%",
+              position: "relative",
+              flexGrow: 1,
+              overflowY: "scroll",
+              overflowX: "hidden",
+              backgroundColor:
+                theme.palette.mode === "light" ? "#F9F1FA" : "#212B36",
+            }}
+            spacing={3}
+            padding={value === 1 ? 1 : 3}
+          >
+            {/* <Conversation starred={true} /> */}
+            {(() => {
+              switch (value) {
+                case 0:
+                  return (
+                    <Grid container spacing={2}>
+                      {imageVideoMsg.map((el) =>
+                        el?.subtype == "img" ? (
+                          <Grid item xs={4}>
+                            <img
+                              src={el?.src}
+                              alt={el?.message}
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                borderRadius: "10px",
+                                cursor: "pointer", // Add cursor pointer to indicate clickable
+                              }}
+                              onClick={() => handleClick(el)} // Open modal on image click
+                            />
+                          </Grid>
+                        ) : el?.subtype == "video" ? (
+                          <Grid item xs={4}>
+                            <video
+                              src={el?.src}
+                              type={el?.type} // Specify the video type if known
+                              // controls
+                              autoPlay
+                              loop
+                              style={{
+                                maxWidth: "100%",
+                                maxHeight: "100%",
+                                width: "100%",
+                                height: "100%",
+                                // objectFit: "contain",
+                                borderRadius: "10px",
+                                cursor: "pointer",
+                              }}
+                              onClick={() => handleClick(el)}
+                            />
+                          </Grid>
+                        ) : null
+                      )}
+                    </Grid>
+                  );
+                case 1:
+                  return linkMsg.map(
+                    (el) =>
+                      el?.subtype == "Link" && (
+                        <Stack
+                          direction={"row"}
+                          justifyContent={"start"}
+                          sx={{
+                            // width: "10%",
+                            wordBreak: "break-all", // ensures long words break and wrap
+                            overflowWrap: "break-word", // ensures lines break at appropriate points
+                            whiteSpace: "normal",
+                          }}
                         >
-                          {el?.message}
-                        </a>
-                      </Stack>
-                    )
-                );
+                          {`${count++})`}
+                          <a
+                            style={{ color: "blue" }}
+                            href={el?.message}
+                            target="_blank"
+                          >
+                            {el?.message}
+                          </a>
+                        </Stack>
+                      )
+                  );
 
-              case 2:
-                return current_messages.map((el) =>(
-                  el?.subtype == "doc" &&
-                  <div style={{marginRight:'-20px'}}>
-                  <DocMsg el={el} menu={false} />
-                  </div>
-                ));
+                case 2:
+                  return docMsg.map(
+                    (el) =>
+                      el?.subtype == "doc" && (
+                        <div style={{ marginRight: "-20px" }}>
+                          <DocMsg el={el} menu={false} />
+                        </div>
+                      )
+                  );
 
-              default:
-                break;
-            }
-          })()}
+                default:
+                  break;
+              }
+            })()}
+          </Stack>
         </Stack>
-      </Stack>
+      )}
 
       {/* Modal for displaying larger image */}
       <Modal

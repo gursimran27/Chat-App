@@ -8,7 +8,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { LogoutUser } from "../../redux/slices/auth";
 import { socket } from "../../socket";
 import { useNavigate } from "react-router-dom";
-import { ClearCurrentMessagesAndCurrentConversation, UpdateReply_msg } from "../../redux/slices/conversation";
+import { ClearCurrentMessagesAndCurrentConversation, UpdateHasMore, UpdatePage, UpdateReply_msg } from "../../redux/slices/conversation";
 // import { AWS_S3_REGION, S3_BUCKET_NAME } from "../../config";
 
 const ProfileMenu = () => {
@@ -72,10 +72,12 @@ const ProfileMenu = () => {
                     else if(idx === 1) {
                       navigate("/settings");
                     }
-                    else {
+                    else {//log-out
                       dispatch(ClearCurrentMessagesAndCurrentConversation());
                       dispatch(UpdateReply_msg({reply:false, replyToMsg: null}))
                       dispatch(LogoutUser());
+                      dispatch(UpdatePage({page: 2}));
+                      dispatch(UpdateHasMore({hasMore: true}));
                       socket.emit("end", {user_id});
                     }
                   }}

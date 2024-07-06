@@ -27,5 +27,11 @@ router.put("/conversations/:id/pin", authController.protect, userController.pin)
 
 router.put("/conversations/:conversationId/:messageId/star", authController.protect, userController.star);
 
+router.get("/messages/:conversationId/:page", authController.protect, userController.fetchMsg);
+
+router.get("/starmessages/:conversationID", authController.protect, userController.fetchStarMsg);
+
+router.get("/mediamessages/:conversationID", authController.protect, userController.fetchMediaMsg);
+
 
 module.exports = router;

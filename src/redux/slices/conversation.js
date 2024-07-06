@@ -10,6 +10,8 @@ const initialState = {
     conversations: [],
     current_conversation: null,
     current_messages: [],
+    page: 2,
+    hasMore: true,
   },
   group_chat: {},
   reply_msg: {
@@ -135,6 +137,8 @@ const slice = createSlice({
     fetchCurrentMessages(state, action) {
       const messages = action.payload.messages;
 
+      messages.reverse();
+
       const formatted_messages = messages.map((el) => {
         const reaction = el?.reaction;
         let myReaction = null;
@@ -164,7 +168,47 @@ const slice = createSlice({
         };
       });
       state.direct_chat.current_messages = formatted_messages;
-      console.log("ssss", messages.file);
+      console.log("file", messages.file);
+    },
+    fetchCurrentPrvPageMessages(state, action) {
+      const messages = action.payload.messages;
+
+      messages.reverse();
+      console.log("sd",messages)
+
+      const formatted_messages = messages.map((el) => {
+        const reaction = el?.reaction;
+        let myReaction = null;
+        let otherReaction = null;
+
+        Object.keys(reaction).forEach((key) => {
+          if (key === user_id.toString()) {
+            myReaction = reaction[key];
+          } else {
+            otherReaction = reaction[key];
+          }
+        });
+
+        return {
+          id: el._id,
+          type: "msg",
+          subtype: el.type,
+          message: el.text,
+          incoming: el.to === user_id,
+          outgoing: el.from === user_id,
+          status: el?.status,
+          src: el?.file,
+          replyToMsg: el?.replyToMsg,
+          star: el?.star[user_id.toString()] || false,
+          myReaction: myReaction,
+          otherReaction: otherReaction,
+        };
+      });
+      state.direct_chat.current_messages = [
+        ...formatted_messages,
+        ...state.direct_chat.current_messages,
+      ];
+      console.log("file", messages.file);
     },
     addDirectMessage(state, action) {
       state.direct_chat.current_messages.push(action.payload.message);
@@ -293,6 +337,12 @@ const slice = createSlice({
       state.reply_msg.reply = action.payload.reply;
       state.reply_msg.replyToMsg = action.payload.replyToMsg;
     },
+    updatePage(state, action) {
+      state.direct_chat.page = action.payload.page;
+    },
+    updateHasMore(state, action) {
+      state.direct_chat.hasMore = action.payload.hasMore;
+    },
   },
 });
 
@@ -344,6 +394,11 @@ export const SetCurrentConversation = (current_conversation) => {
 export const FetchCurrentMessages = ({ messages }) => {
   return async (dispatch, getState) => {
     dispatch(slice.actions.fetchCurrentMessages({ messages }));
+  };
+};
+export const FetchCurrentPrvPageMessages = ({ messages }) => {
+  return async (dispatch, getState) => {
+    dispatch(slice.actions.fetchCurrentPrvPageMessages({ messages }));
   };
 };
 
@@ -422,6 +477,27 @@ export const UpdateMessagesForReaction = ({ messageId, reaction }) => {
       slice.actions.updateMessagesForReaction({
         messageId: messageId,
         reaction: reaction,
+      })
+    );
+  };
+};
+
+export const UpdatePage = ({ page }) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.updatePage({
+        page: page,
+      })
+    );
+  };
+};
+
+
+export const UpdateHasMore = ({ hasMore }) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.updateHasMore({
+        hasMore: hasMore,
       })
     );
   };

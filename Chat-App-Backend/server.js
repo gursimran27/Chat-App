@@ -4,6 +4,12 @@ const dotenv = require("dotenv");
 dotenv.config({ path: "./config.env" });
 const { cloudinaryConnect } = require("./config/cloudinary");
 
+const oldMessages = new Map(); //store in reverse order//TODO store userid and obj of conversationID
+
+module.exports = {
+  oldMessages,
+};
+
 const path = require("path");
 
 mongoose.set("strictQuery", false);
@@ -217,10 +223,26 @@ io.on("connection", async (socket) => {
 
   socket.on("get_messages", async (data, callback) => {
     try {
-      const result = await OneToOneMessage.findById(
-        data.conversation_id
-      ).select("messages");
-      callback(result?.messages); //fire on frontend side
+      // const result = await OneToOneMessage.findById(
+      //   data.conversation_id
+      // ).select("messages");
+      const page = 1;
+      const limit = 10;
+      const skip = (page - 1) * limit;
+      const chat = await OneToOneMessage.findById(data.conversation_id);
+      chat.messages.reverse();
+
+      const innerMap = new Map();
+      innerMap.set(data.conversation_id, chat.messages);
+      oldMessages.set(data.user_id, innerMap);
+
+      const result = chat.messages.slice(skip).slice(0, limit);
+
+      // console.log(result);
+
+      // result.reverse();
+
+      callback(result); //fire on frontend side
     } catch (error) {
       console.log(error);
     }
@@ -578,8 +600,8 @@ io.on("connection", async (socket) => {
 
         if (message) {
           // Update the message with the new reaction
-          message.reaction.set(from,reaction);
-          await conversation.save({new: true});
+          message.reaction.set(from, reaction);
+          await conversation.save({ new: true });
 
           const updatedReaction = message?.reaction;
 
@@ -833,6 +855,7 @@ io.on("connection", async (socket) => {
     // socket.disconnect(0);
 
     if (data.user_id) {
+      oldMessages.delete(data.user_id);
       // Update the user's status to Offline in the database
       const user = await User.findByIdAndUpdate(
         data.user_id,

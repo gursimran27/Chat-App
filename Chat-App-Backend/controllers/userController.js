@@ -9,6 +9,8 @@ const { uploadImageToCloudinary } = require("../utils/imageUploader");
 
 const { generateToken04 } = require("./zegoServerAssistant");
 
+const { oldMessages } = require("../server");
+
 // Please change appID to your appId, appid is a number
 // Example: 1234567890
 const appID = process.env.ZEGO_APP_ID; // type: number
@@ -408,6 +410,104 @@ exports.star = catchAsync(async (req, res, next) => {
     await conversation.save();
 
     res.status(200).json({ success: true, message: 'Star status updated as ',star });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error',message: error.message });
+  }
+});
+
+
+exports.fetchMsg = catchAsync(async (req, res, next) => {
+  try {
+    const { conversationId, page } = req.params;
+    const userId = req.user.id; 
+    console.log('page',page,conversationId)
+
+    // if(!oldMessages.has(userId)){
+    //   const innerMap = new Map();
+    //   console.log('inside if')
+    //   const chat = await OneToOneMessage.findById(conversationId);
+    //   if (!chat) {
+    //     return res.status(404).json({ error: 'Conversation not found' });
+    //   }
+    //   chat.messages.reverse();
+    //   innerMap.set(conversationId,chat.messages);
+    //   oldMessages.set(userId, innerMap);
+    // }
+
+      const limit = 10;
+      const skip = (page - 1) * limit;  
+
+      const innerMap = oldMessages.get(userId);
+      if(!innerMap){
+        console.log('not innermap',innerMap)
+      }
+      const messages = innerMap.get(conversationId);
+      if(!messages){
+        console.log("not messages",messages)
+      }for (const key of oldMessages.get(userId).keys()) {
+        console.log(key);
+      }
+      const result = messages.slice(skip).slice(0, limit);
+      // console.log(result)
+
+    res.status(200).json({ success: true, message: `messages fetch for page=${page}`,data:result });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error',message: error.message });
+  }
+});
+
+
+exports.fetchStarMsg = catchAsync(async (req, res, next) => {
+  try {
+    const { conversationID } = req.params;
+
+    const userId = req.user._id;
+
+    const conversation = await OneToOneMessage.findById(conversationID);
+
+    if (!conversation) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    const message = conversation.messages;
+
+    if (!message) { 
+      return res.status(404).json({ error:'Message not found' });
+    }
+
+    const result = message.filter( msg => msg.star.get(userId) === true)
+
+    res.status(200).json({ success: true, message: 'Star messages fetched',data: result });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error',message: error.message });
+  }
+});
+
+
+
+exports.fetchMediaMsg = catchAsync(async (req, res, next) => {
+  try {
+    const { conversationID } = req.params;
+
+    const userId = req.user._id;
+
+    const conversation = await OneToOneMessage.findById(conversationID);
+
+    if (!conversation) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    const message = conversation.messages;
+
+    if (!message) { 
+      return res.status(404).json({ error:'Message not found' });
+    }
+
+    const imageVideoMsg = message.filter( msg => msg.type === 'img' || msg.type === 'video');
+    const linkMsg = message.filter( msg => msg.type === 'Link');
+    const docMsg = message.filter( msg => msg.type === 'doc');
+
+    res.status(200).json({ success: true, message: 'Star messages fetched',imageVideoMsg: imageVideoMsg, linkMsg:linkMsg, docMsg:docMsg  });
   } catch (error) {
     res.status(500).json({ error: 'Internal server error',message: error.message });
   }
