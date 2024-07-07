@@ -317,10 +317,10 @@ const Message_options = [
     title: "React to message",
   },
   {
-    title: "Forward message",
+    title: "Delete for me",
   },
   {
-    title: "Report",
+    title: "Forward message",
   },
   {
     title: "Delete Message",

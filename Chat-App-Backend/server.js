@@ -232,11 +232,13 @@ io.on("connection", async (socket) => {
       const chat = await OneToOneMessage.findById(data.conversation_id);
       chat.messages.reverse();
 
-      const innerMap = new Map();
-      innerMap.set(data.conversation_id, chat.messages);
-      oldMessages.set(data.user_id, innerMap);
+      const notDeletedMessages = chat.messages.filter(msg => !msg.deletedFor.get(data.user_id));
 
-      const result = chat.messages.slice(skip).slice(0, limit);
+      const innerMap = new Map();
+      innerMap.set(data.conversation_id, notDeletedMessages);
+      oldMessages.set(data.user_id, innerMap);//cache for the use of fetching prv msg's
+
+      const result = notDeletedMessages.slice(skip).slice(0, limit);
 
       // console.log(result);
 
@@ -320,6 +322,7 @@ io.on("connection", async (socket) => {
     // emit to t incoming_message -user
     const savedMessage = chat.messages[chat.messages.length - 1]; //last saved msg
     new_message._id = savedMessage._id;
+    new_message.created_at = savedMessage.created_at;
 
     io.to(to_user?.socket_id).emit("new_message", {
       conversation_id,

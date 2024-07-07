@@ -173,6 +173,17 @@ const DashboardLayout = () => {
         // }
 
         if (currentConversationID === data.conversation_id) {
+          const formatTimeTo24Hrs = (dateString) => {
+            const date = new Date(dateString);
+            return date.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            });
+          };
+
+          const time = formatTimeTo24Hrs(message?.created_at);
+          
           dispatch(
             AddDirectMessage({
               id: message._id,
@@ -186,6 +197,7 @@ const DashboardLayout = () => {
               replyToMsg: message?.replyToMsg,
               myReaction: myReaction,
               otherReaction: otherReaction,
+              time: time || "9:36",
             })
           );
         }

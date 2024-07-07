@@ -515,3 +515,33 @@ exports.fetchMediaMsg = catchAsync(async (req, res, next) => {
 
 
 
+exports.deleteMessageForUser = catchAsync(async (req, res, next) => {
+  try {
+    const { conversationId, messageId } = req.params;
+    const userId = req.user._id;
+
+    const conversation = await OneToOneMessage.findById(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    const message = conversation.messages.id(messageId);
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    message.deletedFor.set(userId, true);
+    
+    // set the star to false
+    message.star.set(userId,false);
+
+    await conversation.save({ new: true });
+
+    res.status(200).json({ success: true, message: 'Message deleted for user' });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error', message: error.message });
+  }
+});
+
+
+

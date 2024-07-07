@@ -198,7 +198,7 @@ const ChatElement = ({ img, name, msg, time, unread, online, id, pinned }) => {
   const theme = useTheme();
 
   return (
-    <Stack  direction="row">
+    <Stack  direction="row" >
       <StyledChatBox
         onClick={() => {
           dispatch(SelectConversation({ room_id: id }));
@@ -241,7 +241,7 @@ const ChatElement = ({ img, name, msg, time, unread, online, id, pinned }) => {
             )}
             <Stack spacing={0.3}>
               <Typography variant="subtitle2">{name}</Typography>
-              <Typography variant="caption">{truncateText(msg, 20)}</Typography>
+              <Typography variant="caption">{truncateText(msg, 12)}</Typography>
             </Stack>
           </Stack>
           <Stack spacing={2} alignItems={"center"}>

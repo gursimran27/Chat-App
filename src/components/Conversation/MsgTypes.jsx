@@ -25,6 +25,7 @@ import {
 import { Message_options } from "../../data";
 import { useDispatch, useSelector } from "react-redux";
 import {
+  UpdateMessagesForDeleteForMe,
   UpdateMessagesForStar,
   UpdateReply_msg,
 } from "../../redux/slices/conversation";
@@ -73,7 +74,7 @@ const MessageOption = ({
       );
       const { data } = await axios.put(
         `/user/conversations/${conversationId}/${messageId}/star`,
-        { star: !star }, // Empty data object as second parameter
+        { star: !star }, // data object as second parameter
         {
           headers: {
             "Content-Type": "application/json",
@@ -85,6 +86,28 @@ const MessageOption = ({
       dispatch(closeSnackBar);
 
       console.log("pinned chat sucess", data);
+    } catch (error) {
+      console.error("Failed to pin conversation", error);
+    }
+    handleClose();
+  };
+
+
+  const handleDeleteForMe = async (conversationId) => {
+    try {
+      console.log("Deleting for me");
+
+      const { data } = await axios.delete(
+        `/user/deletemessage/${conversationId}/${messageId}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      dispatch(UpdateMessagesForDeleteForMe({ messageId: messageId, conversationId:conversationId}));
+
     } catch (error) {
       console.error("Failed to pin conversation", error);
     }
@@ -144,6 +167,14 @@ const MessageOption = ({
                   console.log("menu");
                   setOpenPicker(!openPicker);
                   handleClose();
+                }}
+              >
+                {el.title}
+              </MenuItem>
+            ) : el?.title == "Delete for me" ? (
+              <MenuItem
+                onClick={() => {
+                  handleDeleteForMe(conversationId);
                 }}
               >
                 {el.title}

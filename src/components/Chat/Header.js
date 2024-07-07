@@ -136,7 +136,7 @@ const ChatHeader = () => {
   // };
 
   const formatLastSeen = (lastSeen) => {
-    if (!lastSeen) return "Offline";
+    if (!lastSeen) return "Select for contact info";
     const date = new Date(lastSeen);
 
     if (isToday(date)) {

@@ -5,6 +5,16 @@ import { useSelector } from "react-redux";
 
 const user_id = window.localStorage.getItem("user_id");
 
+const getLastVisibleMessage = (messages, userId) => {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i];
+    if (!message?.deletedFor || !message?.deletedFor[userId]) {
+      return message;
+    }
+  }
+  return null;
+};
+
 const initialState = {
   direct_chat: {
     conversations: [],
@@ -35,6 +45,18 @@ const slice = createSlice({
 
         const isPinned = pinnedChats.includes(el._id.toString());
 
+        const lastVisibleMessage = getLastVisibleMessage(el.messages, user_id);
+
+        // Format time to 24-hour format
+        const formatTimeTo24Hrs = (dateString) => {
+          const date = new Date(dateString);
+          return date.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+        };
+
         return {
           id: el._id, //conversationid
           user_id: user?._id, //userid
@@ -45,8 +67,10 @@ const slice = createSlice({
             user?.avatar ||
             `https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`,
           //   msg: el.messages.slice(-1)[0].text,
-          msg: el.messages[el.messages.length - 1].text,
-          time: "9:36",
+          msg: lastVisibleMessage ? lastVisibleMessage.text : "No messages",
+          time: lastVisibleMessage
+            ? formatTimeTo24Hrs(lastVisibleMessage.created_at)
+            : "9:36",
           unread: el?.unreadCount[user_id.toString()] || 0,
           pinned: isPinned,
           about: user?.about || "No Discription",
@@ -67,6 +91,22 @@ const slice = createSlice({
             const user = this_conversation.participants.find(
               (elm) => elm._id.toString() !== user_id
             );
+
+            const lastVisibleMessage = getLastVisibleMessage(
+              this_conversation.messages,
+              user_id
+            );
+
+            // Format time to 24-hour format
+            const formatTimeTo24Hrs = (dateString) => {
+              const date = new Date(dateString);
+              return date.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              });
+            };
+
             return {
               id: this_conversation._id,
               user_id: user?._id, //onetoonemsssage's _id
@@ -76,10 +116,10 @@ const slice = createSlice({
                 user?.avatar ||
                 `https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`,
               about: user?.about || "No Discription",
-              msg: this_conversation.messages[
-                this_conversation.messages.length - 1
-              ].text,
-              time: "9:36",
+              msg: lastVisibleMessage ? lastVisibleMessage.text : "No messages",
+              time: lastVisibleMessage
+                ? formatTimeTo24Hrs(lastVisibleMessage.created_at)
+                : "9:36",
               unread: el?.unreadCount[user_id.toString()] || 0,
               pinned: false,
               email: user?.email,
@@ -152,6 +192,15 @@ const slice = createSlice({
           }
         });
 
+        const formatTimeTo24Hrs = (dateString) => {
+          const date = new Date(dateString);
+          return date.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+        };
+
         return {
           id: el._id,
           type: "msg",
@@ -165,6 +214,7 @@ const slice = createSlice({
           star: el?.star[user_id.toString()] || false,
           myReaction: myReaction,
           otherReaction: otherReaction,
+          time: formatTimeTo24Hrs(el?.created_at) || "9:36",
         };
       });
       state.direct_chat.current_messages = formatted_messages;
@@ -174,7 +224,7 @@ const slice = createSlice({
       const messages = action.payload.messages;
 
       messages.reverse();
-      console.log("sd",messages)
+      console.log("sd", messages);
 
       const formatted_messages = messages.map((el) => {
         const reaction = el?.reaction;
@@ -189,6 +239,15 @@ const slice = createSlice({
           }
         });
 
+        const formatTimeTo24Hrs = (dateString) => {
+          const date = new Date(dateString);
+          return date.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+        };
+
         return {
           id: el._id,
           type: "msg",
@@ -202,6 +261,7 @@ const slice = createSlice({
           star: el?.star[user_id.toString()] || false,
           myReaction: myReaction,
           otherReaction: otherReaction,
+          time: formatTimeTo24Hrs(el?.created_at) || "9:36",
         };
       });
       state.direct_chat.current_messages = [
@@ -229,6 +289,42 @@ const slice = createSlice({
             };
           }
         });
+    },
+    updateMessagesForDeleteForMe(state, action) {
+      if (
+        state.direct_chat.current_messages[
+          state.direct_chat.current_messages.length - 1
+        ]?.id == action.payload.messageId
+      ) {
+        //last msg deleted
+        state.direct_chat.current_messages.pop();
+
+        const lastVisibleMessage = getLastVisibleMessage(
+          state.direct_chat.current_messages,
+          user_id
+        );
+
+        state.direct_chat.conversations = state.direct_chat.conversations.map(
+          (conversation) =>
+            conversation.id === action.payload.conversationId
+              ? {
+                  ...conversation,
+                  msg: lastVisibleMessage
+                    ? lastVisibleMessage.message
+                    : "No messages",
+                  time: lastVisibleMessage
+                    ? lastVisibleMessage?.time
+                    : "9:36",
+                }
+              : conversation
+        );
+        return;
+      }
+
+      state.direct_chat.current_messages =
+        state.direct_chat.current_messages.filter(
+          (el) => el?.id != action.payload.messageId
+        );
     },
     updateMessagesForReaction(state, action) {
       const reaction = action.payload.reaction;
@@ -471,6 +567,13 @@ export const UpdateMessagesForStar = ({ messageId, star }) => {
     );
   };
 };
+export const UpdateMessagesForDeleteForMe = ({ messageId, conversationId }) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.updateMessagesForDeleteForMe({ messageId: messageId, conversationId:conversationId })
+    );
+  };
+};
 export const UpdateMessagesForReaction = ({ messageId, reaction }) => {
   return async (dispatch, getState) => {
     dispatch(
@@ -491,7 +594,6 @@ export const UpdatePage = ({ page }) => {
     );
   };
 };
-
 
 export const UpdateHasMore = ({ hasMore }) => {
   return async (dispatch, getState) => {

@@ -33,5 +33,7 @@ router.get("/starmessages/:conversationID", authController.protect, userControll
 
 router.get("/mediamessages/:conversationID", authController.protect, userController.fetchMediaMsg);
 
+router.delete('/deletemessage/:conversationId/:messageId', authController.protect, userController.deleteMessageForUser);
+
 
 module.exports = router;

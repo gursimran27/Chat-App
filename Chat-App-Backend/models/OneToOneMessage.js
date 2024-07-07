@@ -50,7 +50,12 @@ const oneToOneMessageSchema = new mongoose.Schema({
         type: Map,
         of: String,
         default: {},
-      }
+      },
+      deletedFor: {
+        type: Map,
+        of: Boolean,
+        default: {},
+      },
     },
   ],
   unreadCount: {
