@@ -10,6 +10,7 @@ npm run dev
 - **Pin/Unpin Chats**: Functionality to pin and unpin one-to-one messages.
 - **Star Messages**: Feature to star important messages.
 - **Delete for Me**: Ability to delete a message for the current user.
+- **Delete for everyone**: Ability to delete a message in a chat for both participants in real time.
 - **Status of User**: Displaying the online status of users or his/her last seen in real time.
 - **Unread Message Count**: Showing the count of unread messages for each conversation in real time.
 - **File Preview**: Preview feature for different file types (image, video, PDF) based on the file extension.
