@@ -35,5 +35,7 @@ router.get("/mediamessages/:conversationID", authController.protect, userControl
 
 router.delete('/deletemessage/:conversationId/:messageId', authController.protect, userController.deleteMessageForUser);
 
+router.put('/updatedeleteforeveryone/:conversationId/:messageId', authController.protect, userController.updateDeleteForEveryone);
+
 
 module.exports = router;

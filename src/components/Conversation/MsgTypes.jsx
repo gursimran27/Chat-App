@@ -11,7 +11,7 @@ import {
   Tooltip,
   Fab,
 } from "@mui/material";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { alpha, useTheme } from "@mui/material/styles";
 import {
   Check,
@@ -25,6 +25,7 @@ import {
 import { Message_options } from "../../data";
 import { useDispatch, useSelector } from "react-redux";
 import {
+  UpdateMessagesForDeleteForEveryoneAsFalse,
   UpdateMessagesForDeleteForMe,
   UpdateMessagesForStar,
   UpdateReply_msg,
@@ -46,6 +47,9 @@ const MessageOption = ({
   replyToMsg,
   messageId,
   star,
+  deletedForEveryone,
+  created_at,
+  incomming
 }) => {
   const dispatch = useDispatch();
   const [anchorEl, setAnchorEl] = useState(null); //store referance
@@ -61,6 +65,12 @@ const MessageOption = ({
 
   const conversationId = useSelector(
     (state) => state.conversation.direct_chat.current_conversation?.id
+  );
+
+  const user_id = window.localStorage.getItem("user_id");
+
+  const { current_conversation } = useSelector(
+    (state) => state.conversation.direct_chat
   );
 
   const handleStar = async (conversationId) => {
@@ -92,7 +102,6 @@ const MessageOption = ({
     handleClose();
   };
 
-
   const handleDeleteForMe = async (conversationId) => {
     try {
       console.log("Deleting for me");
@@ -106,13 +115,97 @@ const MessageOption = ({
           },
         }
       );
-      dispatch(UpdateMessagesForDeleteForMe({ messageId: messageId, conversationId:conversationId}));
-
+      dispatch(
+        UpdateMessagesForDeleteForMe({
+          messageId: messageId,
+          conversationId: conversationId,
+        })
+      );
     } catch (error) {
       console.error("Failed to pin conversation", error);
     }
     handleClose();
   };
+
+
+
+  const setdeletedForEveryoneToFalse = async (conversationId, messageId) => {
+    try {
+
+      // !the API functionality is shifted to socket event:
+      // const { data } = await axios.put(
+      //   `/user/updatedeleteforeveryone/${conversationId}/${messageId}`,
+      //   {}, //empty data
+      //   {
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //       Authorization: `Bearer ${token}`,
+      //     },
+      //   }
+      // );
+      // console.log("makeAPICALL",data);
+      // if(data.conversationId == conversationId){
+      //   console.log("+++++++");
+      //   dispatch(UpdateMessagesForDeleteForEveryoneAsFalse({messageId: messageId}));
+      // }
+
+      console.log("fireing event");//as msg time is over for using deleteforEveryone feature
+      socket.emit(
+        "updateDeleteForEveryoneToFalse",
+        { conversationId: conversationId, messageId: messageId },
+        (data) => {//callBack
+          // console.log("data", data);
+          if (data == conversationId) {//if same conversation is opened!
+            // console.log("+++++++");
+            dispatch(
+              UpdateMessagesForDeleteForEveryoneAsFalse({
+                messageId: messageId,
+              })
+            );
+          }
+        }
+      );
+    } catch (error) {
+      console.error("Failed to setdeletedForEveryoneToFalse", error);
+    }
+    // setShowDeleteButton(false);
+  };
+
+  useEffect(() => {
+    if (deletedForEveryone) {
+      // console.log("timeOUT");
+      // Check if 10 minutes have passed since the message was created
+      const messageCreatedAt = new Date(created_at);
+      const now = new Date();
+      const tenMinutesInMs = 1 * 60 * 1000;
+
+      if (now - messageCreatedAt > tenMinutesInMs) {
+        // console.log("1timeOUT");
+        setdeletedForEveryoneToFalse(conversationId, messageId); //*for testing purpose
+        // setShowDeleteButton(false);
+      } else {
+        // Set a timeout to hide the button after 10 minutes
+        // console.log("2timeOUT");
+        const timeoutId = setTimeout(() => {
+          setdeletedForEveryoneToFalse(conversationId, messageId);
+        }, tenMinutesInMs - (now - messageCreatedAt));
+
+        return () => clearTimeout(timeoutId);
+      }
+    }
+  }, [created_at]);
+
+  // console.log("showBTn", deletedForEveryone);
+
+  const handleDeleteForEverone = async (conversationId, messageId) => {
+    socket.emit("deleteForEveryone", {
+      conversationId: conversationId,
+      from: user_id,
+      to: current_conversation?.user_id,
+      messageId: messageId,
+    });
+    handleClose();
+  }
 
   return (
     <>
@@ -179,6 +272,12 @@ const MessageOption = ({
               >
                 {el.title}
               </MenuItem>
+            ) : el?.title == "Delete for everyone" ? (
+              (deletedForEveryone && !incomming) && (
+                <MenuItem onClick={() => {
+                  handleDeleteForEverone(conversationId,messageId);
+                }}>{el.title}</MenuItem>
+              )
             ) : (
               <MenuItem onClick={handleClose}>{el.title}</MenuItem>
             )
@@ -422,6 +521,9 @@ const DocMsg = ({ el, menu }) => {
           star={el?.star}
           openPicker={openPicker}
           setOpenPicker={setOpenPicker}
+          deletedForEveryone={el?.deletedForEveryone}
+          created_at={el?.created_at}
+          incomming={el?.incoming}
         />
       )}
 
@@ -675,6 +777,9 @@ const LinkMsg = ({ el, menu }) => {
           star={el?.star}
           openPicker={openPicker}
           setOpenPicker={setOpenPicker}
+          deletedForEveryone={el?.deletedForEveryone}
+          created_at={el?.created_at}
+          incomming={el?.incoming}
         />
       )}
       {menu && (
@@ -865,6 +970,9 @@ const ReplyMsg = ({ el, menu }) => {
           star={el?.star}
           openPicker={openPicker}
           setOpenPicker={setOpenPicker}
+          deletedForEveryone={el?.deletedForEveryone}
+          created_at={el?.created_at}
+          incomming={el?.incoming}
         />
       )}
       {menu && (
@@ -1065,6 +1173,9 @@ const MediaMsg = ({ el, menu }) => {
           star={el?.star}
           openPicker={openPicker}
           setOpenPicker={setOpenPicker}
+          deletedForEveryone={el?.deletedForEveryone}
+          created_at={el?.created_at}
+          incomming={el?.incoming}
         />
       )}
       {menu && (
@@ -1326,6 +1437,9 @@ const VideoMsg = ({ el, menu }) => {
           star={el?.star}
           openPicker={openPicker}
           setOpenPicker={setOpenPicker}
+          deletedForEveryone={el?.deletedForEveryone}
+          created_at={el?.created_at}
+          incomming={el?.incoming}
         />
       )}
       {menu && (
@@ -1565,6 +1679,9 @@ const TextMsg = ({ el, menu }) => {
           star={el?.star}
           openPicker={openPicker}
           setOpenPicker={setOpenPicker}
+          deletedForEveryone={el?.deletedForEveryone}
+          created_at={el?.created_at}
+          incomming={el?.incoming}
         />
       )}
       {menu && (
@@ -1586,6 +1703,59 @@ const TextMsg = ({ el, menu }) => {
   );
 };
 
+
+const DeletedMsg = ({ el, menu }) => {
+  // console.log("test message pushed");
+  const theme = useTheme();
+
+  return (
+    <Stack
+      direction="row"
+      justifyContent={el.incoming ? "start" : "end"}
+      sx={{ position: "relative" }}
+      
+    >
+      <Box
+        px={1.5}
+        py={1}
+        sx={{
+          backgroundColor: '#919EAB',
+          borderRadius: 1.5,
+          width: "max-content",
+          position: "relative",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: "-2px",
+            width: 0,
+            height: 0,
+            borderStyle: "solid",
+            borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
+            borderColor: el.incoming
+              ? `transparent ${alpha(
+                  '#919EAB',
+                  1
+                )} transparent transparent`
+              : `transparent transparent transparent ${'#919EAB'}`,
+            left: el.incoming ? "-8px" : "unset",
+            right: el.incoming ? "unset" : "-8px",
+            transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
+          },
+        }}
+      >
+        <Typography
+          variant="caption"
+          color={el.incoming ? theme.palette.text : "#fff"}
+          sx={{ fontStyle: 'italic'}}
+        >
+          {"This message was deleted"}
+        </Typography>
+
+      </Box>
+    </Stack>
+  );
+};
+
 const Timeline = ({ el }) => {
   const theme = useTheme();
   return (
@@ -1603,4 +1773,4 @@ const Timeline = ({ el }) => {
   );
 };
 
-export { Timeline, TextMsg, MediaMsg, ReplyMsg, LinkMsg, DocMsg, VideoMsg };
+export { Timeline, TextMsg, MediaMsg, ReplyMsg, LinkMsg, DocMsg, VideoMsg, DeletedMsg };

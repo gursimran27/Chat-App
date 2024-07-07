@@ -4,6 +4,7 @@ import InfiniteScroll from "react-infinite-scroll-component";
 
 import { Chat_History } from "../../data";
 import {
+  DeletedMsg,
   DocMsg,
   LinkMsg,
   MediaMsg,
@@ -194,6 +195,12 @@ const Message = ({ isMobile, menu }) => {
                   return (
                     //  ReplyMessage
                     <ReplyMsg el={el} menu={menu} />
+                  );
+
+                case "deleted":
+                  return (
+                    //  deletedMessage
+                    <DeletedMsg el={el} menu={menu} />
                   );
 
                 default:

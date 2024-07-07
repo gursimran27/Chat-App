@@ -545,3 +545,30 @@ exports.deleteMessageForUser = catchAsync(async (req, res, next) => {
 
 
 
+// !this API functionality is shifted to socket event
+exports.updateDeleteForEveryone = catchAsync(async (req, res, next) => {
+  try {
+    const { conversationId, messageId } = req.params;
+
+    const conversation = await OneToOneMessage.findById(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    const message = conversation.messages.id(messageId);
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    message.deletedForEveryone = false;
+
+    await conversation.save({ new: true });
+
+    res.status(200).json({ success: true, message: 'deletedForEveryone updated to false', conversationId: conversationId });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error', message: error.message });
+  }
+});
+
+
+

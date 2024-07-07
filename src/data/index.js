@@ -320,10 +320,10 @@ const Message_options = [
     title: "Delete for me",
   },
   {
-    title: "Forward message",
+    title: "Delete for everyone",
   },
   {
-    title: "Delete Message",
+    title: "Forward message",
   },
 ];
 

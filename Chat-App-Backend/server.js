@@ -232,11 +232,14 @@ io.on("connection", async (socket) => {
       const chat = await OneToOneMessage.findById(data.conversation_id);
       chat.messages.reverse();
 
-      const notDeletedMessages = chat.messages.filter(msg => !msg.deletedFor.get(data.user_id));
+      // get those messages that are not deleted for me
+      const notDeletedMessages = chat.messages.filter(
+        (msg) => !msg.deletedFor.get(data.user_id)
+      );
 
       const innerMap = new Map();
       innerMap.set(data.conversation_id, notDeletedMessages);
-      oldMessages.set(data.user_id, innerMap);//cache for the use of fetching prv msg's
+      oldMessages.set(data.user_id, innerMap); //cache for the use of fetching prv msg's
 
       const result = notDeletedMessages.slice(skip).slice(0, limit);
 
@@ -632,6 +635,85 @@ io.on("connection", async (socket) => {
       console.error("Error reacting to message:", error);
     }
   });
+
+  // *------------------updateDeleteForEveryoneToFalseg Msg------------------------//
+
+
+  socket.on("updateDeleteForEveryoneToFalse", async (data, callback) => {
+    try {
+      const { conversationId, messageId } = data;
+
+      const conversation = await OneToOneMessage.findById(conversationId);
+      if (!conversation) {
+        console.log("no conversation found in the updateDeleteForEveryoneToFalse event")
+      }
+
+      const message = conversation.messages.id(messageId);
+      if (!message) {
+        console.log("no messages found in the updateDeleteForEveryoneToFalse event")
+      }
+
+      message.deletedForEveryone = false;
+
+      await conversation.save({ new: true });
+
+
+      callback(conversationId); //fire on frontend side
+
+    } catch (error) {
+      console.log(error);
+    }
+  });
+
+
+    // *----------------------------deleteForEveryone---------------------------------------//
+    socket.on("deleteForEveryone", async (data) => {
+      const { conversationId, to, from, messageId } = data;
+  
+      try {
+        // Find the conversation by ID
+        const conversation = await OneToOneMessage.findById(conversationId);
+  
+        if (conversation) {
+          // Find the message by ID
+          const message = conversation.messages.id(messageId);
+  
+          if (message) {
+            // Update message fields
+            message.star = {}; // Set star to empty object
+            message.reaction = {}; // Set reaction to empty object
+            message.deletedForEveryone = false; // Set deletedForEveryone to true
+            message.type = "deleted";//*Imp
+            message.text = null;
+            message.file = null;
+            message.status = 'Seen';
+            message.replyToMsg = null;
+
+            await conversation.save({ new: true });
+  
+  
+            const to_user = await User.findById(to);
+            const from_user = await User.findById(from);
+  
+            // Emit an event to the recipient to update their UI
+            io.to(to_user?.socket_id).emit("message_deleteForEveryone", {
+              conversationId,
+              messageId,
+            });
+            io.to(from_user?.socket_id).emit("message_deleteForEveryone", {
+              conversationId,
+              messageId,
+            });
+          } else {
+            console.error("Message not found");
+          }
+        } else {
+          console.error("Conversation not found");
+        }
+      } catch (error) {
+        console.error("Error reacting to message:", error);
+      }
+    });
 
   // *-------------- HANDLE AUDIO CALL SOCKET EVENTS ----------------- //
 

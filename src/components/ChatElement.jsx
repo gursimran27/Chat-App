@@ -226,7 +226,7 @@ const ChatElement = ({ img, name, msg, time, unread, online, id, pinned }) => {
           alignItems={"center"}
           justifyContent="space-between"
         >
-          <Stack direction="row" spacing={2}>
+          <Stack direction="row" spacing={1}>
             {" "}
             {online ? (
               <StyledBadge

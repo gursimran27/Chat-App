@@ -18,6 +18,8 @@ import {
   UpdateMessageStatus,
   UpdateConversationUnread,
   UpdateMessagesForReaction,
+  UpdateMessagesForDeleteForEveryoneTypeToDeleted,
+  UpdateChatForDeleteForMeEveryone,
 } from "../../redux/slices/conversation";
 import AudioCallNotification from "../../sections/Dashboard/Audio/CallNotification";
 import VideoCallNotification from "../../sections/Dashboard/video/CallNotification";
@@ -184,8 +186,6 @@ const DashboardLayout = () => {
         const time = formatTimeTo24Hrs(message?.created_at);
 
         if (currentConversationID === data.conversation_id) {
-
-          
           dispatch(
             AddDirectMessage({
               id: message._id,
@@ -200,6 +200,8 @@ const DashboardLayout = () => {
               myReaction: myReaction,
               otherReaction: otherReaction,
               time: time || "9:36",
+              created_at: message?.created_at || "9:36",
+              deletedForEveryone: message?.deletedForEveryone || true,
             })
           );
         }
@@ -333,6 +335,20 @@ const DashboardLayout = () => {
         );
       }
     });
+
+    socket.on("message_deleteForEveryone", (data) => {
+      const currentConversationID = currentConversationIDRef.current;
+      if (currentConversationID == data.conversationId) {
+        console.log("deleting msg...")
+        dispatch(
+          UpdateMessagesForDeleteForEveryoneTypeToDeleted({
+            messageId: data.messageId,
+          })
+        );
+      }
+      // suppose if the last msg was deleted then we also need to handel conversation section display msg
+      dispatch(UpdateChatForDeleteForMeEveryone({conversationId: data.conversationId, messageId:data.messageId}));
+    });
     // // Listen for the 'isSeen' event from the server
     // socket.on("isSeen", () => {
     //   // Get the current conversation ID
@@ -357,6 +373,7 @@ const DashboardLayout = () => {
       socket?.off("messagesSeen");
       socket?.off("updateUnread");
       socket?.off("message_reacted");
+      socket?.off("message_deleteForEveryone");
     };
   }, [isLoggedIn, socket]);
 

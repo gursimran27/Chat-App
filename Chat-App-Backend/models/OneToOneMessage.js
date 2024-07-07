@@ -19,7 +19,7 @@ const oneToOneMessageSchema = new mongoose.Schema({
       },
       type: {
         type: String,
-        enum: ["Text", "doc", "reply", "Link","img", "video"],
+        enum: ["Text", "doc", "reply", "Link","img", "video", "deleted"],
       },
       created_at: {
         type: Date,
@@ -55,6 +55,10 @@ const oneToOneMessageSchema = new mongoose.Schema({
         type: Map,
         of: Boolean,
         default: {},
+      },
+      deletedForEveryone: {
+        type: Boolean,
+        default: true,
       },
     },
   ],

@@ -5,10 +5,26 @@ import { useSelector } from "react-redux";
 
 const user_id = window.localStorage.getItem("user_id");
 
-const getLastVisibleMessage = (messages, userId) => {
+const getLastVisibleMessage = (messages, userId) => { //* message.type
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i];
-    if (!message?.deletedFor || !message?.deletedFor[userId]) {
+    if (
+      (!message?.deletedFor || !message?.deletedFor[userId]) &&
+      message?.type != "deleted"
+    ) {
+      return message;
+    }
+  }
+  return null;
+};
+
+const getLastVisibleMessageForDeleteForEveryOne = (messages, userId) => {//* message.subtype
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i];
+    if (
+      (!message?.deletedFor || !message?.deletedFor[userId]) &&
+      message?.subtype != "deleted"
+    ) {
       return message;
     }
   }
@@ -215,6 +231,8 @@ const slice = createSlice({
           myReaction: myReaction,
           otherReaction: otherReaction,
           time: formatTimeTo24Hrs(el?.created_at) || "9:36",
+          created_at: el?.created_at || "9:36",
+          deletedForEveryone: el?.deletedForEveryone || false,
         };
       });
       state.direct_chat.current_messages = formatted_messages;
@@ -262,6 +280,8 @@ const slice = createSlice({
           myReaction: myReaction,
           otherReaction: otherReaction,
           time: formatTimeTo24Hrs(el?.created_at) || "9:36",
+          created_at: el?.created_at || "9:36",
+          deletedForEveryone: el?.deletedForEveryone || false,
         };
       });
       state.direct_chat.current_messages = [
@@ -290,6 +310,39 @@ const slice = createSlice({
           }
         });
     },
+    updateMessagesForDeleteForEveryoneAsFalse(state, action) {
+      state.direct_chat.current_messages =
+        state.direct_chat.current_messages.map((el) => {
+          if (el?.id != action.payload.messageId) {
+            return el;
+          } else {
+            return {
+              ...el,
+              deletedForEveryone: false,
+            };
+          }
+        });
+    },
+    updateMessagesForDeleteForEveryoneTypeToDeleted(state, action) {
+      state.direct_chat.current_messages =
+        state.direct_chat.current_messages.map((el) => {
+          if (el?.id != action.payload.messageId) {
+            return el;
+          } else {
+            return {
+              ...el,
+              deletedForEveryone: false,
+              subtype: "deleted",
+              message: null,
+              src: null,
+              replyToMsg: null,
+              star: false,
+              myReaction: null,
+              otherReaction: null,
+            };
+          }
+        });
+    },
     updateMessagesForDeleteForMe(state, action) {
       if (
         state.direct_chat.current_messages[
@@ -299,7 +352,7 @@ const slice = createSlice({
         //last msg deleted
         state.direct_chat.current_messages.pop();
 
-        const lastVisibleMessage = getLastVisibleMessage(
+        const lastVisibleMessage = getLastVisibleMessageForDeleteForEveryOne(
           state.direct_chat.current_messages,
           user_id
         );
@@ -312,9 +365,7 @@ const slice = createSlice({
                   msg: lastVisibleMessage
                     ? lastVisibleMessage.message
                     : "No messages",
-                  time: lastVisibleMessage
-                    ? lastVisibleMessage?.time
-                    : "9:36",
+                  time: lastVisibleMessage ? lastVisibleMessage?.time : "9:36",
                 }
               : conversation
         );
@@ -325,6 +376,33 @@ const slice = createSlice({
         state.direct_chat.current_messages.filter(
           (el) => el?.id != action.payload.messageId
         );
+    },
+    updateChatForDeleteForMeEveryone(state, action) {
+      if (
+        state.direct_chat.current_messages[
+          state.direct_chat.current_messages.length - 1
+        ]?.id == action.payload.messageId
+      ) {
+        //last msg deleted
+
+        const lastVisibleMessage = getLastVisibleMessageForDeleteForEveryOne(
+          state.direct_chat.current_messages,
+          user_id
+        );
+
+        state.direct_chat.conversations = state.direct_chat.conversations.map(
+          (conversation) =>
+            conversation.id === action.payload.conversationId
+              ? {
+                  ...conversation,
+                  msg: lastVisibleMessage
+                    ? lastVisibleMessage.message
+                    : "No messages",
+                  time: lastVisibleMessage ? lastVisibleMessage?.time : "9:36",
+                }
+              : conversation
+        );
+      }
     },
     updateMessagesForReaction(state, action) {
       const reaction = action.payload.reaction;
@@ -568,10 +646,46 @@ export const UpdateMessagesForStar = ({ messageId, star }) => {
     );
   };
 };
+export const UpdateMessagesForDeleteForEveryoneAsFalse = ({ messageId }) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.updateMessagesForDeleteForEveryoneAsFalse({
+        messageId: messageId,
+      })
+    );
+  };
+};
+export const UpdateMessagesForDeleteForEveryoneTypeToDeleted = ({
+  messageId,
+}) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.updateMessagesForDeleteForEveryoneTypeToDeleted({
+        messageId: messageId,
+      })
+    );
+  };
+};
 export const UpdateMessagesForDeleteForMe = ({ messageId, conversationId }) => {
   return async (dispatch, getState) => {
     dispatch(
-      slice.actions.updateMessagesForDeleteForMe({ messageId: messageId, conversationId:conversationId })
+      slice.actions.updateMessagesForDeleteForMe({
+        messageId: messageId,
+        conversationId: conversationId,
+      })
+    );
+  };
+};
+export const UpdateChatForDeleteForMeEveryone = ({
+  messageId,
+  conversationId,
+}) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.updateChatForDeleteForMeEveryone({
+        messageId: messageId,
+        conversationId: conversationId,
+      })
     );
   };
 };
