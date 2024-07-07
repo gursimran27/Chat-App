@@ -391,6 +391,7 @@ const slice = createSlice({
               ...el,
               msg: this_conversation?.messages?.text,
               unread: this_conversation?.unread,
+              time: this_conversation?.time,
             };
           }
         }

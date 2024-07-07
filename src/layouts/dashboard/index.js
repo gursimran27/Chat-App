@@ -172,17 +172,19 @@ const DashboardLayout = () => {
         //   });
         // }
 
-        if (currentConversationID === data.conversation_id) {
-          const formatTimeTo24Hrs = (dateString) => {
-            const date = new Date(dateString);
-            return date.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-            });
-          };
+        const formatTimeTo24Hrs = (dateString) => {
+          const date = new Date(dateString);
+          return date.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+        };
 
-          const time = formatTimeTo24Hrs(message?.created_at);
+        const time = formatTimeTo24Hrs(message?.created_at);
+
+        if (currentConversationID === data.conversation_id) {
+
           
           dispatch(
             AddDirectMessage({
@@ -206,6 +208,7 @@ const DashboardLayout = () => {
           _id: data.conversation_id,
           messages: data.message,
           unread: data.unread,
+          time: time,
         };
 
         dispatch(UpdateConversationForNewMessage({ conversation })); //for the conversations list
