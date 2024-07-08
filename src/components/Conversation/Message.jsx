@@ -53,7 +53,7 @@ const Message = ({ isMobile, menu }) => {
       "inside useEffect updating current_conversation and current_messages"
     );
     const current = conversations.find((el) => el?.id === room_id);
-    console.log("cuurent", current);
+    // console.log("cuurent", current);
 
     socket.emit("get_messages", { conversation_id: current?.id, user_id: user_id }, (data) => {
       // data => list of messages

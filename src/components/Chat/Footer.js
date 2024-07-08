@@ -31,7 +31,7 @@ import axios from "../../utils/axios";
 import UseAnimations from "react-useanimations";
 import loader from "react-useanimations/lib/loading";
 import { UpdateReply_msg } from "../../redux/slices/conversation";
-import unSupport from "../../assets/OIP.jpeg"
+import unSupport from "../../assets/OIP.jpeg";
 
 const StyledInput = styled(TextField)(({ theme }) => ({
   "& .MuiInputBase-input": {
@@ -88,7 +88,7 @@ const ChatInput = ({
   const user_id = window.localStorage.getItem("user_id");
   const { room_id } = useSelector((state) => state.app);
 
-  const { token } = useSelector((state)=>state.auth);
+  const { token } = useSelector((state) => state.auth);
 
   const [msg, setMsg] = useState("");
 
@@ -132,44 +132,37 @@ const ChatInput = ({
       console.log("uploading...");
       setLoading(true);
       const formData = new FormData(); //used to gather form data from HTML forms.
-      formData.append('conversation_id', room_id);
+      formData.append("conversation_id", room_id);
       // if(imageFile){
-        formData.append("file", imageFile); // make a key-value pair so to send it in form-data section of request
+      formData.append("file", imageFile); // make a key-value pair so to send it in form-data section of request
       // }
 
       await axios
-      .put(
-        "/user/upload",
-          formData,
-        {
+        .put("/user/upload", formData, {
           headers: {
-            'Content-Type': 'multipart/form-data',
+            "Content-Type": "multipart/form-data",
             Authorization: `Bearer ${token}`,
           },
-        }
-      )
-      .then((response) => {
-        console.log(response);
-        socket.emit(
-                "file_message",
-                {
-                  name: imageFile.name,
-                  to: current_conversation?.user_id,
-                  from: user_id,
-                  conversation_id: room_id,
-                  type: fileType.startsWith("image/")
-                    ? "img"
-                    : fileType.startsWith("video/")
-                    ? "video"
-                    : "doc",
-                  msg: msg,
-                  mediaUrl: response?.data?.mediaUrl,
-                })
-        
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+        })
+        .then((response) => {
+          console.log(response);
+          socket.emit("file_message", {
+            name: imageFile.name,
+            to: current_conversation?.user_id,
+            from: user_id,
+            conversation_id: room_id,
+            type: fileType.startsWith("image/")
+              ? "img"
+              : fileType.startsWith("video/")
+              ? "video"
+              : "doc",
+            msg: msg,
+            mediaUrl: response?.data?.mediaUrl,
+          });
+        })
+        .catch((err) => {
+          console.log(err);
+        });
       // // formData.append('message', message);
       // formData.append('to', current_conversation?.user_id);
       // formData.append('from', user_id);
@@ -229,6 +222,41 @@ const ChatInput = ({
     }
   }, [imageFile]);
 
+  const typingTimeout = useRef(null);
+  const typing = useRef(false);
+
+  const handleTyping = () => {
+    clearTimeout(typingTimeout.current);
+
+    if (!typing.current) {
+      //* for deBouncing purpose
+      console.log("typing...");
+      typing.current = true;
+      socket.emit("updateTyping", {
+        to: current_conversation?.user_id,
+        from: user_id,
+        conversationId: room_id,
+        typing: true,
+      });
+    }
+
+    typingTimeout.current = setTimeout(() => {
+      handleBlur();
+    }, 3000);
+  };
+
+  const handleBlur = () => {
+    clearTimeout(typingTimeout.current);
+    console.log("not typing...");
+    typing.current = false;
+    socket.emit("updateTyping", {
+      to: current_conversation?.user_id,
+      from: user_id,
+      conversationId: room_id,
+      typing: false,
+    });
+  };
+
   return (
     <Box sx={{ position: "relative" }}>
       <StyledInput
@@ -237,9 +265,10 @@ const ChatInput = ({
         value={value}
         onChange={(event) => {
           setValue(event.target.value);
+          handleTyping();
         }}
         // disabled= {openActions?true:false}
-
+        onBlur={handleBlur}
         fullWidth
         placeholder="Write a message..."
         variant="filled"
@@ -303,6 +332,7 @@ const ChatInput = ({
         style={{ display: "none" }} // Inline style to hide the element
         // accept="image/png, image/gif, image/jpeg"
       />
+
       {/* preview dialoag */}
       <Box
         sx={{
@@ -319,7 +349,7 @@ const ChatInput = ({
               ? "#F8FAFF"
               : theme.palette.background.default,
           boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.25)",
-          borderRadius: 1.5
+          borderRadius: 1.5,
         }}
       >
         <IconButton
@@ -385,10 +415,22 @@ const ChatInput = ({
           />
         )}
         {/* unsupported Types */}
-        {
-          ( fileType !== "text/plain" && fileType !== "application/pdf" && !fileType.startsWith("video/") && !fileType.startsWith("image/") ) &&
-          <img src={unSupport} style={{marginTop:"40px", width:"90%",height:"70%", marginLeft:"auto", marginRight:"auto", marginBottom:"30px"}}/>
-        }
+        {fileType !== "text/plain" &&
+          fileType !== "application/pdf" &&
+          !fileType.startsWith("video/") &&
+          !fileType.startsWith("image/") && (
+            <img
+              src={unSupport}
+              style={{
+                marginTop: "40px",
+                width: "90%",
+                height: "70%",
+                marginLeft: "auto",
+                marginRight: "auto",
+                marginBottom: "30px",
+              }}
+            />
+          )}
 
         {/* {(fileType === "application/msword" ||
           fileType ===
@@ -424,8 +466,12 @@ const ChatInput = ({
             onChange={(event) => {
               setMsg(event.target.value);
             }}
-            disabled= {( fileType !== "text/plain" && fileType !== "application/pdf" && !fileType.startsWith("video/") && !fileType.startsWith("image/") )}
-
+            disabled={
+              fileType !== "text/plain" &&
+              fileType !== "application/pdf" &&
+              !fileType.startsWith("video/") &&
+              !fileType.startsWith("image/")
+            }
             fullWidth
             placeholder="Write a message..."
             variant="filled"
@@ -433,44 +479,51 @@ const ChatInput = ({
               disableUnderline: true,
             }}
           />
-          {
-            !loading ?
-            (
-              <Box
-            sx={{
-              height: 48,
-              width: 48,
-              backgroundColor: ( fileType !== "text/plain" && fileType !== "application/pdf" && !fileType.startsWith("video/") && !fileType.startsWith("image/") ) ? "#899" : theme.palette.primary.main,
-              borderRadius: 1.5,
-              "&:hover": {
-              scale: "0.9",
-              transition: "all 300ms",
-            },
-            }}
-          >
-            <Stack
-              sx={{ height: "100%" }}
-              alignItems={"center"}
-              justifyContent="center"
+          {!loading ? (
+            <Box
+              sx={{
+                height: 48,
+                width: 48,
+                backgroundColor:
+                  fileType !== "text/plain" &&
+                  fileType !== "application/pdf" &&
+                  !fileType.startsWith("video/") &&
+                  !fileType.startsWith("image/")
+                    ? "#899"
+                    : theme.palette.primary.main,
+                borderRadius: 1.5,
+                "&:hover": {
+                  scale: "0.9",
+                  transition: "all 300ms",
+                },
+              }}
             >
-              <IconButton
-                disabled={( fileType !== "text/plain" && fileType !== "application/pdf" && !fileType.startsWith("video/") && !fileType.startsWith("image/") )}
-                onClick={() => {
-                  if (!imageFile) return;
-                  console.log("uploading...!");
-                  handleFileUpload();
-                  setMsg("");
-                }}
+              <Stack
+                sx={{ height: "100%" }}
+                alignItems={"center"}
+                justifyContent="center"
               >
-                <PaperPlaneTilt color="#ffffff" />
-              </IconButton>
-            </Stack>
-          </Box>
-            ) :
-            (
-              <UseAnimations animation={loader} strokeColor="#0E96D8" size={60}/>
-            )
-          }
+                <IconButton
+                  disabled={
+                    fileType !== "text/plain" &&
+                    fileType !== "application/pdf" &&
+                    !fileType.startsWith("video/") &&
+                    !fileType.startsWith("image/")
+                  }
+                  onClick={() => {
+                    if (!imageFile) return;
+                    console.log("uploading...!");
+                    handleFileUpload();
+                    setMsg("");
+                  }}
+                >
+                  <PaperPlaneTilt color="#ffffff" />
+                </IconButton>
+              </Stack>
+            </Box>
+          ) : (
+            <UseAnimations animation={loader} strokeColor="#0E96D8" size={60} />
+          )}
         </Stack>
       </Box>
     </Box>
@@ -504,9 +557,11 @@ const Footer = () => {
 
   const { sideBar, room_id } = useSelector((state) => state.app);
 
-  const { reply, replyToMsg } = useSelector((state)=>state.conversation.reply_msg)
+  const { reply, replyToMsg } = useSelector(
+    (state) => state.conversation.reply_msg
+  );
 
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
 
   const [openPicker, setOpenPicker] = React.useState(false);
 
@@ -554,11 +609,11 @@ const Footer = () => {
     };
   }, [value]);
 
-  const handleOpenClick = ()=>{
-    if(openPicker){
+  const handleOpenClick = () => {
+    if (openPicker) {
       setOpenPicker(false);
     }
-  }
+  };
 
   return (
     <Box
@@ -590,11 +645,11 @@ const Footer = () => {
               }}
             >
               <Picker
-              // perLine={9} //The number of emojis to show per line
-              // previewPosition={'none'}
-              // searchPosition={'none'}
+                // perLine={9} //The number of emojis to show per line
+                // previewPosition={'none'}
+                // searchPosition={'none'}
                 data={data}
-              onClickOutside={()=> handleOpenClick()}
+                onClickOutside={() => handleOpenClick()}
                 theme={theme.palette.mode}
                 onEmojiSelect={(emoji) => {
                   handleEmojiClick(emoji.native);
@@ -618,9 +673,9 @@ const Footer = () => {
                 value == "" ? "#899" : theme.palette.primary.main,
               borderRadius: 1.5,
               "&:hover": {
-              scale: "0.9",
-              transition: "all 300ms",
-            },
+                scale: "0.9",
+                transition: "all 300ms",
+              },
             }}
           >
             <Stack
@@ -634,17 +689,29 @@ const Footer = () => {
                 onClick={() => {
                   if (value == "") return;
                   console.log("clicked...");
+                  socket.emit("updateTyping", {
+                    to: current_conversation?.user_id,
+                    from: user_id,
+                    conversationId: room_id,
+                    typing: false,
+                  });
                   socket.emit("text_message", {
                     message: linkify(value),
                     conversation_id: room_id,
                     from: user_id,
                     to: current_conversation?.user_id,
-                    type: containsUrl(value) ? "Link" : (reply) ? "reply" : "Text",
-                    replyToMsg: (reply) ? replyToMsg : null,
+                    type: containsUrl(value)
+                      ? "Link"
+                      : reply
+                      ? "reply"
+                      : "Text",
+                    replyToMsg: reply ? replyToMsg : null,
                   });
                   setValue("");
-                  if(reply){
-                    dispatch(UpdateReply_msg({reply:false, replyToMsg: null}))
+                  if (reply) {
+                    dispatch(
+                      UpdateReply_msg({ reply: false, replyToMsg: null })
+                    );
                   }
                 }}
               >

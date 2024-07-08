@@ -20,6 +20,8 @@ import {
   UpdateMessagesForReaction,
   UpdateMessagesForDeleteForEveryoneTypeToDeleted,
   UpdateChatForDeleteForMeEveryone,
+  UpdateCurrent_conversationTypingStatus,
+  UpdateConversationTypingStatus,
 } from "../../redux/slices/conversation";
 import AudioCallNotification from "../../sections/Dashboard/Audio/CallNotification";
 import VideoCallNotification from "../../sections/Dashboard/video/CallNotification";
@@ -300,6 +302,19 @@ const DashboardLayout = () => {
 
       dispatch(
         UpdateConversationOnlineStatus({ status: true, user_id: data.user_id })
+      );
+    });
+
+
+    socket.on("updatetyping", (data) => {
+      const currentConversationID = currentConversationIDRef.current;
+    
+      if (currentConversationID === data.conversationId) {
+        dispatch(UpdateCurrent_conversationTypingStatus({ typing: data.typing }));
+      }
+
+      dispatch(
+        UpdateConversationTypingStatus({ typing: data.typing, conversationId: data.conversationId })
       );
     });
 

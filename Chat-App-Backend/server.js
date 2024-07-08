@@ -180,7 +180,7 @@ io.on("connection", async (socket) => {
     const user = await User.findById(user_id);
     const pinnedChats = user.pinnedChats || [];
 
-    console.log(existing_conversations);
+    // console.log(existing_conversations);
 
     callback(existing_conversations, pinnedChats);
   });
@@ -611,15 +611,16 @@ io.on("connection", async (socket) => {
 
           const updatedReaction = message?.reaction;
 
-
-          oldMessages?.get(to.toString())?.get(conversationId.toString()).forEach( (el)=>{
-            if(el?._id == messageId){
-              el?.reaction.set(from, reaction);
-            }
-          })
+          oldMessages
+            ?.get(to.toString())
+            ?.get(conversationId.toString())
+            .forEach((el) => {
+              if (el?._id == messageId) {
+                el?.reaction.set(from, reaction);
+              }
+            });
 
           // console.log("cc",oldMessages?.get(to.toString())?.get(conversationId.toString()).find( el=> el?._id == messageId))
-
 
           const to_user = await User.findById(to);
           const from_user = await User.findById(from);
@@ -648,101 +649,129 @@ io.on("connection", async (socket) => {
 
   // *------------------updateDeleteForEveryoneToFalseg Msg------------------------//
 
-
   socket.on("updateDeleteForEveryoneToFalse", async (data, callback) => {
     try {
       const { conversationId, messageId } = data;
 
       const conversation = await OneToOneMessage.findById(conversationId);
       if (!conversation) {
-        console.log("no conversation found in the updateDeleteForEveryoneToFalse event")
+        console.log(
+          "no conversation found in the updateDeleteForEveryoneToFalse event"
+        );
       }
 
       const message = conversation.messages.id(messageId);
       if (!message) {
-        console.log("no messages found in the updateDeleteForEveryoneToFalse event")
+        console.log(
+          "no messages found in the updateDeleteForEveryoneToFalse event"
+        );
       }
 
       message.deletedForEveryone = false;
 
       await conversation.save({ new: true });
 
-
       callback(conversationId); //fire on frontend side
-
     } catch (error) {
       console.log(error);
     }
   });
 
+  // *----------------------------deleteForEveryone---------------------------------------//
+  socket.on("deleteForEveryone", async (data) => {
+    const { conversationId, to, from, messageId } = data;
 
-    // *----------------------------deleteForEveryone---------------------------------------//
-    socket.on("deleteForEveryone", async (data) => {
-      const { conversationId, to, from, messageId } = data;
-  
-      try {
-        // Find the conversation by ID
-        const conversation = await OneToOneMessage.findById(conversationId);
-  
-        if (conversation) {
-          // Find the message by ID
-          const message = conversation.messages.id(messageId);
-  
-          if (message) {
-            // Update message fields
-            message.star = {}; // Set star to empty object
-            message.reaction = {}; // Set reaction to empty object
-            message.deletedForEveryone = false; // Set deletedForEveryone to true
-            message.type = "deleted";//*Imp
-            message.text = null;
-            message.file = null;
-            message.status = 'Seen';
-            message.replyToMsg = null;
+    try {
+      // Find the conversation by ID
+      const conversation = await OneToOneMessage.findById(conversationId);
 
-            await conversation.save({ new: true });
-  
-  
-            const to_user = await User.findById(to);
-            const from_user = await User.findById(from);
-  
-            // Emit an event to the recipient to update their UI
-            io.to(to_user?.socket_id).emit("message_deleteForEveryone", {
-              conversationId,
-              messageId,
-            });
-            io.to(from_user?.socket_id).emit("message_deleteForEveryone", {
-              conversationId,
-              messageId,
-            });
-          } else {
-            console.error("Message not found");
-          }
+      if (conversation) {
+        // Find the message by ID
+        const message = conversation.messages.id(messageId);
 
+        if (message) {
+          // Update message fields
+          message.star = {}; // Set star to empty object
+          message.reaction = {}; // Set reaction to empty object
+          message.deletedForEveryone = false; // Set deletedForEveryone to true
+          message.type = "deleted"; //*Imp
+          message.text = null;
+          message.file = null;
+          message.status = "Seen";
+          message.replyToMsg = null;
 
-          // console.log("cc",oldMessages?.get(to.toString())?.get(conversationId.toString()).find( el=> el?._id == messageId))
+          await conversation.save({ new: true });
 
-          oldMessages?.get(to.toString())?.get(conversationId.toString()).forEach( (el)=>{
-            if(el?._id == messageId){
+          const to_user = await User.findById(to);
+          const from_user = await User.findById(from);
+
+          // Emit an event to the recipient to update their UI
+          io.to(to_user?.socket_id).emit("message_deleteForEveryone", {
+            conversationId,
+            messageId,
+          });
+          io.to(from_user?.socket_id).emit("message_deleteForEveryone", {
+            conversationId,
+            messageId,
+          });
+        } else {
+          console.error("Message not found");
+        }
+
+        // console.log("cc",oldMessages?.get(to.toString())?.get(conversationId.toString()).find( el=> el?._id == messageId))
+
+        oldMessages
+          ?.get(to.toString())
+          ?.get(conversationId.toString())
+          .forEach((el) => {
+            if (el?._id == messageId) {
               el.star = {}; // Set star to empty object
               el.reaction = {}; // Set reaction to empty object
               el.deletedForEveryone = false; // Set deletedForEveryone to true
-              el.type = "deleted";//*Imp
+              el.type = "deleted"; //*Imp
               el.text = null;
               el.file = null;
-              el.status = 'Seen';
+              el.status = "Seen";
               el.replyToMsg = null;
             }
-          })
+          });
 
-          // console.log("cc",oldMessages?.get(to.toString())?.get(conversationId.toString()).find( el=> el?._id == messageId))
-
-        } else {
-          console.error("Conversation not found");
-        }
-      } catch (error) {
-        console.error("Error reacting to message:", error);
+        // console.log("cc",oldMessages?.get(to.toString())?.get(conversationId.toString()).find( el=> el?._id == messageId))
+      } else {
+        console.error("Conversation not found");
       }
-    });
+    } catch (error) {
+      console.error("Error reacting to message:", error);
+    }
+  });
+
+  socket.on("updateTyping", async (data) => {
+    const { conversationId, to, from, typing } = data;
+
+    try {
+      // Find the conversation by ID
+      const conversation = await OneToOneMessage.findById(conversationId);
+
+      if (conversation) {
+        // Update the typing status for the user
+        conversation?.typing.set(from, typing);
+
+        await conversation.save({ new: true });
+
+        const to_user = await User.findById(to);
+
+        // Emit an event to the recipient to update their UI
+        io.to(to_user?.socket_id).emit("updatetyping", {
+          conversationId,
+          typing,
+        });
+      }else{
+        console.log("Conversation not found");
+      }
+    } catch (error) {
+      console.error("Error updating typing", error);
+    }
+  });
 
   // *-------------- HANDLE AUDIO CALL SOCKET EVENTS ----------------- //
 

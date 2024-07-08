@@ -67,6 +67,11 @@ const oneToOneMessageSchema = new mongoose.Schema({
     of: Number,
     default: {},
   },
+  typing: {
+    type: Map,
+    of: Boolean,
+    default: {},
+  },
 });
 
 const OneToOneMessage = new mongoose.model(

@@ -51,7 +51,7 @@ const slice = createSlice({
   initialState,
   reducers: {
     fetchDirectConversations(state, action) {
-      console.log("hola", action.payload.conversations);
+      // console.log("hola", action.payload.conversations);
       const pinnedChats = action.payload.pinnedChats;
 
       const list = action.payload.conversations.map((el) => {
@@ -91,6 +91,7 @@ const slice = createSlice({
           pinned: isPinned,
           about: user?.about || "No Discription",
           email: user?.email,
+          typing: el?.typing[user?._id.toString()] || false,
         };
       });
 
@@ -139,6 +140,7 @@ const slice = createSlice({
               unread: el?.unreadCount[user_id.toString()] || 0,
               pinned: false,
               email: user?.email,
+              typing: el?.typing[user?._id.toString()] || false,
             };
           }
         }
@@ -184,6 +186,7 @@ const slice = createSlice({
         unread: this_conversation?.unreadCount[user_id.toString()] || 0,
         pinned: false,
         email: user?.email,
+        typing: this_conversation?.typing[user?._id.toString()] || false,
       });
     },
 
@@ -435,10 +438,16 @@ const slice = createSlice({
         ...state.direct_chat.current_conversation,
         online: action.payload.status,
       };
-      console.log(
-        "current_conversation setting status to  ",
-        action.payload.status
-      );
+      // console.log(
+      //   "current_conversation setting status to  ",
+      //   action.payload.status
+      // );
+    },
+    updateCurrent_conversationTypingStatus(state, action) {
+      state.direct_chat.current_conversation = {
+        ...state.direct_chat.current_conversation,
+        typing: action.payload.typing,
+      };
     },
     updateConversationOnlineStatus(state, action) {
       state.direct_chat.conversations = state.direct_chat.conversations.map(
@@ -448,6 +457,14 @@ const slice = createSlice({
             : conversation
       );
       console.log("conversations setting status to ", action.payload.status);
+    },
+    updateConversationTypingStatus(state, action) {
+      state.direct_chat.conversations = state.direct_chat.conversations.map(
+        (conversation) =>
+          conversation.id === action.payload.conversationId
+            ? { ...conversation, typing: action.payload.typing }
+            : conversation
+      );
     },
     updateConversationUnread(state, action) {
       state.direct_chat.conversations = state.direct_chat.conversations.map(
@@ -591,6 +608,14 @@ export const UpdateCurrent_conversationOnlineStatus = ({ status }) => {
   };
 };
 
+export const UpdateCurrent_conversationTypingStatus = ({ typing }) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.updateCurrent_conversationTypingStatus({ typing: typing })
+    );
+  };
+};
+
 export const UpdateConversationOnlineStatus = ({ status, user_id }) => {
   return async (dispatch, getState) => {
     dispatch(
@@ -601,6 +626,18 @@ export const UpdateConversationOnlineStatus = ({ status, user_id }) => {
     );
   };
 };
+
+export const UpdateConversationTypingStatus = ({ typing, conversationId }) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.updateConversationTypingStatus({
+        typing: typing,
+        conversationId: conversationId,
+      })
+    );
+  };
+};
+
 export const UpdateConversationUnread = ({ status, conversationId }) => {
   return async (dispatch, getState) => {
     dispatch(
