@@ -56,7 +56,7 @@ const oneToOneMessageSchema = new mongoose.Schema({
         of: Boolean,
         default: {},
       },
-      deletedForEveryone: {
+      deletedForEveryone: {//false mean that user cannat do deleteForEveryOne
         type: Boolean,
         default: true,
       },

@@ -21,6 +21,7 @@ import {
   Image,
   Star,
   X,
+  XCircle
 } from "phosphor-react";
 import { Message_options } from "../../data";
 import { useDispatch, useSelector } from "react-redux";
@@ -1747,8 +1748,12 @@ const DeletedMsg = ({ el, menu }) => {
           variant="caption"
           color={el.incoming ? theme.palette.text : "#fff"}
           sx={{ fontStyle: 'italic'}}
+          style={{display:'flex', flexDirection:'row', alignItems:'center', justifyContent:'center', userSelect:'none',}}
         >
-          {"This message was deleted"}
+            <XCircle size={20} />
+          {
+            "This message was deleted"
+          }
         </Typography>
 
       </Box>

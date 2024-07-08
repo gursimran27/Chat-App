@@ -611,6 +611,16 @@ io.on("connection", async (socket) => {
 
           const updatedReaction = message?.reaction;
 
+
+          oldMessages?.get(to.toString())?.get(conversationId.toString()).forEach( (el)=>{
+            if(el?._id == messageId){
+              el?.reaction.set(from, reaction);
+            }
+          })
+
+          // console.log("cc",oldMessages?.get(to.toString())?.get(conversationId.toString()).find( el=> el?._id == messageId))
+
+
           const to_user = await User.findById(to);
           const from_user = await User.findById(from);
 
@@ -707,6 +717,25 @@ io.on("connection", async (socket) => {
           } else {
             console.error("Message not found");
           }
+
+
+          // console.log("cc",oldMessages?.get(to.toString())?.get(conversationId.toString()).find( el=> el?._id == messageId))
+
+          oldMessages?.get(to.toString())?.get(conversationId.toString()).forEach( (el)=>{
+            if(el?._id == messageId){
+              el.star = {}; // Set star to empty object
+              el.reaction = {}; // Set reaction to empty object
+              el.deletedForEveryone = false; // Set deletedForEveryone to true
+              el.type = "deleted";//*Imp
+              el.text = null;
+              el.file = null;
+              el.status = 'Seen';
+              el.replyToMsg = null;
+            }
+          })
+
+          // console.log("cc",oldMessages?.get(to.toString())?.get(conversationId.toString()).find( el=> el?._id == messageId))
+
         } else {
           console.error("Conversation not found");
         }
