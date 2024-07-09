@@ -21,7 +21,7 @@ import {
   Image,
   Star,
   X,
-  XCircle
+  XCircle,
 } from "phosphor-react";
 import { Message_options } from "../../data";
 import { useDispatch, useSelector } from "react-redux";
@@ -39,6 +39,25 @@ import Picker from "@emoji-mart/react";
 import useResponsive from "../../hooks/useResponsive";
 import { socket } from "../../socket";
 // import "./MsgTypes.css"
+import { format } from 'date-fns';
+
+
+
+const formatDate = (date) => {
+  const today = new Date();
+  const messageDate = new Date(date);
+
+  const isToday = today.toDateString() === messageDate.toDateString();
+  const isYesterday = new Date(today.setDate(today.getDate() - 1)).toDateString() === messageDate.toDateString();
+
+  if (isToday) {
+    return 'Today';
+  } else if (isYesterday) {
+    return 'Yesterday';
+  } else {
+    return format(messageDate, 'MMMM dd, yyyy');
+  }
+};
 
 // TODO HOF
 
@@ -50,7 +69,7 @@ const MessageOption = ({
   star,
   deletedForEveryone,
   created_at,
-  incomming
+  incomming,
 }) => {
   const dispatch = useDispatch();
   const [anchorEl, setAnchorEl] = useState(null); //store referance
@@ -128,11 +147,8 @@ const MessageOption = ({
     handleClose();
   };
 
-
-
   const setdeletedForEveryoneToFalse = async (conversationId, messageId) => {
     try {
-
       // !the API functionality is shifted to socket event:
       // const { data } = await axios.put(
       //   `/user/updatedeleteforeveryone/${conversationId}/${messageId}`,
@@ -150,13 +166,15 @@ const MessageOption = ({
       //   dispatch(UpdateMessagesForDeleteForEveryoneAsFalse({messageId: messageId}));
       // }
 
-      console.log("fireing event");//as msg time is over for using deleteforEveryone feature
+      console.log("fireing event"); //as msg time is over for using deleteforEveryone feature
       socket.emit(
         "updateDeleteForEveryoneToFalse",
         { conversationId: conversationId, messageId: messageId },
-        (data) => {//callBack
+        (data) => {
+          //callBack
           // console.log("data", data);
-          if (data == conversationId) {//if same conversation is opened!
+          if (data == conversationId) {
+            //if same conversation is opened!
             // console.log("+++++++");
             dispatch(
               UpdateMessagesForDeleteForEveryoneAsFalse({
@@ -206,7 +224,7 @@ const MessageOption = ({
       messageId: messageId,
     });
     handleClose();
-  }
+  };
 
   return (
     <>
@@ -274,10 +292,15 @@ const MessageOption = ({
                 {el.title}
               </MenuItem>
             ) : el?.title == "Delete for everyone" ? (
-              (deletedForEveryone && !incomming) && (
-                <MenuItem onClick={() => {
-                  handleDeleteForEverone(conversationId,messageId);
-                }}>{el.title}</MenuItem>
+              deletedForEveryone &&
+              !incomming && (
+                <MenuItem
+                  onClick={() => {
+                    handleDeleteForEverone(conversationId, messageId);
+                  }}
+                >
+                  {el.title}
+                </MenuItem>
               )
             ) : (
               <MenuItem onClick={handleClose}>{el.title}</MenuItem>
@@ -389,6 +412,17 @@ const DocMsg = ({ el, menu }) => {
           },
         }}
       >
+        <Typography
+          variant="capton"
+          style={{
+            fontSize: "10px",
+            position: "absolute",
+            bottom: "-3px",
+            right: "4px",
+          }}
+        >
+          {el.time}
+        </Typography>
         <div
           className="reactions"
           style={{
@@ -438,14 +472,16 @@ const DocMsg = ({ el, menu }) => {
               />
             </IconButton>
           </Stack>
-          <Typography
-            variant="body2"
-            sx={{
-              color: el.incoming ? theme.palette.text.primary : "#fff",
-            }}
-          >
-            {el.message}
-          </Typography>
+          <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: el.incoming ? theme.palette.text.primary : "#fff",
+              }}
+            >
+              {el.message}
+            </Typography>
+          </Tooltip>
         </Stack>
         <Stack
           direction={"row"}
@@ -655,6 +691,17 @@ const LinkMsg = ({ el, menu }) => {
           },
         }}
       >
+        <Typography
+          variant="capton"
+          style={{
+            fontSize: "10px",
+            position: "absolute",
+            bottom: "-3px",
+            right: "4px",
+          }}
+        >
+          {el.time}
+        </Typography>
         <div
           className="reactions"
           style={{
@@ -710,12 +757,14 @@ const LinkMsg = ({ el, menu }) => {
             <a style={{ color: "blue" }} href={el?.message} target="_blank">
               Click Here To Open
             </a>
-            <Typography
-              variant="body2"
-              color={el.incoming ? theme.palette.text : "#fff"}
-            >
-              {el.message}
-            </Typography>
+            <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
+              <Typography
+                variant="body2"
+                color={el.incoming ? theme.palette.text : "#fff"}
+              >
+                {el.message}
+              </Typography>
+            </Tooltip>
           </Stack>
         </Stack>
         <Stack
@@ -867,6 +916,17 @@ const ReplyMsg = ({ el, menu }) => {
           },
         }}
       >
+        <Typography
+          variant="capton"
+          style={{
+            fontSize: "10px",
+            position: "absolute",
+            bottom: "-3px",
+            right: "4px",
+          }}
+        >
+          {el.time}
+        </Typography>
         <div
           className="reactions"
           style={{
@@ -904,12 +964,14 @@ const ReplyMsg = ({ el, menu }) => {
               {el?.replyToMsg}
             </Typography>
           </Stack>
-          <Typography
-            variant="body2"
-            color={el.incoming ? theme.palette.text : "#fff"}
-          >
-            {el?.message}
-          </Typography>
+          <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
+            <Typography
+              variant="body2"
+              color={el.incoming ? theme.palette.text : "#fff"}
+            >
+              {el.message}
+            </Typography>
+          </Tooltip>
         </Stack>
         <Stack
           direction={"row"}
@@ -1071,6 +1133,17 @@ const MediaMsg = ({ el, menu }) => {
           },
         }}
       >
+        <Typography
+          variant="capton"
+          style={{
+            fontSize: "10px",
+            position: "absolute",
+            bottom: "-3px",
+            right: "4px",
+          }}
+        >
+          {el.time}
+        </Typography>
         <div
           className="reactions"
           style={{
@@ -1107,12 +1180,14 @@ const MediaMsg = ({ el, menu }) => {
             }}
             onClick={handleOpenModal} // Open modal on image click
           />
-          <Typography
-            variant="body2"
-            color={el.incoming ? theme.palette.text : "#fff"}
-          >
-            {el.message}
-          </Typography>
+          <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
+            <Typography
+              variant="body2"
+              color={el.incoming ? theme.palette.text : "#fff"}
+            >
+              {el.message}
+            </Typography>
+          </Tooltip>
         </Stack>
         <Stack
           direction={"row"}
@@ -1335,6 +1410,17 @@ const VideoMsg = ({ el, menu }) => {
           },
         }}
       >
+        <Typography
+          variant="capton"
+          style={{
+            fontSize: "10px",
+            position: "absolute",
+            bottom: "-3px",
+            right: "4px",
+          }}
+        >
+          {el.time}
+        </Typography>
         <div
           className="reactions"
           style={{
@@ -1371,12 +1457,14 @@ const VideoMsg = ({ el, menu }) => {
             }}
             onClick={handleOpenModal}
           />
-          <Typography
-            variant="body2"
-            color={el.incoming ? theme.palette.text.primary : "#fff"}
-          >
-            {el.message}
-          </Typography>
+          <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
+            <Typography
+              variant="body2"
+              color={el.incoming ? theme.palette.text : "#fff"}
+            >
+              {el.message}
+            </Typography>
+          </Tooltip>
         </Stack>
         <Stack
           direction={"row"}
@@ -1592,6 +1680,17 @@ const TextMsg = ({ el, menu }) => {
           },
         }}
       >
+        <Typography
+          variant="capton"
+          style={{
+            fontSize: "10px",
+            position: "absolute",
+            bottom: "-3px",
+            right: "4px",
+          }}
+        >
+          {el.time}
+        </Typography>
         <div
           className="reactions"
           style={{
@@ -1614,12 +1713,14 @@ const TextMsg = ({ el, menu }) => {
             }}
           />
         </div>
-        <Typography
-          variant="body2"
-          color={el.incoming ? theme.palette.text : "#fff"}
-        >
-          {el.message}
-        </Typography>
+        <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
+          <Typography
+            variant="body2"
+            color={el.incoming ? theme.palette.text : "#fff"}
+          >
+            {el.message}
+          </Typography>
+        </Tooltip>
         <Stack
           direction={"row"}
           alignItems={"center"}
@@ -1704,7 +1805,6 @@ const TextMsg = ({ el, menu }) => {
   );
 };
 
-
 const DeletedMsg = ({ el, menu }) => {
   // console.log("test message pushed");
   const theme = useTheme();
@@ -1714,13 +1814,12 @@ const DeletedMsg = ({ el, menu }) => {
       direction="row"
       justifyContent={el.incoming ? "start" : "end"}
       sx={{ position: "relative" }}
-      
     >
       <Box
         px={1.5}
         py={1}
         sx={{
-          backgroundColor: '#919EAB',
+          backgroundColor: "#919EAB",
           borderRadius: 1.5,
           width: "max-content",
           position: "relative",
@@ -1733,29 +1832,31 @@ const DeletedMsg = ({ el, menu }) => {
             borderStyle: "solid",
             borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
             borderColor: el.incoming
-              ? `transparent ${alpha(
-                  '#919EAB',
-                  1
-                )} transparent transparent`
-              : `transparent transparent transparent ${'#919EAB'}`,
+              ? `transparent ${alpha("#919EAB", 1)} transparent transparent`
+              : `transparent transparent transparent ${"#919EAB"}`,
             left: el.incoming ? "-8px" : "unset",
             right: el.incoming ? "unset" : "-8px",
             transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
           },
         }}
       >
-        <Typography
-          variant="caption"
-          color={el.incoming ? theme.palette.text : "#fff"}
-          sx={{ fontStyle: 'italic'}}
-          style={{display:'flex', flexDirection:'row', alignItems:'center', justifyContent:'center', userSelect:'none',}}
-        >
+        <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
+          <Typography
+            variant="caption"
+            color={el.incoming ? theme.palette.text : "#fff"}
+            sx={{ fontStyle: "italic" }}
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              userSelect: "none",
+            }}
+          >
             <XCircle size={20} />
-          {
-            "This message was deleted"
-          }
-        </Typography>
-
+            {"This message was deleted"}
+          </Typography>
+        </Tooltip>
       </Box>
     </Stack>
   );
@@ -1771,11 +1872,20 @@ const Timeline = ({ el }) => {
     >
       <Divider width="46%" />
       <Typography variant="caption" sx={{ color: theme.palette.text }}>
-        {el.text}
+        {" "}{el.text}{" "}
       </Typography>
       <Divider width="46%" />
     </Stack>
   );
 };
 
-export { Timeline, TextMsg, MediaMsg, ReplyMsg, LinkMsg, DocMsg, VideoMsg, DeletedMsg };
+export {
+  Timeline,
+  TextMsg,
+  MediaMsg,
+  ReplyMsg,
+  LinkMsg,
+  DocMsg,
+  VideoMsg,
+  DeletedMsg,
+};

@@ -568,7 +568,27 @@ const Footer = () => {
   const [value, setValue] = useState("");
   const inputRef = useRef(null);
 
+  const typing = useRef(false);
+  const typingTimeout = useRef(null);
+
   function handleEmojiClick(emoji) {
+    clearTimeout(typingTimeout.current);
+    if (!typing.current) {
+      //* for deBouncing purpose
+      console.log("typing...");
+      typing.current = true;
+      socket.emit("updateTyping", {
+        to: current_conversation?.user_id,
+        from: user_id,
+        conversationId: room_id,
+        typing: true,
+      });
+    }
+
+    typingTimeout.current = setTimeout(() => {
+      handleBlur();
+    }, 3000);
+
     const input = inputRef.current;
 
     if (input) {
@@ -585,6 +605,19 @@ const Footer = () => {
       input.selectionStart = input.selectionEnd = selectionStart + 1;
     }
   }
+
+
+  const handleBlur = () => {
+    clearTimeout(typingTimeout.current);
+    console.log("not typing...");
+    typing.current = false;
+    socket.emit("updateTyping", {
+      to: current_conversation?.user_id,
+      from: user_id,
+      conversationId: room_id,
+      typing: false,
+    });
+  };
 
   useEffect(() => {
     const handleKeyPress = (event) => {
@@ -611,6 +644,8 @@ const Footer = () => {
 
   const handleOpenClick = () => {
     if (openPicker) {
+      console.log("typing...");
+      handleBlur();
       setOpenPicker(false);
     }
   };

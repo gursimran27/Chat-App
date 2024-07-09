@@ -39,6 +39,7 @@ import {
   UpdateConversationOnlineStatus,
   UpdateCurrent_conversationOnlineStatus,
 } from "../../redux/slices/conversation";
+import { format } from "date-fns";
 
 const DashboardLayout = () => {
   const isDesktop = useResponsive("up", "md");
@@ -122,6 +123,24 @@ const DashboardLayout = () => {
     dispatch(UpdateVideoCallDialog({ state: false }));
   };
 
+  const formatDate = (date) => {
+    const today = new Date();
+    const messageDate = new Date(date);
+
+    const isToday = today.toDateString() === messageDate.toDateString();
+    const isYesterday =
+      new Date(today.setDate(today.getDate() - 1)).toDateString() ===
+      messageDate.toDateString();
+
+    if (isToday) {
+      return "Today";
+    } else if (isYesterday) {
+      return "Yesterday";
+    } else {
+      return format(messageDate, "MMMM dd, yyyy");
+    }
+  };
+
   useEffect(() => {
     if (isLoggedIn) {
       window.onload = function () {
@@ -188,6 +207,20 @@ const DashboardLayout = () => {
         const time = formatTimeTo24Hrs(message?.created_at);
 
         if (currentConversationID === data.conversation_id) {
+          currentMsgRef.current = currentMsg;
+          const currentMsgs = currentMsgRef.current;
+          let lastTimeline =
+            currentMsgs.length &&
+            formatDate(currentMsgs[currentMsg.length - 1]?.created_at);
+
+          const timelineText = formatDate(message?.created_at);
+
+          if (timelineText !== lastTimeline) {
+            dispatch(
+              AddDirectMessage({ type: "divider", text: timelineText, created_at: new Date() })
+            );
+          }
+
           dispatch(
             AddDirectMessage({
               id: message._id,
@@ -305,16 +338,20 @@ const DashboardLayout = () => {
       );
     });
 
-
     socket.on("updatetyping", (data) => {
       const currentConversationID = currentConversationIDRef.current;
-    
+
       if (currentConversationID === data.conversationId) {
-        dispatch(UpdateCurrent_conversationTypingStatus({ typing: data.typing }));
+        dispatch(
+          UpdateCurrent_conversationTypingStatus({ typing: data.typing })
+        );
       }
 
       dispatch(
-        UpdateConversationTypingStatus({ typing: data.typing, conversationId: data.conversationId })
+        UpdateConversationTypingStatus({
+          typing: data.typing,
+          conversationId: data.conversationId,
+        })
       );
     });
 
@@ -354,7 +391,7 @@ const DashboardLayout = () => {
     socket.on("message_deleteForEveryone", (data) => {
       const currentConversationID = currentConversationIDRef.current;
       if (currentConversationID == data.conversationId) {
-        console.log("deleting msg...")
+        console.log("deleting msg...");
         dispatch(
           UpdateMessagesForDeleteForEveryoneTypeToDeleted({
             messageId: data.messageId,
@@ -362,7 +399,12 @@ const DashboardLayout = () => {
         );
       }
       // suppose if the last msg was deleted then we also need to handel conversation section display msg
-      dispatch(UpdateChatForDeleteForMeEveryone({conversationId: data.conversationId, messageId:data.messageId}));
+      dispatch(
+        UpdateChatForDeleteForMeEveryone({
+          conversationId: data.conversationId,
+          messageId: data.messageId,
+        })
+      );
     });
     // // Listen for the 'isSeen' event from the server
     // socket.on("isSeen", () => {

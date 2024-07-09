@@ -5,7 +5,8 @@ import { useSelector } from "react-redux";
 
 const user_id = window.localStorage.getItem("user_id");
 
-const getLastVisibleMessage = (messages, userId) => { //* message.type
+const getLastVisibleMessage = (messages, userId) => {
+  //* message.type
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i];
     if (
@@ -18,7 +19,8 @@ const getLastVisibleMessage = (messages, userId) => { //* message.type
   return null;
 };
 
-const getLastVisibleMessageForDeleteForEveryOne = (messages, userId) => {//* message.subtype
+const getLastVisibleMessageForDeleteForEveryOne = (messages, userId) => {
+  //* message.subtype
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i];
     if (
@@ -199,44 +201,48 @@ const slice = createSlice({
       messages.reverse();
 
       const formatted_messages = messages.map((el) => {
-        const reaction = el?.reaction;
-        let myReaction = null;
-        let otherReaction = null;
+        if (el?.type != "divider") {
+          const reaction = el?.reaction;
+          let myReaction = null;
+          let otherReaction = null;
 
-        Object.keys(reaction).forEach((key) => {
-          if (key === user_id.toString()) {
-            myReaction = reaction[key];
-          } else {
-            otherReaction = reaction[key];
-          }
-        });
-
-        const formatTimeTo24Hrs = (dateString) => {
-          const date = new Date(dateString);
-          return date.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
+          Object.keys(reaction).forEach((key) => {
+            if (key === user_id.toString()) {
+              myReaction = reaction[key];
+            } else {
+              otherReaction = reaction[key];
+            }
           });
-        };
 
-        return {
-          id: el._id,
-          type: "msg",
-          subtype: el.type,
-          message: el.text,
-          incoming: el.to === user_id,
-          outgoing: el.from === user_id,
-          status: el?.status,
-          src: el?.file,
-          replyToMsg: el?.replyToMsg,
-          star: el?.star[user_id.toString()] || false,
-          myReaction: myReaction,
-          otherReaction: otherReaction,
-          time: formatTimeTo24Hrs(el?.created_at) || "9:36",
-          created_at: el?.created_at || "9:36",
-          deletedForEveryone: el?.deletedForEveryone || false,
-        };
+          const formatTimeTo24Hrs = (dateString) => {
+            const date = new Date(dateString);
+            return date.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            });
+          };
+
+          return {
+            id: el._id,
+            type: "msg",
+            subtype: el.type,
+            message: el.text,
+            incoming: el.to === user_id,
+            outgoing: el.from === user_id,
+            status: el?.status,
+            src: el?.file,
+            replyToMsg: el?.replyToMsg,
+            star: el?.star[user_id.toString()] || false,
+            myReaction: myReaction,
+            otherReaction: otherReaction,
+            time: formatTimeTo24Hrs(el?.created_at) || "9:36",
+            created_at: el?.created_at || "9:36",
+            deletedForEveryone: el?.deletedForEveryone || false,
+          };
+        } else {
+          return el;
+        }
       });
       state.direct_chat.current_messages = formatted_messages;
       console.log("file", messages.file);
@@ -248,45 +254,50 @@ const slice = createSlice({
       console.log("sd", messages);
 
       const formatted_messages = messages.map((el) => {
-        const reaction = el?.reaction;
-        let myReaction = null;
-        let otherReaction = null;
+        if (el?.type != "divider") {
+          const reaction = el?.reaction;
+          let myReaction = null;
+          let otherReaction = null;
 
-        Object.keys(reaction).forEach((key) => {
-          if (key === user_id.toString()) {
-            myReaction = reaction[key];
-          } else {
-            otherReaction = reaction[key];
-          }
-        });
-
-        const formatTimeTo24Hrs = (dateString) => {
-          const date = new Date(dateString);
-          return date.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
+          Object.keys(reaction).forEach((key) => {
+            if (key === user_id.toString()) {
+              myReaction = reaction[key];
+            } else {
+              otherReaction = reaction[key];
+            }
           });
-        };
 
-        return {
-          id: el._id,
-          type: "msg",
-          subtype: el.type,
-          message: el.text,
-          incoming: el.to === user_id,
-          outgoing: el.from === user_id,
-          status: el?.status,
-          src: el?.file,
-          replyToMsg: el?.replyToMsg,
-          star: el?.star[user_id.toString()] || false,
-          myReaction: myReaction,
-          otherReaction: otherReaction,
-          time: formatTimeTo24Hrs(el?.created_at) || "9:36",
-          created_at: el?.created_at || "9:36",
-          deletedForEveryone: el?.deletedForEveryone || false,
-        };
+          const formatTimeTo24Hrs = (dateString) => {
+            const date = new Date(dateString);
+            return date.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            });
+          };
+
+          return {
+            id: el._id,
+            type: "msg",
+            subtype: el.type,
+            message: el.text,
+            incoming: el.to === user_id,
+            outgoing: el.from === user_id,
+            status: el?.status,
+            src: el?.file,
+            replyToMsg: el?.replyToMsg,
+            star: el?.star[user_id.toString()] || false,
+            myReaction: myReaction,
+            otherReaction: otherReaction,
+            time: formatTimeTo24Hrs(el?.created_at) || "9:36",
+            created_at: el?.created_at || "9:36",
+            deletedForEveryone: el?.deletedForEveryone || false,
+          };
+        } else {
+          return el;
+        }
       });
+
       state.direct_chat.current_messages = [
         ...formatted_messages,
         ...state.direct_chat.current_messages,
@@ -379,6 +390,24 @@ const slice = createSlice({
         state.direct_chat.current_messages.filter(
           (el) => el?.id != action.payload.messageId
         );
+
+      const lastVisibleMessage = getLastVisibleMessageForDeleteForEveryOne(
+        state.direct_chat.current_messages,
+        user_id
+      );
+
+      state.direct_chat.conversations = state.direct_chat.conversations.map(
+        (conversation) =>
+          conversation.id === action.payload.conversationId
+            ? {
+                ...conversation,
+                msg: lastVisibleMessage
+                  ? lastVisibleMessage.message
+                  : "No messages",
+                time: lastVisibleMessage ? lastVisibleMessage?.time : "9:36",
+              }
+            : conversation
+      );
     },
     updateChatForDeleteForMeEveryone(state, action) {
       if (
@@ -406,6 +435,24 @@ const slice = createSlice({
               : conversation
         );
       }
+
+      const lastVisibleMessage = getLastVisibleMessageForDeleteForEveryOne(
+        state.direct_chat.current_messages,
+        user_id
+      );
+
+      state.direct_chat.conversations = state.direct_chat.conversations.map(
+        (conversation) =>
+          conversation.id === action.payload.conversationId
+            ? {
+                ...conversation,
+                msg: lastVisibleMessage
+                  ? lastVisibleMessage.message
+                  : "No messages",
+                time: lastVisibleMessage ? lastVisibleMessage?.time : "9:36",
+              }
+            : conversation
+      );
     },
     updateMessagesForReaction(state, action) {
       const reaction = action.payload.reaction;

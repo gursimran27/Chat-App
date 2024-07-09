@@ -42,6 +42,7 @@ const OneToOneMessage = require("./models/OneToOneMessage");
 const AudioCall = require("./models/audioCall");
 const VideoCall = require("./models/videoCall");
 const { uploadImageToCloudinary } = require("./utils/imageUploader");
+const { format, isToday, isYesterday } = require('date-fns');
 
 // Add this
 // Create an io server and allow for CORS from http://localhost:3000 with GET and POST methods
@@ -76,6 +77,18 @@ const port = process.env.PORT || 8000;
 server.listen(port, () => {
   console.log(`App running on port ${port} ...`);
 });
+
+const formatDate = (date) => {
+  const messageDate = new Date(date);
+
+  if (isToday(messageDate)) {
+    return 'Today';
+  } else if (isYesterday(messageDate)) {
+    return 'Yesterday';
+  } else {
+    return format(messageDate, 'MMMM dd, yyyy');
+  }
+};
 
 // Add this
 // Listen for when the client connects via socket.io-client
@@ -230,18 +243,36 @@ io.on("connection", async (socket) => {
       const limit = 10;
       const skip = (page - 1) * limit;
       const chat = await OneToOneMessage.findById(data.conversation_id);
-      chat.messages.reverse();
+
+      // chat.messages.reverse();
 
       // get those messages that are not deleted for me
       const notDeletedMessages = chat.messages.filter(
         (msg) => !msg.deletedFor.get(data.user_id)
       );
 
+      const messagesWithTimeLine = [];
+      let lastTimeline = "";
+
+      notDeletedMessages.forEach((message) => {
+        const timelineText = formatDate(message.created_at);
+    
+        if (timelineText !== lastTimeline) {
+          messagesWithTimeLine.push({ type: 'divider', text: timelineText, created_at: new Date() });
+          lastTimeline = timelineText;
+        }
+    
+        messagesWithTimeLine.push(message);
+      });
+
+      messagesWithTimeLine.reverse();// so that the lasted msg come to first
+
       const innerMap = new Map();
-      innerMap.set(data.conversation_id, notDeletedMessages);
+      innerMap.set(data.conversation_id, messagesWithTimeLine);
       oldMessages.set(data.user_id, innerMap); //cache for the use of fetching prv msg's
 
-      const result = notDeletedMessages.slice(skip).slice(0, limit);
+      const result = messagesWithTimeLine.slice(skip).slice(0, limit);
+      console.log(result)
 
       // console.log(result);
 
@@ -765,7 +796,7 @@ io.on("connection", async (socket) => {
           conversationId,
           typing,
         });
-      }else{
+      } else {
         console.log("Conversation not found");
       }
     } catch (error) {
