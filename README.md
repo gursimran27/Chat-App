@@ -30,7 +30,7 @@
 8. **Delete for Me**
    - Ability to delete a message for the current user.
 
-9. ** Status of User**
+9. **Status of User**
    - Displaying the online status of users or his/her last seen in real time.
 
 10. **Unread Message Count**
@@ -44,6 +44,9 @@
 
 13. **User Typing Indicator**
     - Indicates when a user is typing and stops indicating when the user stops typing.
+
+13. **Timeline**
+    - Automatically inserts timeline markers in the chat, indicating "Today", "Yesterday", or specific dates for older messages.
 
 ## Installation
 
