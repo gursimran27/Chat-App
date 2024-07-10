@@ -40,6 +40,9 @@ import {
   UpdateCurrent_conversationOnlineStatus,
 } from "../../redux/slices/conversation";
 import { format } from "date-fns";
+import toast from "react-hot-toast";
+import sound from "../../assets/notifications/level-up-191997.mp3";
+import incommingSound from "../../assets/notifications/Whatsapp Message - QuickSounds.com.mp3";
 
 const DashboardLayout = () => {
   const isDesktop = useResponsive("up", "md");
@@ -213,12 +216,23 @@ const DashboardLayout = () => {
             currentMsgs.length &&
             formatDate(currentMsgs[currentMsg.length - 1]?.created_at);
 
+          console.log("dg", lastTimeline, currentMsgs);
+
           const timelineText = formatDate(message?.created_at);
 
           if (timelineText !== lastTimeline) {
             dispatch(
-              AddDirectMessage({ type: "divider", text: timelineText, created_at: new Date() })
+              AddDirectMessage({
+                type: "divider",
+                text: timelineText,
+                created_at: new Date(),
+              })
             );
+          }
+
+          if (user_id == message?.to) {
+            const sound = new Audio(incommingSound);
+            sound.play();
           }
 
           dispatch(
@@ -253,6 +267,62 @@ const DashboardLayout = () => {
         // const conversationIds =[]
         // conversationIds[0]=data.conversation_id
         // await socket.emit('markMessagesDelivered', { current_id , conversationIds });
+
+        if (
+          user_id == data.message.to &&
+          currentConversationID != data.conversation_id
+        ) {
+          // console.log("image", data);
+          const notiSound = new Audio(sound);
+          notiSound.play();
+
+          toast.custom((t) => (
+            <div
+              className={`${
+                t.visible ? "animate-enter" : "animate-leave"
+              } max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+            >
+              <div
+                className="flex-1 w-0 p-4"
+                onClick={() => {
+                  dispatch(
+                    SelectConversation({ room_id: data.conversation_id })
+                  );
+                  dispatch(
+                    UpdateConversationUnread({
+                      conversationId: data.conversation_id,
+                    })
+                  );
+                  toast.dismiss(t.id);
+                }}
+              >
+                <div className="flex items-start">
+                  <div className="flex-shrink-0 pt-0.5">
+                    <img
+                      className="h-10 w-10 rounded-full"
+                      src={data?.avatar}
+                      alt=""
+                    />
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <p className="text-sm font-medium text-gray-900">
+                      {data?.name}
+                    </p>
+                    <p className="mt-1 text-sm text-gray-500">{data?.text}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex border-l border-gray-200">
+                <button
+                  onClick={() => toast.dismiss(t.id)}
+                  className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          ));
+        }
 
         console.log("new message pushed to current_message");
         // after pushing new message to the current_message state variable the Message.jsx component is rerendered and all the current_messages are agian rerendered
@@ -406,6 +476,7 @@ const DashboardLayout = () => {
         })
       );
     });
+
     // // Listen for the 'isSeen' event from the server
     // socket.on("isSeen", () => {
     //   // Get the current conversation ID

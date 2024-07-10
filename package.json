@@ -29,6 +29,7 @@
     "react-embed": "^3.6.0",
     "react-helmet-async": "^1.3.0",
     "react-hook-form": "^7.41.0",
+    "react-hot-toast": "^2.4.1",
     "react-i18next": "^11.18.6",
     "react-infinite-scroll-component": "^6.1.0",
     "react-lazy-load-image-component": "^1.5.6",
@@ -41,6 +42,7 @@
     "simplebar-react": "^2.4.3",
     "socket.io-client": "^4.6.0",
     "stylis-plugin-rtl": "^2.0.2",
+    "use-sound": "^4.0.3",
     "uuidv4": "^6.2.13",
     "web-vitals": "^2.1.4",
     "yup": "^0.32.11",
@@ -74,6 +76,7 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^7.5.0",
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "tailwindcss": "^3.4.4"
   }
 }

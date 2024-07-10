@@ -434,6 +434,7 @@ const slice = createSlice({
                 }
               : conversation
         );
+        return;
       }
 
       const lastVisibleMessage = getLastVisibleMessageForDeleteForEveryOne(
@@ -685,7 +686,7 @@ export const UpdateConversationTypingStatus = ({ typing, conversationId }) => {
   };
 };
 
-export const UpdateConversationUnread = ({ status, conversationId }) => {
+export const UpdateConversationUnread = ({ conversationId }) => {
   return async (dispatch, getState) => {
     dispatch(
       slice.actions.updateConversationUnread({

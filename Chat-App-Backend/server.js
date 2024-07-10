@@ -272,7 +272,7 @@ io.on("connection", async (socket) => {
       oldMessages.set(data.user_id, innerMap); //cache for the use of fetching prv msg's
 
       const result = messagesWithTimeLine.slice(skip).slice(0, limit);
-      console.log(result)
+      // console.log(result)
 
       // console.log(result);
 
@@ -362,6 +362,9 @@ io.on("connection", async (socket) => {
       conversation_id,
       message: new_message,
       unread: chat.unreadCount.get(to),
+      text: message,
+      avatar: from_user?.avatar || `https://api.dicebear.com/5.x/initials/svg?seed=${from_user?.firstName} ${from_user?.lastName}`,
+      name: `${from_user?.firstName} ${from_user?.lastName}`,
     });
 
     // emit outgoing_message -> from user
@@ -454,6 +457,9 @@ io.on("connection", async (socket) => {
       conversation_id,
       message: new_message,
       unread: chat.unreadCount.get(to),
+      text: msg ? msg : fileData.name,
+      avatar: from_user?.avatar || `https://api.dicebear.com/5.x/initials/svg?seed=${from_user?.firstName} ${from_user?.lastName}`,
+      name: `${from_user?.firstName} ${from_user?.lastName}`,
     });
 
     // emit outgoing_message -> from user
@@ -642,6 +648,7 @@ io.on("connection", async (socket) => {
 
           const updatedReaction = message?.reaction;
 
+          // updatating sanpshot data
           oldMessages
             ?.get(to.toString())
             ?.get(conversationId.toString())

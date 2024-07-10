@@ -39,23 +39,23 @@ import Picker from "@emoji-mart/react";
 import useResponsive from "../../hooks/useResponsive";
 import { socket } from "../../socket";
 // import "./MsgTypes.css"
-import { format } from 'date-fns';
-
-
+import { format } from "date-fns";
 
 const formatDate = (date) => {
   const today = new Date();
   const messageDate = new Date(date);
 
   const isToday = today.toDateString() === messageDate.toDateString();
-  const isYesterday = new Date(today.setDate(today.getDate() - 1)).toDateString() === messageDate.toDateString();
+  const isYesterday =
+    new Date(today.setDate(today.getDate() - 1)).toDateString() ===
+    messageDate.toDateString();
 
   if (isToday) {
-    return 'Today';
+    return "Today";
   } else if (isYesterday) {
-    return 'Yesterday';
+    return "Yesterday";
   } else {
-    return format(messageDate, 'MMMM dd, yyyy');
+    return format(messageDate, "MMMM dd, yyyy");
   }
 };
 
@@ -392,6 +392,7 @@ const DocMsg = ({ el, menu }) => {
           borderRadius: 1.5,
           width: "max-content",
           position: "relative",
+          cursor: "pointer",
           "&::before": {
             content: '""',
             position: "absolute",
@@ -410,6 +411,18 @@ const DocMsg = ({ el, menu }) => {
             right: el.incoming ? "unset" : "-8px",
             transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
           },
+        }}
+        onDoubleClick={() => {
+          if (!el?.myReaction) {
+            console.log("double click");
+            socket.emit("react_to_message", {
+              conversationId: room_id,
+              from: user_id,
+              to: current_conversation?.user_id,
+              messageId: el?.id,
+              reaction: "❤️",
+            });
+          }
         }}
       >
         <Typography
@@ -502,6 +515,7 @@ const DocMsg = ({ el, menu }) => {
               bottom: "-20px",
               left: "0px",
               fontSize: "1.5rem",
+              userSelect: "none",
             }}
           >
             <Box
@@ -523,7 +537,7 @@ const DocMsg = ({ el, menu }) => {
               )}
             </Box>
 
-            <Box>
+            <Box sx={{ cursor: "default" }}>
               {el?.otherReaction && (
                 <Tooltip
                   placement="right-end"
@@ -671,6 +685,7 @@ const LinkMsg = ({ el, menu }) => {
           borderRadius: 1.5,
           width: "max-content",
           position: "relative",
+          cursor: "pointer",
           "&::before": {
             content: '""',
             position: "absolute",
@@ -689,6 +704,18 @@ const LinkMsg = ({ el, menu }) => {
             right: el.incoming ? "unset" : "-8px",
             transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
           },
+        }}
+        onDoubleClick={() => {
+          if (!el?.myReaction) {
+            console.log("double click");
+            socket.emit("react_to_message", {
+              conversationId: room_id,
+              from: user_id,
+              to: current_conversation?.user_id,
+              messageId: el?.id,
+              reaction: "❤️",
+            });
+          }
         }}
       >
         <Typography
@@ -786,6 +813,7 @@ const LinkMsg = ({ el, menu }) => {
               bottom: "-20px",
               left: "0px",
               fontSize: "1.5rem",
+              userSelect: "none",
             }}
           >
             <Box
@@ -807,7 +835,7 @@ const LinkMsg = ({ el, menu }) => {
               )}
             </Box>
 
-            <Box>
+            <Box sx={{ cursor: "default" }}>
               {el?.otherReaction && (
                 <Tooltip
                   placement="right-end"
@@ -896,6 +924,7 @@ const ReplyMsg = ({ el, menu }) => {
           borderRadius: 1.5,
           width: "max-content",
           position: "relative",
+          cursor: "pointer",
           "&::before": {
             content: '""',
             position: "absolute",
@@ -914,6 +943,18 @@ const ReplyMsg = ({ el, menu }) => {
             right: el.incoming ? "unset" : "-8px",
             transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
           },
+        }}
+        onDoubleClick={() => {
+          if (!el?.myReaction) {
+            console.log("double click");
+            socket.emit("react_to_message", {
+              conversationId: room_id,
+              from: user_id,
+              to: current_conversation?.user_id,
+              messageId: el?.id,
+              reaction: "❤️",
+            });
+          }
         }}
       >
         <Typography
@@ -992,6 +1033,7 @@ const ReplyMsg = ({ el, menu }) => {
               bottom: "-20px",
               left: "0px",
               fontSize: "1.5rem",
+              userSelect: "none",
             }}
           >
             <Box
@@ -1013,7 +1055,7 @@ const ReplyMsg = ({ el, menu }) => {
               )}
             </Box>
 
-            <Box>
+            <Box sx={{ cursor: "default" }}>
               {el?.otherReaction && (
                 <Tooltip
                   placement="right-end"
@@ -1113,6 +1155,7 @@ const MediaMsg = ({ el, menu }) => {
           borderRadius: 1.5,
           width: "max-content",
           position: "relative",
+          cursor: "pointer",
           "&::before": {
             content: '""',
             position: "absolute",
@@ -1131,6 +1174,18 @@ const MediaMsg = ({ el, menu }) => {
             right: el.incoming ? "unset" : "-8px",
             transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
           },
+        }}
+        onDoubleClick={() => {
+          if (!el?.myReaction) {
+            console.log("double click");
+            socket.emit("react_to_message", {
+              conversationId: room_id,
+              from: user_id,
+              to: current_conversation?.user_id,
+              messageId: el?.id,
+              reaction: "❤️",
+            });
+          }
         }}
       >
         <Typography
@@ -1208,6 +1263,7 @@ const MediaMsg = ({ el, menu }) => {
               bottom: "-20px",
               left: "0px",
               fontSize: "1.5rem",
+              userSelect: "none",
             }}
           >
             <Box
@@ -1229,7 +1285,7 @@ const MediaMsg = ({ el, menu }) => {
               )}
             </Box>
 
-            <Box>
+            <Box sx={{ cursor: "default" }}>
               {el?.otherReaction && (
                 <Tooltip
                   placement="right-end"
@@ -1390,6 +1446,7 @@ const VideoMsg = ({ el, menu }) => {
           borderRadius: 1.5,
           width: "max-content",
           position: "relative",
+          cursor: "pointer",
           "&::before": {
             content: '""',
             position: "absolute",
@@ -1408,6 +1465,18 @@ const VideoMsg = ({ el, menu }) => {
             right: el.incoming ? "unset" : "-8px",
             transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
           },
+        }}
+        onDoubleClick={() => {
+          if (!el?.myReaction) {
+            console.log("double click");
+            socket.emit("react_to_message", {
+              conversationId: room_id,
+              from: user_id,
+              to: current_conversation?.user_id,
+              messageId: el?.id,
+              reaction: "❤️",
+            });
+          }
         }}
       >
         <Typography
@@ -1485,6 +1554,7 @@ const VideoMsg = ({ el, menu }) => {
               bottom: "-20px",
               left: "0px",
               fontSize: "1.5rem",
+              userSelect: "none",
             }}
           >
             <Box
@@ -1506,7 +1576,7 @@ const VideoMsg = ({ el, menu }) => {
               )}
             </Box>
 
-            <Box>
+            <Box sx={{ cursor: "default" }}>
               {el?.otherReaction && (
                 <Tooltip
                   placement="right-end"
@@ -1660,6 +1730,7 @@ const TextMsg = ({ el, menu }) => {
           borderRadius: 1.5,
           width: "max-content",
           position: "relative",
+          cursor: "pointer",
           "&::before": {
             content: '""',
             position: "absolute",
@@ -1678,6 +1749,18 @@ const TextMsg = ({ el, menu }) => {
             right: el.incoming ? "unset" : "-8px",
             transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
           },
+        }}
+        onDoubleClick={() => {
+          if (!el?.myReaction) {
+            console.log("double click");
+            socket.emit("react_to_message", {
+              conversationId: room_id,
+              from: user_id,
+              to: current_conversation?.user_id,
+              messageId: el?.id,
+              reaction: "❤️",
+            });
+          }
         }}
       >
         <Typography
@@ -1740,6 +1823,7 @@ const TextMsg = ({ el, menu }) => {
               bottom: "-20px",
               left: "0px",
               fontSize: "1.5rem",
+              userSelect: "none",
             }}
           >
             <Box
@@ -1761,7 +1845,7 @@ const TextMsg = ({ el, menu }) => {
               )}
             </Box>
 
-            <Box>
+            <Box sx={{ cursor: "default" }}>
               {el?.otherReaction && (
                 <Tooltip
                   placement="right-end"
@@ -1872,7 +1956,8 @@ const Timeline = ({ el }) => {
     >
       <Divider width="46%" />
       <Typography variant="caption" sx={{ color: theme.palette.text }}>
-        {" "}{el.text}{" "}
+        {" "}
+        {el.text}{" "}
       </Typography>
       <Divider width="46%" />
     </Stack>

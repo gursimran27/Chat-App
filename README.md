@@ -48,6 +48,12 @@
 13. **Timeline**
     - Automatically inserts timeline markers in the chat, indicating "Today", "Yesterday", or specific dates for older messages.
 
+13. **Receiving Message Notification**
+    - Notification with sound effect on message receive.
+
+13. **Message Send and Receive Sounds**
+    - Play sound effects similar to WhatsApp for message sending and receiving.
+
 ## Installation
 
 To install and run the application, follow these steps:

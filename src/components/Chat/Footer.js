@@ -32,6 +32,8 @@ import UseAnimations from "react-useanimations";
 import loader from "react-useanimations/lib/loading";
 import { UpdateReply_msg } from "../../redux/slices/conversation";
 import unSupport from "../../assets/OIP.jpeg";
+import useSound from 'use-sound';
+import sound from "../../assets/notifications/WhatsApp-Sending-Message-Sound-Effect.mp3"
 
 const StyledInput = styled(TextField)(({ theme }) => ({
   "& .MuiInputBase-input": {
@@ -125,6 +127,8 @@ const ChatInput = ({
     };
   };
 
+  const [play] = useSound(sound);
+
   const handleFileUpload = async () => {
     console.log(imageFile, previewFile);
     try {
@@ -159,6 +163,7 @@ const ChatInput = ({
             msg: msg,
             mediaUrl: response?.data?.mediaUrl,
           });
+          play();
         })
         .catch((err) => {
           console.log(err);
@@ -382,7 +387,7 @@ const ChatInput = ({
           <img
             src={previewSource}
             // src="https://images.unsplash.com/photo-1502657877623-f66bf489d236?auto=format&fit=crop&w=800"
-            style={{ objectFit: "contain" }}
+            style={{ objectFit: "contain",width: "100%", height: "87%" }}
             width={550}
             height={366}
           />
@@ -650,6 +655,8 @@ const Footer = () => {
     }
   };
 
+  const [play] = useSound(sound);
+
   return (
     <Box
       sx={{
@@ -730,6 +737,7 @@ const Footer = () => {
                     conversationId: room_id,
                     typing: false,
                   });
+                  play();
                   socket.emit("text_message", {
                     message: linkify(value),
                     conversation_id: room_id,
