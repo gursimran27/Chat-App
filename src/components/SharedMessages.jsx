@@ -90,6 +90,15 @@ const Media = () => {
         }
       });
 
+      const formatTimeTo24Hrs = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+      };
+
       return {
         id: el._id,
         type: "msg",
@@ -103,6 +112,9 @@ const Media = () => {
         star: el?.star[user_id.toString()] || false,
         myReaction: myReaction,
         otherReaction: otherReaction,
+        time: formatTimeTo24Hrs(el?.created_at) || "9:36",
+        created_at: el?.created_at || "9:36",
+        deletedForEveryone: el?.deletedForEveryone || true,
       };
     });
     return formatted_messages;

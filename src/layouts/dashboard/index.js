@@ -208,15 +208,12 @@ const DashboardLayout = () => {
         };
 
         const time = formatTimeTo24Hrs(message?.created_at);
+        // console.log("data", data);
 
         if (currentConversationID === data.conversation_id) {
-          currentMsgRef.current = currentMsg;
-          const currentMsgs = currentMsgRef.current;
-          let lastTimeline =
-            currentMsgs.length &&
-            formatDate(currentMsgs[currentMsg.length - 1]?.created_at);
+          let lastTimeline = formatDate(data?.secondLastMessageCreated_at);
 
-          console.log("dg", lastTimeline, currentMsgs);
+          // console.log("dg", lastTimeline);
 
           const timelineText = formatDate(message?.created_at);
 

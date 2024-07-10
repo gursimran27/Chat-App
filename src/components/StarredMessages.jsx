@@ -37,15 +37,15 @@ const StarredMessages = () => {
 
   // const starMsg = current_messages.filter( el=>el?.star);
 
-  const [ loading, setLoading ] = useState(false);
-  const [starMsg, setStarMsg ] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [starMsg, setStarMsg] = useState([]);
 
-  const currentConversationIDRef = useRef(conversationId);  
+  const currentConversationIDRef = useRef(conversationId);
 
   useEffect(() => {
     async function fetchData() {
       const conversationID = currentConversationIDRef.current;
-      console.log("fetch-data-star",conversationID);
+      console.log("fetch-data-star", conversationID);
       setLoading(true);
       const { data } = await axios.get(
         `/user/starmessages/${conversationID}`,
@@ -72,6 +72,17 @@ const StarredMessages = () => {
           }
         });
 
+        const formatTimeTo24Hrs = (dateString) => {
+          const date = new Date(dateString);
+          return date.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+        };
+
+        const time = formatTimeTo24Hrs(el?.created_at);
+
         return {
           id: el._id,
           type: "msg",
@@ -85,6 +96,9 @@ const StarredMessages = () => {
           star: true,
           myReaction: myReaction,
           otherReaction: otherReaction,
+          time: time || "9:36",
+          created_at: el?.created_at || "9:36",
+          deletedForEveryone: el?.deletedForEveryone || true,
         };
       });
 
@@ -93,7 +107,7 @@ const StarredMessages = () => {
     }
 
     fetchData();
-  },[]); // first render
+  }, []); // first render
 
   return (
     <Box
@@ -144,61 +158,60 @@ const StarredMessages = () => {
         >
           <Box>
             <Stack spacing={3} sx={{ marginTop: "33px", marginLeft: "5px" }}>
-              {
-                loading ? 
+              {loading ? (
                 <Loading />
-                :
-                (starMsg.map((el, idx) => {
-                switch (el.type) {
-                  case "divider":
-                    return (
-                      // Timeline
-                      <Timeline el={el} />
-                    );
+              ) : (
+                starMsg.map((el, idx) => {
+                  switch (el.type) {
+                    case "divider":
+                      return (
+                        // Timeline
+                        <Timeline el={el} />
+                      );
 
-                  case "msg":
-                    switch (el.subtype) {
-                      case "img":
-                        return (
-                          // Media Message
-                          <MediaMsg el={el} menu={false} />
-                        );
+                    case "msg":
+                      switch (el.subtype) {
+                        case "img":
+                          return (
+                            // Media Message
+                            <MediaMsg el={el} menu={false} />
+                          );
 
-                      case "video":
-                        return (
-                          // Media Message
-                          <VideoMsg el={el} menu={false} />
-                        );
+                        case "video":
+                          return (
+                            // Media Message
+                            <VideoMsg el={el} menu={false} />
+                          );
 
-                      case "doc":
-                        return (
-                          // Doc Message
-                          <DocMsg el={el} menu={false} />
-                        );
-                      case "Link":
-                        return (
-                          //  Link Message
-                          <LinkMsg el={el} menu={false} />
-                        );
+                        case "doc":
+                          return (
+                            // Doc Message
+                            <DocMsg el={el} menu={false} />
+                          );
+                        case "Link":
+                          return (
+                            //  Link Message
+                            <LinkMsg el={el} menu={false} />
+                          );
 
-                      case "reply":
-                        return (
-                          //  ReplyMessage
-                          <ReplyMsg el={el} menu={false} />
-                        );
+                        case "reply":
+                          return (
+                            //  ReplyMessage
+                            <ReplyMsg el={el} menu={false} />
+                          );
 
-                      default:
-                        return (
-                          // Text Message
-                          <TextMsg el={el} menu={false} />
-                        );
-                    }
+                        default:
+                          return (
+                            // Text Message
+                            <TextMsg el={el} menu={false} />
+                          );
+                      }
 
-                  default:
-                    return <></>;
-                }
-              }))
-              }
+                    default:
+                      return <></>;
+                  }
+                })
+              )}
             </Stack>
           </Box>
         </Stack>

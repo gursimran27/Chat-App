@@ -105,6 +105,8 @@ const Message = ({ isMobile, menu }) => {
   useEffect(() => {//this duty is now handled by the infinite scroll.
     // Scroll to the bottom of the message list when new messages are added
     messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
+    // *or
+    // messageListRef.current.scrollIntoView({behavior: "smooth", block:"end"})
   }, [conversationId]);
 
   return (

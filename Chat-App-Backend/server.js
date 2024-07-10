@@ -42,7 +42,7 @@ const OneToOneMessage = require("./models/OneToOneMessage");
 const AudioCall = require("./models/audioCall");
 const VideoCall = require("./models/videoCall");
 const { uploadImageToCloudinary } = require("./utils/imageUploader");
-const { format, isToday, isYesterday } = require('date-fns');
+const { format, isToday, isYesterday } = require("date-fns");
 
 // Add this
 // Create an io server and allow for CORS from http://localhost:3000 with GET and POST methods
@@ -82,11 +82,11 @@ const formatDate = (date) => {
   const messageDate = new Date(date);
 
   if (isToday(messageDate)) {
-    return 'Today';
+    return "Today";
   } else if (isYesterday(messageDate)) {
-    return 'Yesterday';
+    return "Yesterday";
   } else {
-    return format(messageDate, 'MMMM dd, yyyy');
+    return format(messageDate, "MMMM dd, yyyy");
   }
 };
 
@@ -256,16 +256,20 @@ io.on("connection", async (socket) => {
 
       notDeletedMessages.forEach((message) => {
         const timelineText = formatDate(message.created_at);
-    
+
         if (timelineText !== lastTimeline) {
-          messagesWithTimeLine.push({ type: 'divider', text: timelineText, created_at: new Date() });
+          messagesWithTimeLine.push({
+            type: "divider",
+            text: timelineText,
+            created_at: new Date(),
+          });
           lastTimeline = timelineText;
         }
-    
+
         messagesWithTimeLine.push(message);
       });
 
-      messagesWithTimeLine.reverse();// so that the lasted msg come to first
+      messagesWithTimeLine.reverse(); // so that the lasted msg come to first
 
       const innerMap = new Map();
       innerMap.set(data.conversation_id, messagesWithTimeLine);
@@ -355,6 +359,7 @@ io.on("connection", async (socket) => {
 
     // emit to t incoming_message -user
     const savedMessage = chat.messages[chat.messages.length - 1]; //last saved msg
+    const secondLastMessage = chat.messages[chat.messages.length - 2]; //last 2nd  msg for timeLine rendering purpose
     new_message._id = savedMessage._id;
     new_message.created_at = savedMessage.created_at;
 
@@ -362,15 +367,19 @@ io.on("connection", async (socket) => {
       conversation_id,
       message: new_message,
       unread: chat.unreadCount.get(to),
-      text: message,
-      avatar: from_user?.avatar || `https://api.dicebear.com/5.x/initials/svg?seed=${from_user?.firstName} ${from_user?.lastName}`,
-      name: `${from_user?.firstName} ${from_user?.lastName}`,
+      text: message, //for notification
+      avatar:
+        from_user?.avatar ||
+        `https://api.dicebear.com/5.x/initials/svg?seed=${from_user?.firstName} ${from_user?.lastName}`, //for notification
+      name: `${from_user?.firstName} ${from_user?.lastName}`, //for notification
+      secondLastMessageCreated_at: secondLastMessage?.created_at, //for timeLine
     });
 
     // emit outgoing_message -> from user
     io.to(from_user?.socket_id).emit("new_message", {
       conversation_id,
       message: new_message,
+      secondLastMessageCreated_at: secondLastMessage?.created_at, //for timeLine
     });
   });
 
@@ -458,7 +467,9 @@ io.on("connection", async (socket) => {
       message: new_message,
       unread: chat.unreadCount.get(to),
       text: msg ? msg : fileData.name,
-      avatar: from_user?.avatar || `https://api.dicebear.com/5.x/initials/svg?seed=${from_user?.firstName} ${from_user?.lastName}`,
+      avatar:
+        from_user?.avatar ||
+        `https://api.dicebear.com/5.x/initials/svg?seed=${from_user?.firstName} ${from_user?.lastName}`,
       name: `${from_user?.firstName} ${from_user?.lastName}`,
     });
 

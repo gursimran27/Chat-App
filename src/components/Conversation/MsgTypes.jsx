@@ -413,7 +413,7 @@ const DocMsg = ({ el, menu }) => {
           },
         }}
         onDoubleClick={() => {
-          if (!el?.myReaction) {
+          if (!el?.myReaction && menu) {
             console.log("double click");
             socket.emit("react_to_message", {
               conversationId: room_id,
@@ -521,17 +521,19 @@ const DocMsg = ({ el, menu }) => {
             <Box
               sx={{ cursor: "pointer" }}
               onClick={() => {
-                socket.emit("react_to_message", {
+                if(menu){
+                  socket.emit("react_to_message", {
                   conversationId: room_id,
                   from: user_id,
                   to: current_conversation?.user_id,
                   messageId: el?.id,
                   reaction: null,
                 });
+                }
               }}
             >
               {el?.myReaction && (
-                <Tooltip placement="left-end" title={"remove my reaction"}>
+                <Tooltip placement="left-end" title={menu && "remove my reaction"}>
                   {el?.myReaction}
                 </Tooltip>
               )}
@@ -706,7 +708,7 @@ const LinkMsg = ({ el, menu }) => {
           },
         }}
         onDoubleClick={() => {
-          if (!el?.myReaction) {
+          if (!el?.myReaction &&  menu) {
             console.log("double click");
             socket.emit("react_to_message", {
               conversationId: room_id,
@@ -819,17 +821,19 @@ const LinkMsg = ({ el, menu }) => {
             <Box
               sx={{ cursor: "pointer" }}
               onClick={() => {
-                socket.emit("react_to_message", {
+                if(menu){
+                  socket.emit("react_to_message", {
                   conversationId: room_id,
                   from: user_id,
                   to: current_conversation?.user_id,
                   messageId: el?.id,
                   reaction: null,
                 });
+                }
               }}
             >
               {el?.myReaction && (
-                <Tooltip placement="left-end" title={"remove my reaction"}>
+                <Tooltip placement="left-end" title={menu && "remove my reaction"}>
                   {el?.myReaction}
                 </Tooltip>
               )}
@@ -945,7 +949,7 @@ const ReplyMsg = ({ el, menu }) => {
           },
         }}
         onDoubleClick={() => {
-          if (!el?.myReaction) {
+          if (!el?.myReaction && menu) {
             console.log("double click");
             socket.emit("react_to_message", {
               conversationId: room_id,
@@ -1039,17 +1043,19 @@ const ReplyMsg = ({ el, menu }) => {
             <Box
               sx={{ cursor: "pointer" }}
               onClick={() => {
-                socket.emit("react_to_message", {
+                if(menu){
+                  socket.emit("react_to_message", {
                   conversationId: room_id,
                   from: user_id,
                   to: current_conversation?.user_id,
                   messageId: el?.id,
                   reaction: null,
                 });
+                }
               }}
             >
               {el?.myReaction && (
-                <Tooltip placement="left-end" title={"remove my reaction"}>
+                <Tooltip placement="left-end" title={menu && "remove my reaction"}>
                   {el?.myReaction}
                 </Tooltip>
               )}
@@ -1176,7 +1182,7 @@ const MediaMsg = ({ el, menu }) => {
           },
         }}
         onDoubleClick={() => {
-          if (!el?.myReaction) {
+          if (!el?.myReaction && menu) {
             console.log("double click");
             socket.emit("react_to_message", {
               conversationId: room_id,
@@ -1269,17 +1275,19 @@ const MediaMsg = ({ el, menu }) => {
             <Box
               sx={{ cursor: "pointer" }}
               onClick={() => {
-                socket.emit("react_to_message", {
+                if(menu){
+                  socket.emit("react_to_message", {
                   conversationId: room_id,
                   from: user_id,
                   to: current_conversation?.user_id,
                   messageId: el?.id,
                   reaction: null,
                 });
+                }
               }}
             >
               {el?.myReaction && (
-                <Tooltip placement="left-end" title={"remove my reaction"}>
+                <Tooltip placement="left-end" title={menu && "remove my reaction"}>
                   {el?.myReaction}
                 </Tooltip>
               )}
@@ -1467,7 +1475,7 @@ const VideoMsg = ({ el, menu }) => {
           },
         }}
         onDoubleClick={() => {
-          if (!el?.myReaction) {
+          if (!el?.myReaction && menu) {
             console.log("double click");
             socket.emit("react_to_message", {
               conversationId: room_id,
@@ -1560,17 +1568,19 @@ const VideoMsg = ({ el, menu }) => {
             <Box
               sx={{ cursor: "pointer" }}
               onClick={() => {
-                socket.emit("react_to_message", {
+                if(menu){
+                  socket.emit("react_to_message", {
                   conversationId: room_id,
                   from: user_id,
                   to: current_conversation?.user_id,
                   messageId: el?.id,
                   reaction: null,
                 });
+                }
               }}
             >
               {el?.myReaction && (
-                <Tooltip placement="left-end" title={"remove my reaction"}>
+                <Tooltip placement="left-end" title={menu && "remove my reaction"}>
                   {el?.myReaction}
                 </Tooltip>
               )}
@@ -1751,7 +1761,7 @@ const TextMsg = ({ el, menu }) => {
           },
         }}
         onDoubleClick={() => {
-          if (!el?.myReaction) {
+          if (!el?.myReaction && menu) {
             console.log("double click");
             socket.emit("react_to_message", {
               conversationId: room_id,
@@ -1772,7 +1782,7 @@ const TextMsg = ({ el, menu }) => {
             right: "4px",
           }}
         >
-          {el.time}
+          {el?.time}
         </Typography>
         <div
           className="reactions"
@@ -1829,17 +1839,19 @@ const TextMsg = ({ el, menu }) => {
             <Box
               sx={{ cursor: "pointer" }}
               onClick={() => {
-                socket.emit("react_to_message", {
+                if(menu){
+                  socket.emit("react_to_message", {
                   conversationId: room_id,
                   from: user_id,
                   to: current_conversation?.user_id,
                   messageId: el?.id,
                   reaction: null,
                 });
+                }
               }}
             >
               {el?.myReaction && (
-                <Tooltip placement="left-end" title={"remove my reaction"}>
+                <Tooltip placement="left-end" title={menu && "remove my reaction"}>
                   {el?.myReaction}
                 </Tooltip>
               )}
