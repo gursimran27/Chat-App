@@ -239,6 +239,7 @@ const slice = createSlice({
             time: formatTimeTo24Hrs(el?.created_at) || "9:36",
             created_at: el?.created_at || "9:36",
             deletedForEveryone: el?.deletedForEveryone || false,
+            coordinates: el?.location?.coordinates.reverse() || null,
           };
         } else {
           return el;
@@ -292,6 +293,7 @@ const slice = createSlice({
             time: formatTimeTo24Hrs(el?.created_at) || "9:36",
             created_at: el?.created_at || "9:36",
             deletedForEveryone: el?.deletedForEveryone || false,
+            coordinates: el?.location?.coordinates.reverse() || null,
           };
         } else {
           return el;

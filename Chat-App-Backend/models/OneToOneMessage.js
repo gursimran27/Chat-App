@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
 
 const oneToOneMessageSchema = new mongoose.Schema({
-  participants: [//array
+  participants: [
+    //array
     {
       type: mongoose.Schema.ObjectId,
       ref: "User",
@@ -19,7 +20,16 @@ const oneToOneMessageSchema = new mongoose.Schema({
       },
       type: {
         type: String,
-        enum: ["Text", "doc", "reply", "Link","img", "video", "deleted"],
+        enum: [
+          "Text",
+          "doc",
+          "reply",
+          "Link",
+          "img",
+          "video",
+          "deleted",
+          "loc",
+        ],
       },
       created_at: {
         type: Date,
@@ -34,7 +44,7 @@ const oneToOneMessageSchema = new mongoose.Schema({
       },
       status: {
         type: String,
-        enum: ["Sent", "Delivered","Seen"],
+        enum: ["Sent", "Delivered", "Seen"],
         default: "Sent",
       },
       replyToMsg: {
@@ -56,9 +66,18 @@ const oneToOneMessageSchema = new mongoose.Schema({
         of: Boolean,
         default: {},
       },
-      deletedForEveryone: {//false mean that user cannat do deleteForEveryOne
+      deletedForEveryone: {
+        //false mean that user cannat do deleteForEveryOne
         type: Boolean,
         default: true,
+      },
+      location: {
+        type: {
+          type: String,
+          enum: ["Point"],
+          default: "Point",
+        },
+        coordinates: [Number],
       },
     },
   ],

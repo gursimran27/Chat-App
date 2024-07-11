@@ -14,7 +14,7 @@ import {
   LinkSimple,
   PaperPlaneTilt,
   Smiley,
-  Sticker,
+  MapPinLine ,
   UploadSimple,
   User,
   X,
@@ -32,8 +32,9 @@ import UseAnimations from "react-useanimations";
 import loader from "react-useanimations/lib/loading";
 import { UpdateReply_msg } from "../../redux/slices/conversation";
 import unSupport from "../../assets/OIP.jpeg";
-import useSound from 'use-sound';
-import sound from "../../assets/notifications/WhatsApp-Sending-Message-Sound-Effect.mp3"
+import useSound from "use-sound";
+import sound from "../../assets/notifications/WhatsApp-Sending-Message-Sound-Effect.mp3";
+import { showSnackbar } from "../../redux/slices/app";
 
 const StyledInput = styled(TextField)(({ theme }) => ({
   "& .MuiInputBase-input": {
@@ -51,9 +52,9 @@ const Actions = [
   },
   {
     color: "#1b8cfe",
-    icon: <Sticker size={24} />,
+    icon: <MapPinLine  size={24} />,
     y: 172,
-    title: "Stickers",
+    title: "share your current location",
   },
   {
     color: "#0172e4",
@@ -84,13 +85,20 @@ const ChatInput = ({
 }) => {
   const [openActions, setOpenActions] = React.useState(false);
   const theme = useTheme();
+  const dispatch = useDispatch();
   const { current_conversation } = useSelector(
     (state) => state.conversation.direct_chat
   );
+
+  const { firstName, lastName } =  useSelector((state)=>state.app.user)
   const user_id = window.localStorage.getItem("user_id");
   const { room_id } = useSelector((state) => state.app);
 
   const { token } = useSelector((state) => state.auth);
+
+  const { reply, replyToMsg } = useSelector(
+    (state) => state.conversation.reply_msg
+  );
 
   const [msg, setMsg] = useState("");
 
@@ -262,6 +270,34 @@ const ChatInput = ({
     });
   };
 
+  const handleCurrentLoc = async () => {
+    console.log("handleCurrentLoc");
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          console.log(pos);
+          socket.emit("text_message", {
+            message: `current location of ${firstName} ${lastName}`,
+            conversation_id: room_id,
+            from: user_id,
+            to: current_conversation?.user_id,
+            type: "loc",
+            replyToMsg: reply ? replyToMsg : null,
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+          });
+        },
+        (err) => {
+          console.log(err.message);
+          dispatch(showSnackbar({ severity: "error", message: err.message }));
+        }
+      );
+    } else {
+      console.log("Geolocation is not supported by this browser.");
+      dispatch(showSnackbar({ severity: "error", message: "Geolocation is not supported by this browser." }));
+    }
+  };
+
   return (
     <Box sx={{ position: "relative" }}>
       <StyledInput
@@ -287,21 +323,37 @@ const ChatInput = ({
                   display: openActions ? "inline-block" : "none",
                 }}
               >
-                {Actions.map((el) => (
-                  <Tooltip placement="right" title={el.title}>
-                    <Fab
-                      onClick={handleClick}
-                      sx={{
-                        position: "absolute",
-                        top: -el.y,
-                        backgroundColor: el.color,
-                      }}
-                      aria-label="add"
-                    >
-                      {el.icon}
-                    </Fab>
-                  </Tooltip>
-                ))}
+                {Actions.map((el) =>
+                  el?.title == "share your current location" ? (
+                    <Tooltip placement="right" title={el.title}>
+                      <Fab
+                        onClick={handleCurrentLoc}
+                        sx={{
+                          position: "absolute",
+                          top: -el.y,
+                          backgroundColor: el.color,
+                        }}
+                        aria-label="add"
+                      >
+                        {el.icon}
+                      </Fab>
+                    </Tooltip>
+                  ) : (
+                    <Tooltip placement="right" title={el.title}>
+                      <Fab
+                        onClick={handleClick}
+                        sx={{
+                          position: "absolute",
+                          top: -el.y,
+                          backgroundColor: el.color,
+                        }}
+                        aria-label="add"
+                      >
+                        {el.icon}
+                      </Fab>
+                    </Tooltip>
+                  )
+                )}
               </Stack>
 
               <InputAdornment>
@@ -387,7 +439,7 @@ const ChatInput = ({
           <img
             src={previewSource}
             // src="https://images.unsplash.com/photo-1502657877623-f66bf489d236?auto=format&fit=crop&w=800"
-            style={{ objectFit: "contain",width: "100%", height: "87%" }}
+            style={{ objectFit: "contain", width: "100%", height: "87%" }}
             width={550}
             height={366}
           />
@@ -610,7 +662,6 @@ const Footer = () => {
       input.selectionStart = input.selectionEnd = selectionStart + 1;
     }
   }
-
 
   const handleBlur = () => {
     clearTimeout(typingTimeout.current);

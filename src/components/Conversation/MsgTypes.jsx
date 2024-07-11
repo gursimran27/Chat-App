@@ -38,8 +38,21 @@ import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import useResponsive from "../../hooks/useResponsive";
 import { socket } from "../../socket";
-// import "./MsgTypes.css"
+import "./MsgTypes.css";
 import { format } from "date-fns";
+
+import "leaflet/dist/leaflet.css";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  Tooltip as TP,
+} from "react-leaflet";
+import MarkerClusterGroup from "react-leaflet-cluster";
+import icon from "../../assets/placeholder.png";
+import myLoc from "../../assets/unnamed.png";
+import { Icon } from "leaflet";
 
 const formatDate = (date) => {
   const today = new Date();
@@ -521,19 +534,22 @@ const DocMsg = ({ el, menu }) => {
             <Box
               sx={{ cursor: "pointer" }}
               onClick={() => {
-                if(menu){
+                if (menu) {
                   socket.emit("react_to_message", {
-                  conversationId: room_id,
-                  from: user_id,
-                  to: current_conversation?.user_id,
-                  messageId: el?.id,
-                  reaction: null,
-                });
+                    conversationId: room_id,
+                    from: user_id,
+                    to: current_conversation?.user_id,
+                    messageId: el?.id,
+                    reaction: null,
+                  });
                 }
               }}
             >
               {el?.myReaction && (
-                <Tooltip placement="left-end" title={menu && "remove my reaction"}>
+                <Tooltip
+                  placement="left-end"
+                  title={menu && "remove my reaction"}
+                >
                   {el?.myReaction}
                 </Tooltip>
               )}
@@ -708,7 +724,7 @@ const LinkMsg = ({ el, menu }) => {
           },
         }}
         onDoubleClick={() => {
-          if (!el?.myReaction &&  menu) {
+          if (!el?.myReaction && menu) {
             console.log("double click");
             socket.emit("react_to_message", {
               conversationId: room_id,
@@ -821,19 +837,22 @@ const LinkMsg = ({ el, menu }) => {
             <Box
               sx={{ cursor: "pointer" }}
               onClick={() => {
-                if(menu){
+                if (menu) {
                   socket.emit("react_to_message", {
-                  conversationId: room_id,
-                  from: user_id,
-                  to: current_conversation?.user_id,
-                  messageId: el?.id,
-                  reaction: null,
-                });
+                    conversationId: room_id,
+                    from: user_id,
+                    to: current_conversation?.user_id,
+                    messageId: el?.id,
+                    reaction: null,
+                  });
                 }
               }}
             >
               {el?.myReaction && (
-                <Tooltip placement="left-end" title={menu && "remove my reaction"}>
+                <Tooltip
+                  placement="left-end"
+                  title={menu && "remove my reaction"}
+                >
                   {el?.myReaction}
                 </Tooltip>
               )}
@@ -1043,19 +1062,22 @@ const ReplyMsg = ({ el, menu }) => {
             <Box
               sx={{ cursor: "pointer" }}
               onClick={() => {
-                if(menu){
+                if (menu) {
                   socket.emit("react_to_message", {
-                  conversationId: room_id,
-                  from: user_id,
-                  to: current_conversation?.user_id,
-                  messageId: el?.id,
-                  reaction: null,
-                });
+                    conversationId: room_id,
+                    from: user_id,
+                    to: current_conversation?.user_id,
+                    messageId: el?.id,
+                    reaction: null,
+                  });
                 }
               }}
             >
               {el?.myReaction && (
-                <Tooltip placement="left-end" title={menu && "remove my reaction"}>
+                <Tooltip
+                  placement="left-end"
+                  title={menu && "remove my reaction"}
+                >
                   {el?.myReaction}
                 </Tooltip>
               )}
@@ -1275,19 +1297,22 @@ const MediaMsg = ({ el, menu }) => {
             <Box
               sx={{ cursor: "pointer" }}
               onClick={() => {
-                if(menu){
+                if (menu) {
                   socket.emit("react_to_message", {
-                  conversationId: room_id,
-                  from: user_id,
-                  to: current_conversation?.user_id,
-                  messageId: el?.id,
-                  reaction: null,
-                });
+                    conversationId: room_id,
+                    from: user_id,
+                    to: current_conversation?.user_id,
+                    messageId: el?.id,
+                    reaction: null,
+                  });
                 }
               }}
             >
               {el?.myReaction && (
-                <Tooltip placement="left-end" title={menu && "remove my reaction"}>
+                <Tooltip
+                  placement="left-end"
+                  title={menu && "remove my reaction"}
+                >
                   {el?.myReaction}
                 </Tooltip>
               )}
@@ -1568,19 +1593,22 @@ const VideoMsg = ({ el, menu }) => {
             <Box
               sx={{ cursor: "pointer" }}
               onClick={() => {
-                if(menu){
+                if (menu) {
                   socket.emit("react_to_message", {
-                  conversationId: room_id,
-                  from: user_id,
-                  to: current_conversation?.user_id,
-                  messageId: el?.id,
-                  reaction: null,
-                });
+                    conversationId: room_id,
+                    from: user_id,
+                    to: current_conversation?.user_id,
+                    messageId: el?.id,
+                    reaction: null,
+                  });
                 }
               }}
             >
               {el?.myReaction && (
-                <Tooltip placement="left-end" title={menu && "remove my reaction"}>
+                <Tooltip
+                  placement="left-end"
+                  title={menu && "remove my reaction"}
+                >
                   {el?.myReaction}
                 </Tooltip>
               )}
@@ -1839,19 +1867,22 @@ const TextMsg = ({ el, menu }) => {
             <Box
               sx={{ cursor: "pointer" }}
               onClick={() => {
-                if(menu){
+                if (menu) {
                   socket.emit("react_to_message", {
-                  conversationId: room_id,
-                  from: user_id,
-                  to: current_conversation?.user_id,
-                  messageId: el?.id,
-                  reaction: null,
-                });
+                    conversationId: room_id,
+                    from: user_id,
+                    to: current_conversation?.user_id,
+                    messageId: el?.id,
+                    reaction: null,
+                  });
                 }
               }}
             >
               {el?.myReaction && (
-                <Tooltip placement="left-end" title={menu && "remove my reaction"}>
+                <Tooltip
+                  placement="left-end"
+                  title={menu && "remove my reaction"}
+                >
                   {el?.myReaction}
                 </Tooltip>
               )}
@@ -1958,6 +1989,358 @@ const DeletedMsg = ({ el, menu }) => {
   );
 };
 
+const LocMsg = ({ el, menu }) => {
+  const theme = useTheme();
+
+  const [openModal, setOpenModal] = useState(false);
+
+  const handleOpenModal = () => {
+    setOpenModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+  };
+
+  const [openPicker, setOpenPicker] = useState(false);
+  const isMobile = useResponsive("between", "md", "xs", "sm");
+  const { sideBar } = useSelector((state) => state.app);
+  const { room_id } = useSelector((state) => state.app);
+  const user_id = window.localStorage.getItem("user_id");
+  const { current_conversation } = useSelector(
+    (state) => state.conversation.direct_chat
+  );
+
+  function handleEmojiClick(emoji, messageId) {
+    socket.emit("react_to_message", {
+      conversationId: room_id,
+      from: user_id,
+      to: current_conversation?.user_id,
+      messageId: messageId,
+      reaction: emoji,
+    });
+    setOpenPicker(!openPicker);
+  }
+
+  const handleOpenClick = () => {
+    if (openPicker) {
+      setOpenPicker(false);
+    }
+  };
+
+  const customIcon = new Icon({
+    // iconUrl: "https://cdn-icons-png.flaticon.com/512/447/447031.png",
+    iconUrl: icon,
+    iconSize: [38, 38], // size of the icon
+  });
+
+  const customIconForMyLoc = new Icon({
+    // iconUrl: "https://cdn-icons-png.flaticon.com/512/447/447031.png",
+    iconUrl: myLoc,
+    iconSize: [38, 38], // size of the icon
+  });
+
+  const [myCoordinates, setMyCoordinates] = useState([]);
+
+  useEffect(() => {
+    console.log("useeffetc");
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setMyCoordinates([pos.coords.latitude, pos.coords.longitude]);
+        },
+        (err) => {
+          console.log(err.message);
+          setMyCoordinates(null);
+        }
+      );
+    } else {
+      console.log("Geolocation is not supported by this browser.");
+      setMyCoordinates(null);
+    }
+  }, [openModal]);
+
+  return (
+    <Stack
+      direction="row"
+      justifyContent={el.incoming ? "start" : "end"}
+      sx={{ position: "relative" }}
+    >
+      <Box
+        px={1.5}
+        py={1.5}
+        sx={{
+          backgroundColor: el.incoming
+            ? alpha(theme.palette.background.default, 1)
+            : theme.palette.primary.main,
+          borderRadius: 1.5,
+          width: "340px",
+          position: "relative",
+          cursor: "pointer",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: "-2px",
+            width: 0,
+            height: 0,
+            borderStyle: "solid",
+            borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
+            borderColor: el.incoming
+              ? `transparent ${alpha(
+                  theme.palette.background.default,
+                  1
+                )} transparent transparent`
+              : `transparent transparent transparent ${theme.palette.primary.main}`,
+            left: el.incoming ? "-8px" : "unset",
+            right: el.incoming ? "unset" : "-8px",
+            transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
+          },
+        }}
+        onDoubleClick={() => {
+          if (!el?.myReaction && menu) {
+            console.log("double click");
+            socket.emit("react_to_message", {
+              conversationId: room_id,
+              from: user_id,
+              to: current_conversation?.user_id,
+              messageId: el?.id,
+              reaction: "❤️",
+            });
+          }
+        }}
+      >
+        <Typography
+          variant="capton"
+          style={{
+            fontSize: "10px",
+            position: "absolute",
+            bottom: "-3px",
+            right: "4px",
+          }}
+        >
+          {el.time}
+        </Typography>
+        <div
+          className="reactions"
+          style={{
+            zIndex: 10,
+            position: "fixed",
+            display: openPicker ? "inline" : "none",
+            bottom: 100,
+            right: isMobile ? 20 : sideBar.open ? 420 : 100,
+          }}
+        >
+          <Picker
+            data={data}
+            // perLine={9} //The number of emojis to show per line
+            previewPosition={"none"}
+            searchPosition={"none"}
+            onClickOutside={() => handleOpenClick()}
+            theme={theme.palette.mode}
+            onEmojiSelect={(emoji) => {
+              handleEmojiClick(emoji.native, el?.id);
+            }}
+          />
+        </div>
+        <Stack spacing={1} sx={{ maxWidth: "100%" }}>
+          <div
+            className="border w-full"
+            style={{
+              height: "210px",
+              borderRadius: "10px",
+              cursor: "pointer", // Add cursor pointer to indicate clickable
+            }}
+            onClick={handleOpenModal} // Open modal on image click
+          >
+            <MapContainer center={el?.coordinates} zoom={9} scrollWheelZoom={false} zoomControl={false} dragging={false} attributionControl={false}>
+              {/* OPEN STREEN MAPS TILES */}
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              {/* Hard coded markers */}
+              <Marker position={el?.coordinates} icon={customIcon}>
+                {/* <Popup>{el?.message}</Popup> */}
+                {/* <TP>{el?.message}</TP> */}
+              </Marker>
+              {/* <Marker position={myCoordinates} icon={customIconForMyLoc}>
+                  <Popup>My Locaiton</Popup>
+                  <TP>Your Location</TP>
+                </Marker> */}
+            </MapContainer>
+          </div>
+          <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
+            <Typography
+              variant="body2"
+              color={el.incoming ? theme.palette.text : "#fff"}
+            >
+              {el.message}
+            </Typography>
+          </Tooltip>
+        </Stack>
+        <Stack
+          direction={"row"}
+          alignItems={"center"}
+          justifyContent={"end"}
+          sx={{ marginTop: "3px" }}
+        >
+          {el?.star && <Star size={13} color="black" weight="duotone" />}
+        </Stack>
+        {(el?.myReaction || el?.otherReaction) && (
+          <Stack
+            direction={"row"}
+            alignItems={"center"}
+            justifyContent={"center"}
+            gap={"1px"}
+            style={{
+              position: "absolute",
+              bottom: "-20px",
+              left: "0px",
+              fontSize: "1.5rem",
+              userSelect: "none",
+            }}
+          >
+            <Box
+              sx={{ cursor: "pointer" }}
+              onClick={() => {
+                if (menu) {
+                  socket.emit("react_to_message", {
+                    conversationId: room_id,
+                    from: user_id,
+                    to: current_conversation?.user_id,
+                    messageId: el?.id,
+                    reaction: null,
+                  });
+                }
+              }}
+            >
+              {el?.myReaction && (
+                <Tooltip
+                  placement="left-end"
+                  title={menu && "remove my reaction"}
+                >
+                  {el?.myReaction}
+                </Tooltip>
+              )}
+            </Box>
+
+            <Box sx={{ cursor: "default" }}>
+              {el?.otherReaction && (
+                <Tooltip
+                  placement="right-end"
+                  title={`${current_conversation?.name.split(" ")[0]} reaction`}
+                >
+                  {el?.otherReaction}
+                </Tooltip>
+              )}
+            </Box>
+          </Stack>
+        )}
+      </Box>
+      {menu && (
+        <MessageOption
+          replyToMsg={el?.message}
+          messageId={el?.id}
+          star={el?.star}
+          openPicker={openPicker}
+          setOpenPicker={setOpenPicker}
+          deletedForEveryone={el?.deletedForEveryone}
+          created_at={el?.created_at}
+          incomming={el?.incoming}
+        />
+      )}
+      {menu && (
+        <Stack
+          justifyContent={"flex-end"}
+          sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
+        >
+          {!el.incoming &&
+            (el?.status == "Sent" ? (
+              <Check size={22} color="#908989" />
+            ) : el?.status == "Delivered" ? (
+              <Checks size={22} color="#908989" />
+            ) : (
+              <Checks size={22} color="#0949dc" />
+            ))}
+        </Stack>
+      )}
+
+      {/* Modal for displaying larger image */}
+      <Modal
+        open={openModal}
+        onClose={handleCloseModal}
+        aria-labelledby="image-modal-title"
+        aria-describedby="image-modal-description"
+      >
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            maxWidth: "90vw",
+            maxHeight: "90vh",
+            width: "90%",
+            height: "90%",
+            backgroundColor: "#fff",
+            boxShadow: 24,
+            p: 4,
+            borderRadius: "10px",
+            outline: "none",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            overflow: "auto", // Add scrollbar when content overflows
+          }}
+        >
+          {/* <div style={{width:'90%', height:'90%'}}> */}
+          <MapContainer center={el?.coordinates} zoom={10} attributionControl={false}>
+            {/* OPEN STREEN MAPS TILES */}
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <MarkerClusterGroup chunkedLoading>
+              {/* Hard coded markers */}
+              <Marker position={el?.coordinates} icon={customIcon}>
+                <Popup>{el?.message}</Popup>
+                <TP>{el?.message}</TP>
+              </Marker>
+              {myCoordinates && (
+                <Marker position={myCoordinates} icon={customIconForMyLoc}>
+                  <Popup>My Locaiton</Popup>
+                  <TP>Your Location</TP>
+                </Marker>
+              )}
+            </MarkerClusterGroup>
+          </MapContainer>
+          {/* </div> */}
+          <IconButton
+            aria-label="Close modal"
+            onClick={handleCloseModal}
+            className="z-10"
+            sx={{
+              position: "absolute",
+              top: 5,
+              right: 5,
+              color: "black",
+              backgroundColor: "red",
+              "&:hover": {
+                backgroundColor: "red",
+                color: "black",
+                scale: "0.9",
+                transition: "all 300ms",
+              },
+            }}
+          >
+            <X />
+          </IconButton>
+        </Box>
+      </Modal>
+    </Stack>
+  );
+};
+
 const Timeline = ({ el }) => {
   const theme = useTheme();
   return (
@@ -1985,4 +2368,5 @@ export {
   DocMsg,
   VideoMsg,
   DeletedMsg,
+  LocMsg,
 };

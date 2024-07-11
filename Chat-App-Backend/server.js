@@ -294,7 +294,7 @@ io.on("connection", async (socket) => {
 
     // data: {to, from, text/link}
 
-    const { message, conversation_id, from, to, type, replyToMsg } = data;
+    const { message, conversation_id, from, to, type, replyToMsg, latitude, longitude } = data;
 
     const to_user = await User.findById(to);
     const from_user = await User.findById(from);
@@ -344,6 +344,13 @@ io.on("connection", async (socket) => {
         text: message,
         status: "Sent",
         replyToMsg: replyToMsg,
+      };
+    }
+
+    if (latitude !== undefined && longitude !== undefined && type=='loc'){
+      new_message.location = {
+        type: 'Point',
+        coordinates: [longitude, latitude],
       };
     }
 
@@ -460,7 +467,9 @@ io.on("connection", async (socket) => {
 
     // emit to t incoming_message -user
     const savedMessage = chat.messages[chat.messages.length - 1];
+    const secondLastMessage = chat.messages[chat.messages.length - 2]; //last 2nd  msg for timeLine rendering purpose
     new_message._id = savedMessage._id;
+    new_message.created_at = savedMessage.created_at;
 
     io.to(to_user?.socket_id).emit("new_message", {
       conversation_id,
@@ -471,12 +480,14 @@ io.on("connection", async (socket) => {
         from_user?.avatar ||
         `https://api.dicebear.com/5.x/initials/svg?seed=${from_user?.firstName} ${from_user?.lastName}`,
       name: `${from_user?.firstName} ${from_user?.lastName}`,
+      secondLastMessageCreated_at: secondLastMessage?.created_at, //for timeLine
     });
 
     // emit outgoing_message -> from user
     io.to(from_user?.socket_id).emit("new_message", {
       conversation_id,
       message: new_message,
+      secondLastMessageCreated_at: secondLastMessage?.created_at, //for timeLine
     });
 
     // // Get the file extension

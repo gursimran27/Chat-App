@@ -181,7 +181,7 @@ const DashboardLayout = () => {
       socket.on("new_message", async (data) => {
         const currentConversationID = currentConversationIDRef.current;
         const message = data.message;
-        console.log("current_conversation", current_conversation, "data", data);
+        // console.log("current_conversation", current_conversation, "data", data);
         // check if msg we got is from currently selected conversation
 
         // const reaction = message?.reaction;
@@ -206,6 +206,8 @@ const DashboardLayout = () => {
             hour12: false,
           });
         };
+
+        // console.log(data?.message)
 
         const time = formatTimeTo24Hrs(message?.created_at);
         // console.log("data", data);
@@ -248,6 +250,7 @@ const DashboardLayout = () => {
               time: time || "9:36",
               created_at: message?.created_at || "9:36",
               deletedForEveryone: message?.deletedForEveryone || true,
+              coordinates: message?.location?.coordinates.reverse() || null,
             })
           );
         }
@@ -280,7 +283,7 @@ const DashboardLayout = () => {
               } max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
             >
               <div
-                className="flex-1 w-0 p-4"
+                className="flex-1 w-0 p-4 cursor-pointer"
                 onClick={() => {
                   dispatch(
                     SelectConversation({ room_id: data.conversation_id })
