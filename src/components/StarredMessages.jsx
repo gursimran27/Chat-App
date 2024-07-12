@@ -100,6 +100,8 @@ const StarredMessages = () => {
           created_at: el?.created_at || "9:36",
           deletedForEveryone: el?.deletedForEveryone || true,
           coordinates: el?.location?.coordinates.reverse() || null,
+          isLiveLocationSharing: el?.isLiveLocationSharing,
+          watchId: el?.watchId,
         };
       });
 

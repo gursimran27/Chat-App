@@ -8,6 +8,8 @@ import {
   FetchUserProfile,
   SelectConversation,
   showSnackbar,
+  UpdateUserLocation,
+  UpdateUserLocationEnded,
 } from "../../redux/slices/app";
 import { socket, connectSocket } from "../../socket";
 import {
@@ -22,6 +24,9 @@ import {
   UpdateChatForDeleteForMeEveryone,
   UpdateCurrent_conversationTypingStatus,
   UpdateConversationTypingStatus,
+  UpdateCurrent_conversationCoordinates,
+  UpdateConversationCoordinates,
+  UpdateMessagesForLiveLocEnded,
 } from "../../redux/slices/conversation";
 import AudioCallNotification from "../../sections/Dashboard/Audio/CallNotification";
 import VideoCallNotification from "../../sections/Dashboard/video/CallNotification";
@@ -251,6 +256,8 @@ const DashboardLayout = () => {
               created_at: message?.created_at || "9:36",
               deletedForEveryone: message?.deletedForEveryone || true,
               coordinates: message?.location?.coordinates.reverse() || null,
+              isLiveLocationSharing: message?.isLiveLocationSharing,
+              watchId: message?.watchId,
             })
           );
         }
@@ -477,6 +484,47 @@ const DashboardLayout = () => {
       );
     });
 
+    socket.on("updateCoordinates", async (data) => {
+      const currentConversationID = currentConversationIDRef.current;
+
+      if (currentConversationID === data.conversation_id) {
+        dispatch(
+          UpdateCurrent_conversationCoordinates({
+            coordinates: data.coordinates,
+          })
+        );
+      }
+
+      dispatch(
+        UpdateConversationCoordinates({
+          coordinates: data.coordinates,
+          conversation_id: data.conversation_id,
+        })
+      );
+    });
+
+    socket.on("updateUser", async (data) => {
+      dispatch(
+        UpdateUserLocation({
+          isLiveLocationSharing: data.isLiveLocationSharing,
+          location: data.location,
+        })
+      );
+    });
+
+    socket.on("liveLocEnded", async (data) => {
+      const currentConversationID = currentConversationIDRef.current;
+
+      if (currentConversationID === data.conversationId) {
+        dispatch(UpdateMessagesForLiveLocEnded({ messageId: data.messageId }));
+      }
+
+      if (user_id == data.from) {
+        console.log("loll")
+        dispatch(UpdateUserLocationEnded());
+      }
+    });
+
     // // Listen for the 'isSeen' event from the server
     // socket.on("isSeen", () => {
     //   // Get the current conversation ID
@@ -502,6 +550,9 @@ const DashboardLayout = () => {
       socket?.off("updateUnread");
       socket?.off("message_reacted");
       socket?.off("message_deleteForEveryone");
+      socket?.off("updateCoordinates");
+      socket?.off("updateUser");
+      socket?.off("liveLocEnded");
     };
   }, [isLoggedIn, socket]);
 
@@ -510,7 +561,7 @@ const DashboardLayout = () => {
   }
 
   return (
-    <>
+    <div className="overflow-y-hidden">
       <Stack direction="row">
         {isDesktop && (
           // SideBar
@@ -537,7 +588,7 @@ const DashboardLayout = () => {
           handleClose={handleCloseVideoDialog}
         />
       )}
-    </>
+    </div>
   );
 };
 

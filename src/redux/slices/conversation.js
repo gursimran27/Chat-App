@@ -94,6 +94,7 @@ const slice = createSlice({
           about: user?.about || "No Discription",
           email: user?.email,
           typing: el?.typing[user?._id.toString()] || false,
+          coordinates: user?.location.coordinates.reverse() || null,
         };
       });
 
@@ -143,6 +144,7 @@ const slice = createSlice({
               pinned: false,
               email: user?.email,
               typing: el?.typing[user?._id.toString()] || false,
+              coordinates: user?.location.coordinates.reverse() || null,
             };
           }
         }
@@ -189,6 +191,7 @@ const slice = createSlice({
         pinned: false,
         email: user?.email,
         typing: this_conversation?.typing[user?._id.toString()] || false,
+        coordinates: user?.location.coordinates.reverse() || null,
       });
     },
 
@@ -240,6 +243,8 @@ const slice = createSlice({
             created_at: el?.created_at || "9:36",
             deletedForEveryone: el?.deletedForEveryone || false,
             coordinates: el?.location?.coordinates.reverse() || null,
+            isLiveLocationSharing: el?.isLiveLocationSharing,
+            watchId: el?.watchId,
           };
         } else {
           return el;
@@ -294,6 +299,8 @@ const slice = createSlice({
             created_at: el?.created_at || "9:36",
             deletedForEveryone: el?.deletedForEveryone || false,
             coordinates: el?.location?.coordinates.reverse() || null,
+            isLiveLocationSharing: el?.isLiveLocationSharing,
+            watchId: el?.watchId,
           };
         } else {
           return el;
@@ -483,6 +490,20 @@ const slice = createSlice({
           }
         });
     },
+    updateMessagesForLiveLocEnded(state, action) {
+      state.direct_chat.current_messages =
+        state.direct_chat.current_messages.map((el) => {
+          if (el?.id != action.payload.messageId) {
+            return el;
+          } else {
+            return {
+              ...el,
+              isLiveLocationSharing: false,
+              watchId: null,
+            };
+          }
+        });
+    },
     updateCurrent_conversationOnlineStatus(state, action) {
       state.direct_chat.current_conversation = {
         ...state.direct_chat.current_conversation,
@@ -492,6 +513,12 @@ const slice = createSlice({
       //   "current_conversation setting status to  ",
       //   action.payload.status
       // );
+    },
+    updateCurrent_conversationCoordinates(state, action) {
+      state.direct_chat.current_conversation = {
+        ...state.direct_chat.current_conversation,
+        coordinates: action.payload.coordinates.reverse(),
+      };
     },
     updateCurrent_conversationTypingStatus(state, action) {
       state.direct_chat.current_conversation = {
@@ -504,6 +531,18 @@ const slice = createSlice({
         (conversation) =>
           conversation.user_id === action.payload.user_id
             ? { ...conversation, online: action.payload.status }
+            : conversation
+      );
+      console.log("conversations setting status to ", action.payload.status);
+    },
+    updateConversationCoordinates(state, action) {
+      state.direct_chat.conversations = state.direct_chat.conversations.map(
+        (conversation) =>
+          conversation.id === action.payload.conversation_id
+            ? {
+                ...conversation,
+                coordinates: action.payload.coordinates.reverse(),
+              }
             : conversation
       );
       console.log("conversations setting status to ", action.payload.status);
@@ -658,6 +697,16 @@ export const UpdateCurrent_conversationOnlineStatus = ({ status }) => {
   };
 };
 
+export const UpdateCurrent_conversationCoordinates = ({ coordinates }) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.updateCurrent_conversationCoordinates({
+        coordinates: coordinates,
+      })
+    );
+  };
+};
+
 export const UpdateCurrent_conversationTypingStatus = ({ typing }) => {
   return async (dispatch, getState) => {
     dispatch(
@@ -672,6 +721,19 @@ export const UpdateConversationOnlineStatus = ({ status, user_id }) => {
       slice.actions.updateConversationOnlineStatus({
         status: status,
         user_id: user_id,
+      })
+    );
+  };
+};
+export const UpdateConversationCoordinates = ({
+  conversation_id,
+  coordinates,
+}) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.updateConversationCoordinates({
+        conversation_id: conversation_id,
+        coordinates: coordinates,
       })
     );
   };
@@ -759,6 +821,17 @@ export const UpdateMessagesForDeleteForMe = ({ messageId, conversationId }) => {
       slice.actions.updateMessagesForDeleteForMe({
         messageId: messageId,
         conversationId: conversationId,
+      })
+    );
+  };
+};
+export const UpdateMessagesForLiveLocEnded = ({
+  messageId,
+}) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.updateMessagesForLiveLocEnded({
+        messageId: messageId,
       })
     );
   };

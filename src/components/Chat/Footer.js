@@ -14,7 +14,7 @@ import {
   LinkSimple,
   PaperPlaneTilt,
   Smiley,
-  MapPinLine ,
+  MapPinLine,
   UploadSimple,
   User,
   X,
@@ -35,6 +35,7 @@ import unSupport from "../../assets/OIP.jpeg";
 import useSound from "use-sound";
 import sound from "../../assets/notifications/WhatsApp-Sending-Message-Sound-Effect.mp3";
 import { showSnackbar } from "../../redux/slices/app";
+import toast from "react-hot-toast";
 
 const StyledInput = styled(TextField)(({ theme }) => ({
   "& .MuiInputBase-input": {
@@ -52,7 +53,7 @@ const Actions = [
   },
   {
     color: "#1b8cfe",
-    icon: <MapPinLine  size={24} />,
+    icon: <MapPinLine size={24} />,
     y: 172,
     title: "share your current location",
   },
@@ -90,11 +91,12 @@ const ChatInput = ({
     (state) => state.conversation.direct_chat
   );
 
-  const { firstName, lastName } =  useSelector((state)=>state.app.user)
+  const { firstName, lastName } = useSelector((state) => state.app.user);
   const user_id = window.localStorage.getItem("user_id");
   const { room_id } = useSelector((state) => state.app);
 
   const { token } = useSelector((state) => state.auth);
+  const { isLiveLocationSharing } = useSelector((state) => state.app.user);
 
   const { reply, replyToMsg } = useSelector(
     (state) => state.conversation.reply_msg
@@ -272,6 +274,7 @@ const ChatInput = ({
 
   const handleCurrentLoc = async () => {
     console.log("handleCurrentLoc");
+    const toastId = toast.loading("Loading...");
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -286,15 +289,103 @@ const ChatInput = ({
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
           });
+          toast.dismiss(toastId);
         },
         (err) => {
           console.log(err.message);
+          toast.dismiss(toastId);
           dispatch(showSnackbar({ severity: "error", message: err.message }));
         }
       );
     } else {
       console.log("Geolocation is not supported by this browser.");
-      dispatch(showSnackbar({ severity: "error", message: "Geolocation is not supported by this browser." }));
+      toast.dismiss(toastId);
+      dispatch(
+        showSnackbar({
+          severity: "error",
+          message: "Geolocation is not supported by this browser.",
+        })
+      );
+    }
+    setOpenActions(!openActions);
+  };
+
+  const handleLiveLoc = async () => {
+    console.log("handleLiveLoc");
+    if(isLiveLocationSharing){
+      dispatch(showSnackbar({ severity: "error", message: "Live location is already in pregress!" }));
+      return;
+    }
+    const toastId = toast.loading("Loading...");
+    if ("geolocation" in navigator) {
+      const watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          // Send the updated location to the server
+          console.log(`Latitude: ${latitude}, Longitude: ${longitude}`,watchId);
+          socket.emit("liveLocationMsg", {
+            latitude,
+            longitude,
+            conversation_id: room_id,
+            from: user_id,
+            to: current_conversation?.user_id,
+            type: "live-loc",
+            replyToMsg: reply ? replyToMsg : null,
+            watchId: watchId,
+          });
+          toast.dismiss(toastId);
+        },
+        (error) => {
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              console.error("User denied the request for Geolocation.");
+              dispatch(
+                showSnackbar({
+                  severity: "error",
+                  message: "User denied the request for Geolocation.",
+                })
+              );
+              toast.dismiss(toastId);
+              break;
+            // case error.POSITION_UNAVAILABLE:
+            //   console.error("Location information is unavailable.");
+            //   dispatch(
+            //     showSnackbar({
+            //       severity: "error",
+            //       message: "Location information is unavailable.",
+            //     })
+            //   );
+            //   toast.dismiss(toastId)
+            //   break;
+            case error.TIMEOUT:
+              console.error("The request to get user location timed out.");
+              dispatch(
+                showSnackbar({
+                  severity: "error",
+                  message: "The request to get user location timed out.",
+                })
+              );
+              toast.dismiss(toastId);
+              break;
+            case error.UNKNOWN_ERROR:
+              console.error("An unknown error occurred.");
+              dispatch(
+                showSnackbar({
+                  severity: "error",
+                  message: "An unknown error occurred.",
+                })
+              );
+              toast.dismiss(toastId);
+              break;
+          }
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 5000,
+        }
+      );
+      setOpenActions(!openActions);
     }
   };
 
@@ -328,6 +419,20 @@ const ChatInput = ({
                     <Tooltip placement="right" title={el.title}>
                       <Fab
                         onClick={handleCurrentLoc}
+                        sx={{
+                          position: "absolute",
+                          top: -el.y,
+                          backgroundColor: el.color,
+                        }}
+                        aria-label="add"
+                      >
+                        {el.icon}
+                      </Fab>
+                    </Tooltip>
+                  ) : el?.title == "Contact" ? (
+                    <Tooltip placement="right" title="Share your live location">
+                      <Fab
+                        onClick={handleLiveLoc}
                         sx={{
                           position: "absolute",
                           top: -el.y,

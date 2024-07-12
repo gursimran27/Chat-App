@@ -185,7 +185,7 @@ io.on("connection", async (socket) => {
       participants: { $all: [user_id] },
     }).populate(
       "participants",
-      "firstName lastName avatar _id email status about"
+      "firstName lastName avatar _id email status about location"
     );
 
     // db.books.find({ authors: { $elemMatch: { name: "John Smith" } } })
@@ -294,7 +294,16 @@ io.on("connection", async (socket) => {
 
     // data: {to, from, text/link}
 
-    const { message, conversation_id, from, to, type, replyToMsg, latitude, longitude } = data;
+    const {
+      message,
+      conversation_id,
+      from,
+      to,
+      type,
+      replyToMsg,
+      latitude,
+      longitude,
+    } = data;
 
     const to_user = await User.findById(to);
     const from_user = await User.findById(from);
@@ -347,9 +356,9 @@ io.on("connection", async (socket) => {
       };
     }
 
-    if (latitude !== undefined && longitude !== undefined && type=='loc'){
+    if (latitude !== undefined && longitude !== undefined && type == "loc") {
       new_message.location = {
-        type: 'Point',
+        type: "Point",
         coordinates: [longitude, latitude],
       };
     }
@@ -745,11 +754,32 @@ io.on("connection", async (socket) => {
       // Find the conversation by ID
       const conversation = await OneToOneMessage.findById(conversationId);
 
+      const to_user = await User.findById(to);
+      const from_user = await User.findById(from);
+
       if (conversation) {
         // Find the message by ID
         const message = conversation.messages.id(messageId);
 
         if (message) {
+
+          if(message.type == 'live-loc'){
+            from_user.isLiveLocationSharing = false;
+            await from_user.save({ new: true });
+            io.to(to_user?.socket_id).emit("liveLocEnded", {
+              conversationId,
+              messageId: messageId,
+              from: from,
+            });
+        
+            // emit outgoing_message -> from user
+            io.to(from_user?.socket_id).emit("liveLocEnded", {
+              conversationId,
+              messageId: messageId,
+              from: from,
+            });
+          }
+
           // Update message fields
           message.star = {}; // Set star to empty object
           message.reaction = {}; // Set reaction to empty object
@@ -759,11 +789,10 @@ io.on("connection", async (socket) => {
           message.file = null;
           message.status = "Seen";
           message.replyToMsg = null;
+          message.isLiveLocationSharing = false;
+          message.watchId = null,
 
           await conversation.save({ new: true });
-
-          const to_user = await User.findById(to);
-          const from_user = await User.findById(from);
 
           // Emit an event to the recipient to update their UI
           io.to(to_user?.socket_id).emit("message_deleteForEveryone", {
@@ -793,6 +822,8 @@ io.on("connection", async (socket) => {
               el.file = null;
               el.status = "Seen";
               el.replyToMsg = null;
+              el.isLiveLocationSharing = false;
+              el.watchId = null;
             }
           });
 
@@ -831,6 +862,167 @@ io.on("connection", async (socket) => {
     } catch (error) {
       console.error("Error updating typing", error);
     }
+  });
+
+  // *------------------------------------------------------------------
+  socket.on("liveLocationMsg", async (data) => {
+    // console.log("Received message:", data);
+
+    // data: {to, from, text/link}
+
+    const {
+      conversation_id,
+      from,
+      to,
+      type,
+      replyToMsg,
+      latitude,
+      longitude,
+      watchId,
+    } = data;
+
+    const to_user = await User.findById(to);
+    const from_user = await User.findById(from);
+
+    const isLiveLocation = from_user?.isLiveLocationSharing;
+
+    // updating location of from user
+    from_user.isLiveLocationSharing = true;
+    from_user.location = {
+      type: "Point",
+      coordinates: [longitude, latitude],
+    };
+
+    await from_user.save({ new: true, validateModifiedOnly: true });
+
+    io.to(to_user?.socket_id).emit("updateCoordinates", {
+      conversation_id,
+      coordinates: [longitude, latitude],
+    });
+
+    io.to(from_user?.socket_id).emit("updateUser", {
+      location: from_user?.location,
+      isLiveLocationSharing: true,
+    });
+
+    if (!isLiveLocation) {
+      console.log("inside", isLiveLocation);
+      let new_message = null;
+
+      if (to_user?.status == "Online") {
+        new_message = {
+          to: to,
+          from: from,
+          type: type,
+          created_at: Date.now(),
+          text: "live location",
+          status: "Delivered", // Update the status to Delivered if the conversation IDs do not match
+          replyToMsg: replyToMsg,
+          isLiveLocationSharing: true,
+          watchId: watchId,
+        };
+        // }
+      } else {
+        new_message = {
+          to: to,
+          from: from,
+          type: type,
+          created_at: Date.now(),
+          text: "live location",
+          status: "Sent",
+          replyToMsg: replyToMsg,
+          isLiveLocationSharing: true,
+          watchId: watchId,
+        };
+      }
+
+      // fetch OneToOneMessage Doc & push a new message to existing conversation
+      const chat = await OneToOneMessage.findById(conversation_id);
+      chat.messages.push(new_message);
+      // Increment the unreadCount for the recipient
+      chat.unreadCount.set(to, (chat.unreadCount.get(to) || 0) + 1);
+      // save to db`
+      await chat.save({ new: true, validateModifiedOnly: true });
+      // emit to  incoming_message -user
+      const savedMessage = chat.messages[chat.messages.length - 1]; //last saved msg
+      const secondLastMessage = chat.messages[chat.messages.length - 2]; //last 2nd  msg for timeLine rendering purpose
+      new_message._id = savedMessage._id;
+      new_message.created_at = savedMessage.created_at;
+
+      io.to(to_user?.socket_id).emit("new_message", {
+        conversation_id,
+        message: new_message,
+        unread: chat.unreadCount.get(to),
+        text: "live location", //for notification
+        avatar:
+          from_user?.avatar ||
+          `https://api.dicebear.com/5.x/initials/svg?seed=${from_user?.firstName} ${from_user?.lastName}`, //for notification
+        name: `${from_user?.firstName} ${from_user?.lastName}`, //for notification
+        secondLastMessageCreated_at: secondLastMessage?.created_at, //for timeLine
+      });
+
+      // emit outgoing_message -> from user
+      io.to(from_user?.socket_id).emit("new_message", {
+        conversation_id,
+        message: new_message,
+        secondLastMessageCreated_at: secondLastMessage?.created_at, //for timeLine
+      });
+    }
+  });
+
+  // *------------------------------------------------------------------
+  socket.on("liveLocEnded", async (data) => {
+    const { conversationId, from, to, messageId } = data;
+
+    const to_user = await User.findById(to);
+    const from_user = await User.findById(from);
+
+    // updating location of from user
+    from_user.isLiveLocationSharing = false;
+    // from_user.location= {
+    //   type: "Point",
+    //   coordinates: [longitude, latitude],
+    // }
+
+    await from_user.save({ new: true, validateModifiedOnly: true });
+
+    const conversation = await OneToOneMessage.findById(conversationId);
+    if (!conversation) {
+      console.log("no conversation found");
+    }
+
+    const message = conversation.messages.id(messageId);
+    if (!message) {
+      console.log("no messages found");
+    }
+
+    message.isLiveLocationSharing = false;
+    message.watchId = null;
+
+    await conversation.save({ new: true });
+
+    // update sanpshot
+    oldMessages
+      ?.get(to.toString())
+      ?.get(conversationId.toString())
+      .forEach((el) => {
+        if (el?._id == messageId) {
+          (el.isLiveLocationSharing = false), (el.watchId = null);
+        }
+      });
+
+    io.to(to_user?.socket_id).emit("liveLocEnded", {
+      conversationId,
+      messageId: messageId,
+      from: from,
+    });
+
+    // emit outgoing_message -> from user
+    io.to(from_user?.socket_id).emit("liveLocEnded", {
+      conversationId,
+      messageId: messageId,
+      from: from,
+    });
   });
 
   // *-------------- HANDLE AUDIO CALL SOCKET EVENTS ----------------- //

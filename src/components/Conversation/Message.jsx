@@ -7,6 +7,7 @@ import {
   DeletedMsg,
   DocMsg,
   LinkMsg,
+  LiveLocMsg,
   LocMsg,
   MediaMsg,
   ReplyMsg,
@@ -210,6 +211,12 @@ const Message = ({ isMobile, menu }) => {
                   return (
                     //  deletedMessage
                     <LocMsg el={el} menu={menu} />
+                  );
+
+                case  "live-loc":
+                  return (
+                    //  deletedMessage
+                    <LiveLocMsg el={el} menu={menu} />
                   );
 
                 default:

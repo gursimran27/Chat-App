@@ -11,11 +11,18 @@ import {
 import { styled, useTheme, alpha } from "@mui/material/styles";
 // import { useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { SelectConversation, closeSnackBar, showSnackbar } from "../redux/slices/app";
-import { UpdateConversationUnread, UpdateDirectConversationForPinnedChat } from "../redux/slices/conversation";
+import {
+  SelectConversation,
+  closeSnackBar,
+  showSnackbar,
+} from "../redux/slices/app";
+import {
+  ClearCurrentMessagesAndCurrentConversation,
+  UpdateConversationUnread,
+  UpdateDirectConversationForPinnedChat,
+} from "../redux/slices/conversation";
 import { DotsThreeVertical } from "phosphor-react";
 import axios from "../utils/axios";
-
 
 const Message_options = [
   {
@@ -68,7 +75,7 @@ const StyledBadge = styled(Badge)(({ theme }) => ({
   },
 }));
 
-const MessageOption = ({conversationId, name, pinned}) => {
+const MessageOption = ({ conversationId, name, pinned }) => {
   const dispatch = useDispatch();
   const [anchorEl, setAnchorEl] = useState(null); //store referance
   const open = Boolean(anchorEl); //convert referance to boollean
@@ -79,9 +86,9 @@ const MessageOption = ({conversationId, name, pinned}) => {
     setAnchorEl(null);
   };
 
-  const { token } = useSelector((state)=>state.auth);
+  const { token } = useSelector((state) => state.auth);
 
-  const handlePin =  async (conversationId) => {
+  const handlePin = async (conversationId) => {
     try {
       dispatch(
         showSnackbar({
@@ -99,17 +106,22 @@ const MessageOption = ({conversationId, name, pinned}) => {
           },
         }
       );
-      dispatch(UpdateDirectConversationForPinnedChat({this_conversation_id: conversationId, pinned: true}));
+      dispatch(
+        UpdateDirectConversationForPinnedChat({
+          this_conversation_id: conversationId,
+          pinned: true,
+        })
+      );
       dispatch(closeSnackBar);
 
-      console.log('pinned chat sucess',data)
+      console.log("pinned chat sucess", data);
     } catch (error) {
-      console.error('Failed to pin conversation', error);
+      console.error("Failed to pin conversation", error);
     }
     handleClose();
   };
 
-  const handleUnpin =  async (conversationId) => {
+  const handleUnpin = async (conversationId) => {
     try {
       dispatch(
         showSnackbar({
@@ -127,11 +139,16 @@ const MessageOption = ({conversationId, name, pinned}) => {
           },
         }
       );
-      dispatch(UpdateDirectConversationForPinnedChat({this_conversation_id: conversationId, pinned: false}));
+      dispatch(
+        UpdateDirectConversationForPinnedChat({
+          this_conversation_id: conversationId,
+          pinned: false,
+        })
+      );
       dispatch(closeSnackBar);
-      console.log('unpinned chat sucess',data)
+      console.log("unpinned chat sucess", data);
     } catch (error) {
-      console.error('Failed to pin conversation', error);
+      console.error("Failed to pin conversation", error);
     }
     handleClose();
   };
@@ -145,7 +162,7 @@ const MessageOption = ({conversationId, name, pinned}) => {
         aria-haspopup="true"
         aria-expanded={open ? "true" : undefined}
         onClick={handleClick}
-        style={{cursor:'pointer'}}
+        style={{ cursor: "pointer" }}
       />
       <Menu
         id="basic-menu"
@@ -157,24 +174,23 @@ const MessageOption = ({conversationId, name, pinned}) => {
         }}
       >
         <Stack spacing={1} px={1}>
-          {Message_options.map((el) => (
+          {Message_options.map((el) =>
             el?.title == "Pin Chat" ? (
               <MenuItem
                 onClick={() => {
-                  if(pinned){
+                  if (pinned) {
                     handleUnpin(conversationId);
-                  }
-                  else{
+                  } else {
                     handlePin(conversationId);
                   }
                 }}
               >
-                {!pinned? el?.title : "Unpin Chat"}
+                {!pinned ? el?.title : "Unpin Chat"}
               </MenuItem>
             ) : (
               <MenuItem onClick={handleClose}>{el.title}</MenuItem>
             )
-          ))}
+          )}
         </Stack>
       </Menu>
     </>
@@ -198,9 +214,12 @@ const ChatElement = ({ img, name, msg, time, unread, online, id, pinned }) => {
   const theme = useTheme();
 
   return (
-    <Stack  direction="row" >
+    <Stack direction="row">
       <StyledChatBox
         onClick={() => {
+          if(id==room_id) 
+            return;
+          dispatch(ClearCurrentMessagesAndCurrentConversation());
           dispatch(SelectConversation({ room_id: id }));
           dispatch(UpdateConversationUnread({ conversationId: id }));
         }}
@@ -256,7 +275,7 @@ const ChatElement = ({ img, name, msg, time, unread, online, id, pinned }) => {
           </Stack>
         </Stack>
       </StyledChatBox>
-      <MessageOption conversationId={id} name={name} pinned={pinned}/>
+      <MessageOption conversationId={id} name={name} pinned={pinned} />
     </Stack>
   );
 };

@@ -78,6 +78,19 @@ const slice = createSlice({
       state.chat_type = "individual";
       state.room_id = action.payload.room_id;
     },
+    updateUserLocation(state, action) {
+      state.user = {
+        ...state.user,
+        location: action.payload.location,
+        isLiveLocationSharing: action.payload.isLiveLocationSharing,
+      }
+    },
+    updateUserLocationEnded(state, action) {
+      state.user = {
+        ...state.user,
+        isLiveLocationSharing: false,
+      }
+    },
   },
 });
 
@@ -317,5 +330,22 @@ export const UpdateUserProfile = ({ firstName, about, avatar, setLoading }) => {
         console.log(err.message);
         setLoading(false);
       });
+  };
+};
+
+
+export const UpdateUserLocation = ({ isLiveLocationSharing, location }) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.updateUserLocation({ isLiveLocationSharing: isLiveLocationSharing, location: location  })
+    );
+  };
+};
+
+export const UpdateUserLocationEnded = () => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.updateUserLocationEnded()
+    );
   };
 };

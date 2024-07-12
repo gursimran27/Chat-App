@@ -72,14 +72,14 @@ const userSchema = new mongoose.Schema({
     },
   ],
   socket_id: {
-    type: String
+    type: String,
   },
   status: {
     type: String,
-    enum: ["Online", "Offline"]
+    enum: ["Online", "Offline"],
   },
   lastSeen: {
-    type: Date
+    type: Date,
   },
   pinnedChats: [
     {
@@ -87,10 +87,22 @@ const userSchema = new mongoose.Schema({
       ref: "OneToOneMessage",
     },
   ],
+  isLiveLocationSharing: {
+    type: Boolean,
+    default: false,
+  },
+  location: {
+    //for live location sharing
+    type: {
+      type: String,
+      enum: ["Point"],
+      default: "Point",
+    },
+    coordinates: [Number],
+  },
 });
 
-
-// * HOOK's 
+// * HOOK's
 userSchema.pre("save", async function (next) {
   // Only run this function if OTP was actually modified
   if (!this.isModified("otp") || !this.otp) return next();
@@ -110,23 +122,20 @@ userSchema.pre("save", async function (next) {
   // Hash the password with cost of 12
   this.password = await bcrypt.hash(this.password, 12);
   // console.log("hwllo")
-  
+
   //! Shift it to next hook // this.passwordChangedAt = Date.now() - 1000;
-  
-  next();
-  });
-  
-  userSchema.pre("save", function (next) {
-    if (!this.isModified("password") || this.isNew || !this.password)
-      return next();
-    
-    this.passwordChangedAt = Date.now() - 1000;
-    // console.log("lol")
+
   next();
 });
 
+userSchema.pre("save", function (next) {
+  if (!this.isModified("password") || this.isNew || !this.password)
+    return next();
 
-
+  this.passwordChangedAt = Date.now() - 1000;
+  // console.log("lol")
+  next();
+});
 
 // *the below are methods of User model
 userSchema.methods.correctPassword = async function (
@@ -161,7 +170,7 @@ userSchema.methods.createPasswordResetToken = function () {
     .update(resetToken)
     .digest("hex");
 
-  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;//10 min
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000; //10 min
   console.log(`reset token= ${resetToken}`);
   return resetToken;
 };

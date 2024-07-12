@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { ArrowFatLinesDown } = require("phosphor-react");
 
 const oneToOneMessageSchema = new mongoose.Schema({
   participants: [
@@ -29,6 +30,7 @@ const oneToOneMessageSchema = new mongoose.Schema({
           "video",
           "deleted",
           "loc",
+          "live-loc"
         ],
       },
       created_at: {
@@ -71,13 +73,21 @@ const oneToOneMessageSchema = new mongoose.Schema({
         type: Boolean,
         default: true,
       },
-      location: {
+      location: {//for current location sharing
         type: {
           type: String,
           enum: ["Point"],
           default: "Point",
         },
         coordinates: [Number],
+      },
+      isLiveLocationSharing: {
+        type: Boolean,
+        default: false,
+      },
+      watchId: {
+        type: Number,
+        default: null,
       },
     },
   ],

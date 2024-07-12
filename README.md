@@ -40,7 +40,7 @@
 
 10. **Status of User**
 
-- Displaying the online status of users or his/her last seen in real time.
+   - Displaying the online status of users or his/her last seen in real time.
 
 11. **Unread Message Count**
 
@@ -73,6 +73,9 @@
 18. **Current Location Sharing**
 
     - Users can share their current location with other user in the chat.
+
+19. **Live Location Sharing**
+    - Users can share their live location with other user, updating in real-time.
 
 ## Installation
 
