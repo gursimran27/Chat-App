@@ -2166,7 +2166,7 @@ const LocMsg = ({ el, menu }) => {
         </div>
         <Stack spacing={1} sx={{ maxWidth: "100%" }}>
           <div
-            className="border w-full"
+            className="border w-full -z-0"
             style={{
               height: "210px",
               borderRadius: "10px",
@@ -2558,7 +2558,7 @@ const LiveLocMsg = ({ el, menu }) => {
             <div
               className={`border w-full ${
                 el?.isLiveLocationSharing ? "opacity-100" : "opacity-40"
-              }`}
+              } -z-0`}
               style={{
                 height: "210px",
                 borderRadius: "10px",
@@ -2598,7 +2598,7 @@ const LiveLocMsg = ({ el, menu }) => {
             <div
               className={`border w-full ${
                 el?.isLiveLocationSharing ? "opacity-100" : "opacity-55"
-              }`}
+              } -z-0`}
               style={{
                 height: "210px",
                 borderRadius: "10px",
@@ -2853,6 +2853,9 @@ const VoiceMsg = ({ el, menu }) => {
     }
   };
 
+  const playbackRates = [1, 1.25, 1.5, 0.75];
+  const [currentRateIndex, setCurrentRateIndex] = useState(0);
+
   const [audioMessage, setaudioMessage] = useState(null);
   const [currentPlayBackTime, setcurrentPlayBackTime] = useState(0);
   const [totalDuration, settotalDuration] = useState(0);
@@ -2874,12 +2877,11 @@ const VoiceMsg = ({ el, menu }) => {
         responsive: true,
       });
 
-
       const updatePlaybackTime = () => {
         setcurrentPlayBackTime(waveform.current.getCurrentTime());
       };
 
-      waveform.current.on('audioprocess', updatePlaybackTime);
+      waveform.current.on("audioprocess", updatePlaybackTime);
 
       waveform.current.on("finish", () => {
         setisPlaying(false);
@@ -2890,15 +2892,20 @@ const VoiceMsg = ({ el, menu }) => {
     };
   }, []);
 
-    useEffect(() => {
-      const audio = new Audio(el?.src);
-      // console.log('asa',audio)
-      setaudioMessage(audio);
-      waveform.current.load(el?.src);
-      waveform.current.on("ready", () => {
-        settotalDuration(waveform.current.getDuration());
-      });
-    }, [el]);
+  useEffect(() => {
+    const currentRate = playbackRates[currentRateIndex];
+    waveform.current.setPlaybackRate(currentRate);
+  }, [currentRateIndex]);
+
+  useEffect(() => {
+    const audio = new Audio(el?.src);
+    // console.log('asa',audio)
+    setaudioMessage(audio);
+    waveform.current.load(el?.src);
+    waveform.current.on("ready", () => {
+      settotalDuration(waveform.current.getDuration());
+    });
+  }, [el]);
 
   // useEffect(() => {
   //   if (audioMessage) {
@@ -2912,6 +2919,10 @@ const VoiceMsg = ({ el, menu }) => {
   //     };
   //   }
   // }, [audioMessage]);
+
+  const handleIncreaseSpeed = () => {
+    setCurrentRateIndex((prevIndex) => (prevIndex + 1) % playbackRates.length);
+  };
 
   const handlePlayAudio = () => {
     if (audioMessage) {
@@ -3024,16 +3035,39 @@ const VoiceMsg = ({ el, menu }) => {
         <div className="flex items-center gap-5 text-white px-4 pr-2 py-4 text-sm rounded-md">
           <div className={`cursor-pointer text-xl`}>
             {!isPlaying ? (
-              <FaPlay onClick={handlePlayAudio} className={`hover:text-green-500 ${(el?.incoming && theme.palette.mode =='light')? 'text-gray-500': null} transition-colors duration-300`}/>
+              <FaPlay
+                onClick={handlePlayAudio}
+                className={`hover:text-green-500 ${
+                  el?.incoming && theme.palette.mode == "light"
+                    ? "text-gray-500"
+                    : null
+                } transition-colors duration-300`}
+              />
             ) : (
-              <FaStop onClick={handlePauseAudio} className={`hover:text-green-500 ${(el?.incoming && theme.palette.mode =='light')? 'text-gray-500': null} transition-colors duration-300`}/>
+              <FaStop
+                onClick={handlePauseAudio}
+                className={`hover:text-green-500 ${
+                  el?.incoming && theme.palette.mode == "light"
+                    ? "text-gray-500"
+                    : null
+                } transition-colors duration-300`}
+              />
             )}
           </div>
 
           <div className=" relative">
+            <div className=" flex flex-row justify-between gap-2 items-center">
             <div className=" w-60" ref={waveformRef} />
+            <div className={`rounded-[10px] select-none w-10 cursor-pointer font-semibold bg-white text-black text-center ${(theme.palette.mode== 'light' && el?.incoming)  ? 'bg-gray-500 text-[#ffff]': null} `}onClick={handleIncreaseSpeed}>{playbackRates[currentRateIndex]}x</div>
+            </div>
             <div className="text-white text-[11px] pt-1 flex justify-between absolute bottom-[-22px] w-full">
-              <span className={`${(el?.incoming && theme.palette.mode =='light')? 'text-gray-600' : null}`}>
+              <span
+                className={`${
+                  el?.incoming && theme.palette.mode == "light"
+                    ? "text-gray-600"
+                    : null
+                }`}
+              >
                 {formatTime(isPlaying ? currentPlayBackTime : totalDuration)}
               </span>
             </div>
@@ -3159,5 +3193,5 @@ export {
   DeletedMsg,
   LocMsg,
   LiveLocMsg,
-  VoiceMsg
+  VoiceMsg,
 };

@@ -865,6 +865,35 @@ io.on("connection", async (socket) => {
   });
 
   // *------------------------------------------------------------------
+  socket.on("updateRecordingAudio", async (data) => {
+    const { conversationId, to, from, recordingAudio } = data;
+
+    try {
+      // Find the conversation by ID
+      const conversation = await OneToOneMessage.findById(conversationId);
+
+      if (conversation) {
+        // Update the typing status for the user
+        conversation?.recordingAudio.set(from, recordingAudio);
+
+        await conversation.save({ new: true });
+
+        const to_user = await User.findById(to);
+
+        // Emit an event to the recipient to update their UI
+        io.to(to_user?.socket_id).emit("updateRecordingAudio", {
+          conversationId,
+          recordingAudio,
+        });
+      } else {
+        console.log("Conversation not found");
+      }
+    } catch (error) {
+      console.error("Error updating recordingAudio", error);
+    }
+  });
+
+  // *------------------------------------------------------------------
   socket.on("liveLocationMsg", async (data) => {
     // console.log("Received message:", data);
 

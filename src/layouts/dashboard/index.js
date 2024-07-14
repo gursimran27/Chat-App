@@ -27,6 +27,8 @@ import {
   UpdateCurrent_conversationCoordinates,
   UpdateConversationCoordinates,
   UpdateMessagesForLiveLocEnded,
+  UpdateCurrent_conversationRecordingAudioStatus,
+  UpdateConversationRecordingAudioStatus,
 } from "../../redux/slices/conversation";
 import AudioCallNotification from "../../sections/Dashboard/Audio/CallNotification";
 import VideoCallNotification from "../../sections/Dashboard/video/CallNotification";
@@ -427,6 +429,24 @@ const DashboardLayout = () => {
       dispatch(
         UpdateConversationTypingStatus({
           typing: data.typing,
+          conversationId: data.conversationId,
+        })
+      );
+    });
+
+
+    socket.on("updateRecordingAudio", (data) => {
+      const currentConversationID = currentConversationIDRef.current;
+
+      if (currentConversationID === data.conversationId) {
+        dispatch(
+          UpdateCurrent_conversationRecordingAudioStatus({ recordingAudio: data.recordingAudio })
+        );
+      }
+
+      dispatch(
+        UpdateConversationRecordingAudioStatus({
+          recordingAudio: data.recordingAudio,
           conversationId: data.conversationId,
         })
       );

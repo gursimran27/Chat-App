@@ -62,6 +62,15 @@ const CaptureAudio = ({ hide }) => {
   }, [isRecording]);
 
   useEffect(() => {
+    socket.emit("updateRecordingAudio", {
+      to: current_conversation?.user_id,
+      from: user_id,
+      conversationId: room_id,
+      recordingAudio: true,
+    });
+  }, []); //first render
+
+  useEffect(() => {
     const wavesurfer = WaveSurfer.create({
       container: waveformRef.current,
       waveColor: "violet",
@@ -100,6 +109,13 @@ const CaptureAudio = ({ hide }) => {
     setcurrentPlayBackTime(0);
     settotalDuration(0);
     setIsRecording(true);
+
+    socket.emit("updateRecordingAudio", {
+      to: current_conversation?.user_id,
+      from: user_id,
+      conversationId: room_id,
+      recordingAudio: true,
+    });
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -160,6 +176,12 @@ const CaptureAudio = ({ hide }) => {
       //   });
       // console.log(renderAudio);
     }
+    socket.emit("updateRecordingAudio", {
+      to: current_conversation?.user_id,
+      from: user_id,
+      conversationId: room_id,
+      recordingAudio: false,
+    });
   };
 
   //   useEffect(() => {
@@ -202,6 +224,13 @@ const CaptureAudio = ({ hide }) => {
   const sendRecording = async () => {
     // console.log(renderAudio);
     try {
+      // * no need as the send button will not work untill the audio strean not stoped
+      // socket.emit("updateRecordingAudio", {
+      //   to: current_conversation?.user_id,
+      //   from: user_id,
+      //   conversationId: room_id,
+      //   recordingAudio: false,
+      // });
       if (renderAudio.current == null) return;
       setLoading(true);
       const formData = new FormData(); //used to gather form data from HTML forms.
@@ -218,7 +247,7 @@ const CaptureAudio = ({ hide }) => {
           },
         })
         .then((response) => {
-        //   console.log(response);
+          //   console.log(response);
           socket.emit("file_message", {
             name: renderAudio.name,
             to: current_conversation?.user_id,
@@ -248,11 +277,25 @@ const CaptureAudio = ({ hide }) => {
     <div className=" flex text-2xl w-full justify-end items-center">
       <div className="pt-1">
         <FaTrash
-          className={`text-[#ffffff] hover:text-red-500 transition-colors duration-300 ${theme.palette.mode =='light' ? 'text-gray-700': null}`}
-          onClick={() => hide(false)}
+          className={`text-[#ffffff] hover:text-red-500 transition-colors duration-300 ${
+            theme.palette.mode == "light" ? "text-gray-700" : null
+          }`}
+          onClick={() => {
+            socket.emit("updateRecordingAudio", {
+              to: current_conversation?.user_id,
+              from: user_id,
+              conversationId: room_id,
+              recordingAudio: false,
+            });
+            hide(false);
+          }}
         />
       </div>
-      <div className={`mx-4 py-4 text-white text-lg flex gap-3 justify-center items-center rounded-full drop-shadow-lg bg-gray-900 w-96 ${theme.palette.mode =='light' ? 'bg-slate-600': null}`}>
+      <div
+        className={`mx-4 py-4 text-white text-lg flex gap-3 justify-center items-center rounded-full drop-shadow-lg bg-gray-900 w-96 ${
+          theme.palette.mode == "light" ? "bg-slate-600" : null
+        }`}
+      >
         {isRecording ? (
           <div className="text-red-500 animate-pulse w-60 text-center">
             Recording <span>{recordingDuration}s</span>
@@ -269,7 +312,7 @@ const CaptureAudio = ({ hide }) => {
                 ) : (
                   <FaStop
                     onClick={handlePauseRecording}
-                    className="hover:text-green-500 transition-colors duration-300" 
+                    className="hover:text-green-500 transition-colors duration-300"
                   />
                 )}
               </>
@@ -289,13 +332,13 @@ const CaptureAudio = ({ hide }) => {
       <div className="mr-4">
         {!isRecording ? (
           <FaMicrophone
-          size={24}
+            size={24}
             className=" text-red-500 text-xl"
             onClick={handleStartRecording}
           />
         ) : (
           <FaPauseCircle
-          size={24}
+            size={24}
             className=" text-red-500 text-xl"
             onClick={handleStopRecording}
           />
@@ -304,7 +347,9 @@ const CaptureAudio = ({ hide }) => {
       {!loading ? (
         <div>
           <MdSend
-            className={`text-[#ffffff] cursor-pointer mr-4 hover:text-blue-500 transition-colors divide-purple-300 ${theme.palette.mode =='light' ? 'text-gray-700' : null}`}
+            className={`text-[#ffffff] cursor-pointer mr-4 hover:text-blue-500 transition-colors divide-purple-300 ${
+              theme.palette.mode == "light" ? "text-gray-700" : null
+            }`}
             title="send"
             onClick={sendRecording}
           />

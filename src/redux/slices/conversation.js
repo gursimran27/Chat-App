@@ -95,6 +95,7 @@ const slice = createSlice({
           email: user?.email,
           typing: el?.typing[user?._id.toString()] || false,
           coordinates: user?.location.coordinates.reverse() || null,
+          recordingAudio: el?.recordingAudio[user?._id.toString()] || false,
         };
       });
 
@@ -145,6 +146,7 @@ const slice = createSlice({
               email: user?.email,
               typing: el?.typing[user?._id.toString()] || false,
               coordinates: user?.location.coordinates.reverse() || null,
+              recordingAudio: el?.recordingAudio[user?._id.toString()] || false,
             };
           }
         }
@@ -192,6 +194,7 @@ const slice = createSlice({
         email: user?.email,
         typing: this_conversation?.typing[user?._id.toString()] || false,
         coordinates: user?.location.coordinates.reverse() || null,
+        recordingAudio: this_conversation?.recordingAudio[user?._id.toString()] || false,
       });
     },
 
@@ -526,6 +529,12 @@ const slice = createSlice({
         typing: action.payload.typing,
       };
     },
+    updateCurrent_conversationRecordingAudioStatus(state, action) {
+      state.direct_chat.current_conversation = {
+        ...state.direct_chat.current_conversation,
+        recordingAudio: action.payload.recordingAudio,
+      };
+    },
     updateConversationOnlineStatus(state, action) {
       state.direct_chat.conversations = state.direct_chat.conversations.map(
         (conversation) =>
@@ -552,6 +561,14 @@ const slice = createSlice({
         (conversation) =>
           conversation.id === action.payload.conversationId
             ? { ...conversation, typing: action.payload.typing }
+            : conversation
+      );
+    },
+    updateConversationRecordingAudioStatus(state, action) {
+      state.direct_chat.conversations = state.direct_chat.conversations.map(
+        (conversation) =>
+          conversation.id === action.payload.conversationId
+            ? { ...conversation, recordingAudio: action.payload.recordingAudio }
             : conversation
       );
     },
@@ -715,6 +732,14 @@ export const UpdateCurrent_conversationTypingStatus = ({ typing }) => {
   };
 };
 
+export const UpdateCurrent_conversationRecordingAudioStatus = ({ recordingAudio }) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.updateCurrent_conversationRecordingAudioStatus({ recordingAudio: recordingAudio })
+    );
+  };
+};
+
 export const UpdateConversationOnlineStatus = ({ status, user_id }) => {
   return async (dispatch, getState) => {
     dispatch(
@@ -744,6 +769,17 @@ export const UpdateConversationTypingStatus = ({ typing, conversationId }) => {
     dispatch(
       slice.actions.updateConversationTypingStatus({
         typing: typing,
+        conversationId: conversationId,
+      })
+    );
+  };
+};
+
+export const UpdateConversationRecordingAudioStatus = ({ recordingAudio, conversationId }) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.updateConversationRecordingAudioStatus({
+        recordingAudio: recordingAudio,
         conversationId: conversationId,
       })
     );

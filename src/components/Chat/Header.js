@@ -223,7 +223,11 @@ const ChatHeader = () => {
                     {current_conversation?.name}
                   </Typography>
                   <Typography variant="caption">
-                    {current_conversation?.typing ? "Typing..." : "Online"}
+                    {current_conversation?.typing
+                      ? "Typing..."
+                      : current_conversation?.recordingAudio
+                      ? "Recording audio..."
+                      : "Online"}
                   </Typography>
                 </Stack>
               </>

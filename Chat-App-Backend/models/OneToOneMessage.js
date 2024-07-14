@@ -102,6 +102,11 @@ const oneToOneMessageSchema = new mongoose.Schema({
     of: Boolean,
     default: {},
   },
+  recordingAudio: {
+    type: Map,
+    of: Boolean,
+    default: {},
+  },
 });
 
 const OneToOneMessage = new mongoose.model(

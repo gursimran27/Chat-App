@@ -38,6 +38,7 @@ import { showSnackbar } from "../../redux/slices/app";
 import toast from "react-hot-toast";
 import { FaMicrophone } from "react-icons/fa";
 import CaptureAudio from "./CaptureAudio";
+import { FaMapLocationDot } from "react-icons/fa6";
 
 const StyledInput = styled(TextField)(({ theme }) => ({
   "& .MuiInputBase-input": {
@@ -60,6 +61,12 @@ const Actions = [
     title: "share your current location",
   },
   {
+    color: "#013f7f",
+    icon: <FaMapLocationDot size={24}/>,
+    y: 382,
+    title: "liveLoc",
+  },
+  {
     color: "#0172e4",
     icon: <Camera size={24} />,
     y: 242,
@@ -70,12 +77,6 @@ const Actions = [
     icon: <File size={24} />,
     y: 312,
     title: "Document",
-  },
-  {
-    color: "#013f7f",
-    icon: <User size={24} />,
-    y: 382,
-    title: "Contact",
   },
 ];
 
@@ -247,7 +248,7 @@ const ChatInput = ({
 
     if (!typing.current) {
       //* for deBouncing purpose
-      console.log("typing...");
+      // console.log("typing...");
       typing.current = true;
       socket.emit("updateTyping", {
         to: current_conversation?.user_id,
@@ -439,7 +440,7 @@ const ChatInput = ({
                         {el.icon}
                       </Fab>
                     </Tooltip>
-                  ) : el?.title == "Contact" ? (
+                  ) : el?.title == "liveLoc" ? (
                     <Tooltip placement="right" title="Share your live location">
                       <Fab
                         onClick={handleLiveLoc}
@@ -747,7 +748,7 @@ const Footer = () => {
     clearTimeout(typingTimeout.current);
     if (!typing.current) {
       //* for deBouncing purpose
-      console.log("typing...");
+      // console.log("typing...");
       typing.current = true;
       socket.emit("updateTyping", {
         to: current_conversation?.user_id,

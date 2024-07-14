@@ -77,8 +77,13 @@
 19. **Live Location Sharing**
     - Users can share their live location with other user, updating in real-time.
 
-19. **Voice Messaging***
-    - Record and send voice messages in chats.
+19. **Voice Messaging**
+    - Record and send voice messages in chats. User can also increase the playback speed of voice messages.
+   
+20. **User Recording Audio Indicator**
+
+    - Indicates when a user is recording audio and stops indicating when the user stops recording audio.
+
 
 ## Installation
 
