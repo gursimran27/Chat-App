@@ -77,6 +77,9 @@
 19. **Live Location Sharing**
     - Users can share their live location with other user, updating in real-time.
 
+19. **Voice Messaging***
+    - Record and send voice messages in chats.
+
 ## Installation
 
 To install and run the application, follow these steps:
