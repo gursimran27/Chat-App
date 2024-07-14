@@ -14,6 +14,7 @@ import {
   TextMsg,
   Timeline,
   VideoMsg,
+  VoiceMsg,
 } from "./MsgTypes";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -217,6 +218,13 @@ const Message = ({ isMobile, menu }) => {
                   return (
                     //  deletedMessage
                     <LiveLocMsg el={el} menu={menu} />
+                  );
+
+
+                case  "audio":
+                  return (
+                    //  deletedMessage
+                    <VoiceMsg el={el} menu={menu} />
                   );
 
                 default:

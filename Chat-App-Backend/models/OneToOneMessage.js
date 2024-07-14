@@ -30,7 +30,8 @@ const oneToOneMessageSchema = new mongoose.Schema({
           "video",
           "deleted",
           "loc",
-          "live-loc"
+          "live-loc",
+          "audio"
         ],
       },
       created_at: {

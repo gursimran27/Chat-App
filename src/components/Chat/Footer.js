@@ -36,6 +36,8 @@ import useSound from "use-sound";
 import sound from "../../assets/notifications/WhatsApp-Sending-Message-Sound-Effect.mp3";
 import { showSnackbar } from "../../redux/slices/app";
 import toast from "react-hot-toast";
+import { FaMicrophone } from "react-icons/fa";
+import CaptureAudio from "./CaptureAudio";
 
 const StyledInput = styled(TextField)(({ theme }) => ({
   "& .MuiInputBase-input": {
@@ -140,10 +142,10 @@ const ChatInput = ({
   const [play] = useSound(sound);
 
   const handleFileUpload = async () => {
-    console.log(imageFile, previewFile);
+    // console.log(imageFile, previewFile);
     try {
       if (imageFile == null) return;
-      console.log("uploading...");
+      // console.log("uploading...");
       setLoading(true);
       const formData = new FormData(); //used to gather form data from HTML forms.
       formData.append("conversation_id", room_id);
@@ -312,8 +314,13 @@ const ChatInput = ({
 
   const handleLiveLoc = async () => {
     console.log("handleLiveLoc");
-    if(isLiveLocationSharing){
-      dispatch(showSnackbar({ severity: "error", message: "Live location is already in pregress!" }));
+    if (isLiveLocationSharing) {
+      dispatch(
+        showSnackbar({
+          severity: "error",
+          message: "Live location is already in pregress!",
+        })
+      );
       return;
     }
     const toastId = toast.loading("Loading...");
@@ -322,7 +329,10 @@ const ChatInput = ({
         (position) => {
           const { latitude, longitude } = position.coords;
           // Send the updated location to the server
-          console.log(`Latitude: ${latitude}, Longitude: ${longitude}`,watchId);
+          console.log(
+            `Latitude: ${latitude}, Longitude: ${longitude}`,
+            watchId
+          );
           socket.emit("liveLocationMsg", {
             latitude,
             longitude,
@@ -805,13 +815,15 @@ const Footer = () => {
 
   const handleOpenClick = () => {
     if (openPicker) {
-      console.log("typing...");
+      // console.log("typing...");
       handleBlur();
       setOpenPicker(false);
     }
   };
 
   const [play] = useSound(sound);
+
+  const [showAudioRecoder, setshowAudioRecoder] = useState(false);
 
   return (
     <Box
@@ -821,6 +833,7 @@ const Footer = () => {
       }}
     >
       <Box
+      // className='border-t-[1px] border-dotted'
         p={isMobile ? 1 : 2}
         width={"100%"}
         sx={{
@@ -832,92 +845,125 @@ const Footer = () => {
         }}
       >
         <Stack direction="row" alignItems={"center"} spacing={isMobile ? 1 : 3}>
-          <Stack sx={{ width: "100%" }}>
-            <Box
-              style={{
-                zIndex: 10,
-                position: "fixed",
-                display: openPicker ? "inline" : "none",
-                bottom: 81,
-                right: isMobile ? 20 : sideBar.open ? 420 : 100,
-              }}
-            >
-              <Picker
-                // perLine={9} //The number of emojis to show per line
-                // previewPosition={'none'}
-                // searchPosition={'none'}
-                data={data}
-                onClickOutside={() => handleOpenClick()}
-                theme={theme.palette.mode}
-                onEmojiSelect={(emoji) => {
-                  handleEmojiClick(emoji.native);
-                }}
-              />
-            </Box>
-            {/* Chat Input */}
-            <ChatInput
-              inputRef={inputRef}
-              value={value}
-              setValue={setValue}
-              openPicker={openPicker}
-              setOpenPicker={setOpenPicker}
-            />
-          </Stack>
-          <Box
-            sx={{
-              height: 48,
-              width: 48,
-              backgroundColor:
-                value == "" ? "#899" : theme.palette.primary.main,
-              borderRadius: 1.5,
-              "&:hover": {
-                scale: "0.9",
-                transition: "all 300ms",
-              },
-            }}
-          >
-            <Stack
-              sx={{ height: "100%" }}
-              alignItems={"center"}
-              justifyContent="center"
-            >
-              <IconButton
-                id="sendButton"
-                disabled={value == ""}
-                onClick={() => {
-                  if (value == "") return;
-                  console.log("clicked...");
-                  socket.emit("updateTyping", {
-                    to: current_conversation?.user_id,
-                    from: user_id,
-                    conversationId: room_id,
-                    typing: false,
-                  });
-                  play();
-                  socket.emit("text_message", {
-                    message: linkify(value),
-                    conversation_id: room_id,
-                    from: user_id,
-                    to: current_conversation?.user_id,
-                    type: containsUrl(value)
-                      ? "Link"
-                      : reply
-                      ? "reply"
-                      : "Text",
-                    replyToMsg: reply ? replyToMsg : null,
-                  });
-                  setValue("");
-                  if (reply) {
-                    dispatch(
-                      UpdateReply_msg({ reply: false, replyToMsg: null })
-                    );
-                  }
+          {!showAudioRecoder ? (
+            <Stack sx={{ width: "100%" }}>
+              <Box
+                style={{
+                  zIndex: 10,
+                  position: "fixed",
+                  display: openPicker ? "inline" : "none",
+                  bottom: 81,
+                  right: isMobile ? 20 : sideBar.open ? 420 : 100,
                 }}
               >
-                <PaperPlaneTilt color="#ffffff" />
-              </IconButton>
+                <Picker
+                  // perLine={9} //The number of emojis to show per line
+                  // previewPosition={'none'}
+                  // searchPosition={'none'}
+                  data={data}
+                  onClickOutside={() => handleOpenClick()}
+                  theme={theme.palette.mode}
+                  onEmojiSelect={(emoji) => {
+                    handleEmojiClick(emoji.native);
+                  }}
+                />
+              </Box>
+              {/* Chat Input */}
+              <ChatInput
+                inputRef={inputRef}
+                value={value}
+                setValue={setValue}
+                openPicker={openPicker}
+                setOpenPicker={setOpenPicker}
+              />
             </Stack>
-          </Box>
+          ) : (
+            <CaptureAudio hide={setshowAudioRecoder}/>
+          )}
+          {value.length ? (
+            <Box
+              sx={{
+                height: 48,
+                width: 48,
+                backgroundColor:
+                  value == "" ? "#899" : theme.palette.primary.main,
+                borderRadius: 1.5,
+                "&:hover": {
+                  scale: "0.9",
+                  transition: "all 300ms",
+                },
+              }}
+            >
+              <Stack
+                sx={{ height: "100%" }}
+                alignItems={"center"}
+                justifyContent="center"
+              >
+                <IconButton
+                  id="sendButton"
+                  disabled={value == ""}
+                  onClick={() => {
+                    if (value == "") return;
+                    // console.log("clicked...");
+                    socket.emit("updateTyping", {
+                      to: current_conversation?.user_id,
+                      from: user_id,
+                      conversationId: room_id,
+                      typing: false,
+                    });
+                    play();
+                    socket.emit("text_message", {
+                      message: linkify(value),
+                      conversation_id: room_id,
+                      from: user_id,
+                      to: current_conversation?.user_id,
+                      type: containsUrl(value)
+                        ? "Link"
+                        : reply
+                        ? "reply"
+                        : "Text",
+                      replyToMsg: reply ? replyToMsg : null,
+                    });
+                    setValue("");
+                    if (reply) {
+                      dispatch(
+                        UpdateReply_msg({ reply: false, replyToMsg: null })
+                      );
+                    }
+                  }}
+                >
+                  <PaperPlaneTilt color="#ffffff" />
+                </IconButton>
+              </Stack>
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                height: 48,
+                width: 48,
+                backgroundColor:
+                  showAudioRecoder ? "#899" : theme.palette.primary.main,
+                borderRadius: 1.5,
+                "&:hover": {
+                  scale: "0.9",
+                  transition: "all 300ms",
+                },
+              }}
+            >
+              <Stack
+                sx={{ height: "100%" }}
+                alignItems={"center"}
+                justifyContent="center"
+              >
+                <IconButton disabled={showAudioRecoder} onClick={()=>setshowAudioRecoder(true)}>
+                  <FaMicrophone
+                    className="cursor-pointer text-xl text-[#ffffff]"
+                    title="Record"
+                  />
+                </IconButton>
+              </Stack>
+            </Box>
+          )}
         </Stack>
       </Box>
     </Box>

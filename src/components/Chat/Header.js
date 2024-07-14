@@ -177,6 +177,7 @@ const ChatHeader = () => {
       <Box
         p={2}
         width={"100%"}
+        // className='border-b-[1px] border-dashed'
         sx={{
           backgroundColor:
             theme.palette.mode === "light"

@@ -5,13 +5,13 @@ import { useSelector } from "react-redux";
 
 const user_id = window.localStorage.getItem("user_id");
 
-const getLastVisibleMessage = (messages, userId) => {
+const getLastVisibleMessage = (messages, userId) => {//for constact chat
   //* message.type
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i];
     if (
       (!message?.deletedFor || !message?.deletedFor[userId]) &&
-      message?.type != "deleted"
+      message?.type != "deleted" && message?.type != "divider"
     ) {
       return message;
     }
@@ -19,13 +19,13 @@ const getLastVisibleMessage = (messages, userId) => {
   return null;
 };
 
-const getLastVisibleMessageForDeleteForEveryOne = (messages, userId) => {
+const getLastVisibleMessageForDeleteForEveryOne = (messages, userId) => {//for messages
   //* message.subtype
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i];
     if (
       (!message?.deletedFor || !message?.deletedFor[userId]) &&
-      message?.subtype != "deleted"
+      message?.subtype != "deleted" && message?.type != "divider"
     ) {
       return message;
     }

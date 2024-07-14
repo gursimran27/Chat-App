@@ -11,7 +11,7 @@ import {
   Tooltip,
   Fab,
 } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { alpha, useTheme } from "@mui/material/styles";
 import {
   Check,
@@ -53,6 +53,8 @@ import MarkerClusterGroup from "react-leaflet-cluster";
 import icon from "../../assets/placeholder.png";
 import myLoc from "../../assets/unnamed.png";
 import { Icon } from "leaflet";
+import WaveSurfer from "wavesurfer.js";
+import { FaPlay, FaStop } from "react-icons/fa";
 
 const formatDate = (date) => {
   const today = new Date();
@@ -2821,6 +2823,313 @@ const LiveLocMsg = ({ el, menu }) => {
   );
 };
 
+const VoiceMsg = ({ el, menu }) => {
+  // console.log("test message pushed");
+  const theme = useTheme();
+
+  const [openPicker, setOpenPicker] = useState(false);
+  const isMobile = useResponsive("between", "md", "xs", "sm");
+  const { sideBar } = useSelector((state) => state.app);
+  const { room_id } = useSelector((state) => state.app);
+  const user_id = window.localStorage.getItem("user_id");
+  const { current_conversation } = useSelector(
+    (state) => state.conversation.direct_chat
+  );
+
+  function handleEmojiClick(emoji, messageId) {
+    socket.emit("react_to_message", {
+      conversationId: room_id,
+      from: user_id,
+      to: current_conversation?.user_id,
+      messageId: messageId,
+      reaction: emoji,
+    });
+    setOpenPicker(!openPicker);
+  }
+
+  const handleOpenClick = () => {
+    if (openPicker) {
+      setOpenPicker(false);
+    }
+  };
+
+  const [audioMessage, setaudioMessage] = useState(null);
+  const [currentPlayBackTime, setcurrentPlayBackTime] = useState(0);
+  const [totalDuration, settotalDuration] = useState(0);
+  const [isPlaying, setisPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  const waveformRef = useRef(null);
+  const waveform = useRef(null);
+
+  useEffect(() => {
+    if (el?.src) {
+      waveform.current = WaveSurfer.create({
+        container: waveformRef.current,
+        waveColor: "#ccc",
+        progressColor: "#4a9eff",
+        cursorColor: "#7ae3c3",
+        barWidth: 2,
+        height: 30,
+        responsive: true,
+      });
+
+
+      const updatePlaybackTime = () => {
+        setcurrentPlayBackTime(waveform.current.getCurrentTime());
+      };
+
+      waveform.current.on('audioprocess', updatePlaybackTime);
+
+      waveform.current.on("finish", () => {
+        setisPlaying(false);
+      });
+    }
+    return () => {
+      waveform.current.destroy();
+    };
+  }, []);
+
+    useEffect(() => {
+      const audio = new Audio(el?.src);
+      // console.log('asa',audio)
+      setaudioMessage(audio);
+      waveform.current.load(el?.src);
+      waveform.current.on("ready", () => {
+        settotalDuration(waveform.current.getDuration());
+      });
+    }, [el]);
+
+  // useEffect(() => {
+  //   if (audioMessage) {
+  //     const updatePlayBackTime = () => {
+  //       setcurrentPlayBackTime(audioMessage.currentTime);
+  //     };
+  //     audioMessage.addEventListener("timeupdate", updatePlayBackTime);
+
+  //     return () => {
+  //       audioMessage.removeEventListener("timeupdate", updatePlayBackTime);
+  //     };
+  //   }
+  // }, [audioMessage]);
+
+  const handlePlayAudio = () => {
+    if (audioMessage) {
+      // waveform.current.stop();
+      waveform.current.play();
+      // audioMessage.play();
+      setisPlaying(true);
+    }
+  };
+
+  const handlePauseAudio = () => {
+    // setCurrentTime(audioMessage.currentTime); // Save current time
+    waveform.current.pause();
+    // audioMessage.pause();
+    setisPlaying(false);
+  };
+
+  const formatTime = (time) => {
+    if (isNaN(time)) return "00:00";
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes.toString().padStart(2, "0")}:${seconds
+      .toString()
+      .padStart(2, "0")}`;
+  };
+
+  return (
+    <Stack
+      direction="row"
+      justifyContent={el.incoming ? "start" : "end"}
+      sx={{ position: "relative" }}
+    >
+      <Box
+        px={1.5}
+        py={1.5}
+        sx={{
+          backgroundColor: el.incoming
+            ? alpha(theme.palette.background.default, 1)
+            : theme.palette.primary.main,
+          borderRadius: 1.5,
+          width: "max-content",
+          position: "relative",
+          cursor: "pointer",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: "-2px",
+            width: 0,
+            height: 0,
+            borderStyle: "solid",
+            borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
+            borderColor: el.incoming
+              ? `transparent ${alpha(
+                  theme.palette.background.default,
+                  1
+                )} transparent transparent`
+              : `transparent transparent transparent ${theme.palette.primary.main}`,
+            left: el.incoming ? "-8px" : "unset",
+            right: el.incoming ? "unset" : "-8px",
+            transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
+          },
+        }}
+        onDoubleClick={() => {
+          if (!el?.myReaction && menu) {
+            // console.log("double click");
+            socket.emit("react_to_message", {
+              conversationId: room_id,
+              from: user_id,
+              to: current_conversation?.user_id,
+              messageId: el?.id,
+              reaction: "❤️",
+            });
+          }
+        }}
+      >
+        <Typography
+          variant="capton"
+          style={{
+            fontSize: "10px",
+            position: "absolute",
+            bottom: "-3px",
+            right: "4px",
+          }}
+        >
+          {el?.time}
+        </Typography>
+        <div
+          className="reactions"
+          style={{
+            zIndex: 10,
+            position: "fixed",
+            display: openPicker ? "inline" : "none",
+            bottom: 100,
+            right: isMobile ? 20 : sideBar.open ? 420 : 100,
+          }}
+        >
+          <Picker
+            data={data}
+            // perLine={9} //The number of emojis to show per line
+            previewPosition={"none"}
+            searchPosition={"none"}
+            onClickOutside={() => handleOpenClick()}
+            theme={theme.palette.mode}
+            onEmojiSelect={(emoji) => {
+              handleEmojiClick(emoji.native, el?.id);
+            }}
+          />
+        </div>
+
+        <div className="flex items-center gap-5 text-white px-4 pr-2 py-4 text-sm rounded-md">
+          <div className={`cursor-pointer text-xl`}>
+            {!isPlaying ? (
+              <FaPlay onClick={handlePlayAudio} className={`hover:text-green-500 ${(el?.incoming && theme.palette.mode =='light')? 'text-gray-500': null} transition-colors duration-300`}/>
+            ) : (
+              <FaStop onClick={handlePauseAudio} className={`hover:text-green-500 ${(el?.incoming && theme.palette.mode =='light')? 'text-gray-500': null} transition-colors duration-300`}/>
+            )}
+          </div>
+
+          <div className=" relative">
+            <div className=" w-60" ref={waveformRef} />
+            <div className="text-white text-[11px] pt-1 flex justify-between absolute bottom-[-22px] w-full">
+              <span className={`${(el?.incoming && theme.palette.mode =='light')? 'text-gray-600' : null}`}>
+                {formatTime(isPlaying ? currentPlayBackTime : totalDuration)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <Stack
+          direction={"row"}
+          alignItems={"center"}
+          justifyContent={"end"}
+          sx={{ marginTop: "3px" }}
+        >
+          {el?.star && <Star size={13} color="black" weight="duotone" />}
+        </Stack>
+        {(el?.myReaction || el?.otherReaction) && (
+          <Stack
+            direction={"row"}
+            alignItems={"center"}
+            justifyContent={"center"}
+            gap={"1px"}
+            style={{
+              position: "absolute",
+              bottom: "-20px",
+              left: "0px",
+              fontSize: "1.5rem",
+              userSelect: "none",
+            }}
+          >
+            <Box
+              sx={{ cursor: "pointer" }}
+              onClick={() => {
+                if (menu) {
+                  socket.emit("react_to_message", {
+                    conversationId: room_id,
+                    from: user_id,
+                    to: current_conversation?.user_id,
+                    messageId: el?.id,
+                    reaction: null,
+                  });
+                }
+              }}
+            >
+              {el?.myReaction && (
+                <Tooltip
+                  placement="left-end"
+                  title={menu && "remove my reaction"}
+                >
+                  {el?.myReaction}
+                </Tooltip>
+              )}
+            </Box>
+
+            <Box sx={{ cursor: "default" }}>
+              {el?.otherReaction && (
+                <Tooltip
+                  placement="right-end"
+                  title={`${current_conversation?.name.split(" ")[0]} reaction`}
+                >
+                  {el?.otherReaction}
+                </Tooltip>
+              )}
+            </Box>
+          </Stack>
+        )}
+      </Box>
+      {menu && (
+        <MessageOption
+          replyToMsg={el?.message}
+          messageId={el?.id}
+          star={el?.star}
+          openPicker={openPicker}
+          setOpenPicker={setOpenPicker}
+          deletedForEveryone={el?.deletedForEveryone}
+          created_at={el?.created_at}
+          incomming={el?.incoming}
+        />
+      )}
+      {menu && (
+        <Stack
+          justifyContent={"flex-end"}
+          sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
+        >
+          {!el.incoming &&
+            (el?.status == "Sent" ? (
+              <Check size={22} color="#908989" />
+            ) : el?.status == "Delivered" ? (
+              <Checks size={22} color="#908989" />
+            ) : (
+              <Checks size={22} color="#0949dc" />
+            ))}
+        </Stack>
+      )}
+    </Stack>
+  );
+};
+
 const Timeline = ({ el }) => {
   const theme = useTheme();
   return (
@@ -2850,4 +3159,5 @@ export {
   DeletedMsg,
   LocMsg,
   LiveLocMsg,
+  VoiceMsg
 };
