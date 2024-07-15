@@ -277,7 +277,7 @@ const CaptureAudio = ({ hide }) => {
     <div className=" flex text-2xl w-full justify-end items-center">
       <div className="pt-1">
         <FaTrash
-          className={`text-[#ffffff] hover:text-red-500 transition-colors duration-300 ${
+          className={`text-[#ffffff] cursor-pointer hover:text-red-500 transition-colors duration-300 ${
             theme.palette.mode == "light" ? "text-gray-700" : null
           }`}
           onClick={() => {
@@ -307,12 +307,12 @@ const CaptureAudio = ({ hide }) => {
                 {!isPlaying ? (
                   <FaPlay
                     onClick={handlePlayRecording}
-                    className="hover:text-green-500 transition-colors duration-300"
+                    className="hover:text-green-500 transition-colors duration-300 cursor-pointer"
                   />
                 ) : (
                   <FaStop
                     onClick={handlePauseRecording}
-                    className="hover:text-green-500 transition-colors duration-300"
+                    className="hover:text-green-500 transition-colors duration-300 cursor-pointer"
                   />
                 )}
               </>
@@ -333,13 +333,13 @@ const CaptureAudio = ({ hide }) => {
         {!isRecording ? (
           <FaMicrophone
             size={24}
-            className=" text-red-500 text-xl"
+            className=" text-red-500 text-xl cursor-pointer"
             onClick={handleStartRecording}
           />
         ) : (
           <FaPauseCircle
             size={24}
-            className=" text-red-500 text-xl"
+            className=" text-red-500 text-xl cursor-pointer" 
             onClick={handleStopRecording}
           />
         )}

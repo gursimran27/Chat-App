@@ -3,20 +3,19 @@ import {
   Fab,
   IconButton,
   InputAdornment,
+  Modal,
   Stack,
   TextField,
   Tooltip,
 } from "@mui/material";
 import {
   Camera,
-  File,
+  // File,
   Image,
   LinkSimple,
   PaperPlaneTilt,
   Smiley,
   MapPinLine,
-  UploadSimple,
-  User,
   X,
 } from "phosphor-react";
 import { useTheme, styled } from "@mui/material/styles";
@@ -39,6 +38,8 @@ import toast from "react-hot-toast";
 import { FaMicrophone } from "react-icons/fa";
 import CaptureAudio from "./CaptureAudio";
 import { FaMapLocationDot } from "react-icons/fa6";
+import Webcam from "react-webcam";
+import { LuFile } from "react-icons/lu";
 
 const StyledInput = styled(TextField)(({ theme }) => ({
   "& .MuiInputBase-input": {
@@ -62,7 +63,7 @@ const Actions = [
   },
   {
     color: "#013f7f",
-    icon: <FaMapLocationDot size={24}/>,
+    icon: <FaMapLocationDot size={24} />,
     y: 382,
     title: "liveLoc",
   },
@@ -70,11 +71,11 @@ const Actions = [
     color: "#0172e4",
     icon: <Camera size={24} />,
     y: 242,
-    title: "Image",
+    title: "camera",
   },
   {
     color: "#0159b2",
-    icon: <File size={24} />,
+    icon: <LuFile size={24}/>,
     y: 312,
     title: "Document",
   },
@@ -400,6 +401,53 @@ const ChatInput = ({
     }
   };
 
+  const videoConstraints = {
+    width: 1280,
+    height: 720,
+    facingMode: "user",
+  };
+
+  const base64ToFile = async (base64String, fileName) => {
+    try {
+      // Fetch the base64 encoded image data
+      const response = await fetch(base64String);
+      const blob = await response.blob();
+  
+      // Create a File object with the blob and additional metadata
+      const file = new File([blob], fileName, { type: blob.type });
+  
+      return file;
+    } catch (error) {
+      console.error('Error converting base64 to file:', error);
+      throw error;
+    }
+  };
+
+  const [openModal, setOpenModal] = useState(false);
+  const webcamRef = useRef(null); 
+
+  const capture = async () => {
+    const screenshot = webcamRef.current.getScreenshot();
+    // console.log(screenshot)
+    if (screenshot) {
+      const file = await base64ToFile(screenshot, 'captured_photo.png');
+      if (file) {
+        handleCloseModal();
+        setImageFile(file);
+        previewFile(file);
+      }
+    }
+  };
+
+  const handleOpenModal = () => {
+    setOpenActions(!openActions);
+    setOpenModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+  };
+
   return (
     <Box sx={{ position: "relative" }}>
       <StyledInput
@@ -444,6 +492,20 @@ const ChatInput = ({
                     <Tooltip placement="right" title="Share your live location">
                       <Fab
                         onClick={handleLiveLoc}
+                        sx={{
+                          position: "absolute",
+                          top: -el.y,
+                          backgroundColor: el.color,
+                        }}
+                        aria-label="add"
+                      >
+                        {el.icon}
+                      </Fab>
+                    </Tooltip>
+                  ) : el?.title == "camera" ? (
+                    <Tooltip placement="right" title={"Capture Picture"}>
+                      <Fab
+                        onClick={handleOpenModal}
                         sx={{
                           position: "absolute",
                           top: -el.y,
@@ -508,6 +570,7 @@ const ChatInput = ({
 
       {/* preview dialoag */}
       <Box
+      className=" z-10"
         sx={{
           display: previewSource ? "block" : "none", // Conditionally set display
           color: "red", // Text color
@@ -699,6 +762,75 @@ const ChatInput = ({
           )}
         </Stack>
       </Box>
+
+      {/* moadl */}
+      <Modal
+        open={openModal}
+        onClose={handleCloseModal}
+        aria-labelledby="image-modal-title"
+        aria-describedby="image-modal-description"
+      >
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            maxWidth: "90vw",
+            maxHeight: "90vh",
+            width: "90%",
+            height: "100%",
+            backgroundColor: "transparent",
+            boxShadow: 24,
+            p: 4,
+            borderRadius: "10px",
+            outline: "none",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            overflow: "hidden", // Add scrollbar when content overflows
+          }}
+        >
+          <div style={{ display: "relative" }}>
+            <Webcam
+              audio={false}
+              ref={webcamRef}
+              sFormacreenshott="image/jpeg"
+              videoConstraints={videoConstraints}
+              disablePictureInPicture={true}
+              width={"100%"}
+              height={600}
+              mirrored={true}
+            />
+              <button
+                className=" absolute bottom-4 right-[100px] px-3 py-4 rounded-full bg-blue-400 text-black hover:scale-[0.9] transition-all duration-300 animate-pulse hover:animate-none border border-yellow-300"
+                onClick={capture}
+              >
+                Capture photo
+              </button>
+          </div>
+          <IconButton
+            aria-label="Close modal"
+            onClick={handleCloseModal}
+            className="z-10"
+            sx={{
+              position: "absolute",
+              top: 0,
+              right: 5,
+              color: "black",
+              backgroundColor: "red",
+              "&:hover": {
+                backgroundColor: "red",
+                color: "black",
+                scale: "0.9",
+                transition: "all 300ms",
+              },
+            }}
+          >
+            <X />
+          </IconButton>
+        </Box>
+      </Modal>
     </Box>
   );
 };
@@ -834,7 +966,7 @@ const Footer = () => {
       }}
     >
       <Box
-      // className='border-t-[1px] border-dotted'
+        // className='border-t-[1px] border-dotted'
         p={isMobile ? 1 : 2}
         width={"100%"}
         sx={{
@@ -879,7 +1011,7 @@ const Footer = () => {
               />
             </Stack>
           ) : (
-            <CaptureAudio hide={setshowAudioRecoder}/>
+            <CaptureAudio hide={setshowAudioRecoder} />
           )}
           {value.length ? (
             <Box
@@ -942,8 +1074,9 @@ const Footer = () => {
               sx={{
                 height: 48,
                 width: 48,
-                backgroundColor:
-                  showAudioRecoder ? "#899" : theme.palette.primary.main,
+                backgroundColor: showAudioRecoder
+                  ? "#899"
+                  : theme.palette.primary.main,
                 borderRadius: 1.5,
                 "&:hover": {
                   scale: "0.9",
@@ -956,7 +1089,10 @@ const Footer = () => {
                 alignItems={"center"}
                 justifyContent="center"
               >
-                <IconButton disabled={showAudioRecoder} onClick={()=>setshowAudioRecoder(true)}>
+                <IconButton
+                  disabled={showAudioRecoder}
+                  onClick={() => setshowAudioRecoder(true)}
+                >
                   <FaMicrophone
                     className="cursor-pointer text-xl text-[#ffffff]"
                     title="Record"
