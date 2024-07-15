@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 dotenv.config({ path: "./config.env" });
 const { cloudinaryConnect } = require("./config/cloudinary");
+const cloudinary = require("cloudinary").v2
 
 const oldMessages = new Map(); //store in reverse order//TODO store userid and obj of conversationID
 
@@ -762,8 +763,7 @@ io.on("connection", async (socket) => {
         const message = conversation.messages.id(messageId);
 
         if (message) {
-
-          if(message.type == 'live-loc'){
+          if (message.type == "live-loc") {
             from_user.isLiveLocationSharing = false;
             await from_user.save({ new: true });
             io.to(to_user?.socket_id).emit("liveLocEnded", {
@@ -771,13 +771,38 @@ io.on("connection", async (socket) => {
               messageId: messageId,
               from: from,
             });
-        
+
             // emit outgoing_message -> from user
             io.to(from_user?.socket_id).emit("liveLocEnded", {
               conversationId,
               messageId: messageId,
               from: from,
             });
+          }
+
+          if (message?.file) {
+            let options = {
+              resource_type: "image",
+            }
+            
+            if(message?.type == "video" || message?.type == "audio"){
+              options.resource_type = "video";
+            }
+            //delete from cloudinary
+            const ID = message?.file.split("/").pop().split(".")[0];
+            if (ID.includes("?") && ID.includes("=")) {
+              console.log(`no image uploaded to cloudinary`);
+            } else {
+              try {
+                console.log(`Deleting from media server...`, ID);
+                // not using await as it add wait the thread , we can delete in background
+                cloudinary.uploader.destroy(`${process.env.FOLDER_NAME}-${conversationId}/${ID}`, options).then((res)=> console.log(res));
+                
+              } catch (error) {
+                console.log(`Unable to delete profile pic from cloudinary`);
+                console.log(error.message);
+              }
+            }
           }
 
           // Update message fields
@@ -790,9 +815,7 @@ io.on("connection", async (socket) => {
           message.status = "Seen";
           message.replyToMsg = null;
           message.isLiveLocationSharing = false;
-          message.watchId = null,
-
-          await conversation.save({ new: true });
+          (message.watchId = null), await conversation.save({ new: true });
 
           // Emit an event to the recipient to update their UI
           io.to(to_user?.socket_id).emit("message_deleteForEveryone", {
