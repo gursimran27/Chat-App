@@ -294,12 +294,12 @@ const MessageOption = ({
                     })
                   );
                   handleClose();
-                  dispatch(
-                    showSnackbar({
-                      severity: "success",
-                      message: `Replying to ${replyToMsg}...`,
-                    })
-                  );
+                  // dispatch(
+                  //   showSnackbar({
+                  //     severity: "success",
+                  //     message: `Replying to ${replyToMsg}...`,
+                  //   })
+                  // );
                 }}
               >
                 {el.title}
@@ -423,7 +423,7 @@ const DocMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
         sx={{ position: "relative" }}
       >
         <Box
-          className={`transition-all duration-1000 ${
+          className={`transition-transform duration-1000 ${
             el?.id == highlightedMessageId
               ? el?.incoming
                 ? "translate-x-96 ease-in-out border-4 border-red-500"
@@ -732,7 +732,7 @@ const LinkMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
         sx={{ position: "relative" }}
       >
         <Box
-          className={`transition-all duration-1000 ${
+          className={`transition-transform duration-1000 ${
             el?.id == highlightedMessageId
               ? el?.incoming
                 ? "translate-x-96 ease-in-out border-4 border-red-500"
@@ -853,7 +853,8 @@ const LinkMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
               >
                 <Typography
                   variant="body2"
-                  color={el.incoming ? theme.palette.text : "#fff"}
+                  // color={el.incoming ? theme.palette.text : "#fff"}
+                  className={` ${theme.palette.mode  == 'light' ? 'text-black' : theme.palette.text}`}
                 >
                   {el.message}
                 </Typography>
@@ -999,7 +1000,7 @@ const ReplyMsg = ({
         showSnackbar({
           severity: "error",
           message:
-            "either message was deleted or the message is not yet loaded in the chat",
+            "Either message was deleted or the message is not yet loaded in the chat",
         })
       );
     }
@@ -1013,7 +1014,7 @@ const ReplyMsg = ({
         sx={{ position: "relative" }}
       >
         <Box
-          className={`transition-all duration-1000 ${
+          className={`transition-transform duration-1000 ${
             el?.id == highlightedMessageId
               ? el?.incoming
                 ? "translate-x-96 ease-in-out border-4 border-red-500"
@@ -1263,7 +1264,7 @@ const MediaMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
         sx={{ position: "relative" }}
       >
         <Box
-          className={`transition-all duration-1000 ${
+          className={`transition-transform duration-1000 ${
             el?.id == highlightedMessageId
               ? el?.incoming
                 ? "translate-x-96 ease-in-out border-4 border-red-500"
@@ -1570,7 +1571,7 @@ const VideoMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
         sx={{ position: "relative" }}
       >
         <Box
-          className={`transition-all duration-1000 ${
+          className={`transition-transform duration-1000 ${
             el?.id == highlightedMessageId
               ? el?.incoming
                 ? "translate-x-96 ease-in-out border-4 border-red-500"
@@ -1873,7 +1874,7 @@ const TextMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
         
       </div> */}
         <Box
-          className={`transition-all duration-1000 ${
+          className={`transition-transform duration-1000 ${
             el?.id == highlightedMessageId
               ? el?.incoming
                 ? "translate-x-96 ease-in-out border-4 border-red-500"
@@ -2194,7 +2195,7 @@ const LocMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
         sx={{ position: "relative" }}
       >
         <Box
-          className={`transition-all duration-1000 ${
+          className={`transition-transform duration-1000 ${
             el?.id == highlightedMessageId
               ? el?.incoming
                 ? "translate-x-96 ease-in-out border-4 border-red-500"
@@ -2594,7 +2595,7 @@ const LiveLocMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
         sx={{ position: "relative" }}
       >
         <Box
-          className={`transition-all duration-1000 ${
+          className={`transition-transform duration-1000 ${
             el?.id == highlightedMessageId
               ? el?.incoming
                 ? "translate-x-96 ease-in-out border-4 border-red-500"
@@ -3086,7 +3087,7 @@ const VoiceMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
         sx={{ position: "relative" }}
       >
         <Box
-          className={`transition-all duration-1000 ${
+          className={`transition-transform duration-1000 ${
             el?.id == highlightedMessageId
               ? el?.incoming
                 ? "translate-x-96 ease-in-out border-4 border-red-500"

@@ -102,6 +102,7 @@ const StarredMessages = () => {
           coordinates: el?.location?.coordinates.reverse() || null,
           isLiveLocationSharing: el?.isLiveLocationSharing,
           watchId: el?.watchId,
+          replyToMsgId: el?.replyToMsgId,
         };
       });
 
@@ -111,6 +112,10 @@ const StarredMessages = () => {
 
     fetchData();
   }, []); // first render
+
+  const messageRefs = useRef({});
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
+
 
   return (
     <Box
@@ -177,36 +182,36 @@ const StarredMessages = () => {
                         case "img":
                           return (
                             // Media Message
-                            <MediaMsg el={el} menu={false} />
+                            <MediaMsg el={el} menu={false}  messageRefs={messageRefs} highlightedMessageId={highlightedMessageId}/>
                           );
 
                         case "video":
                           return (
                             // Media Message
-                            <VideoMsg el={el} menu={false} />
+                            <VideoMsg el={el} menu={false}  messageRefs={messageRefs} highlightedMessageId={highlightedMessageId}/>
                           );
 
                         case "doc":
                           return (
                             // Doc Message
-                            <DocMsg el={el} menu={false} />
+                            <DocMsg el={el} menu={false}  messageRefs={messageRefs} highlightedMessageId={highlightedMessageId}/>
                           );
                         case "Link":
                           return (
                             //  Link Message
-                            <LinkMsg el={el} menu={false} />
+                            <LinkMsg el={el} menu={false}  messageRefs={messageRefs} highlightedMessageId={highlightedMessageId}/>
                           );
 
                         case "reply":
                           return (
                             //  ReplyMessage
-                            <ReplyMsg el={el} menu={false} />
+                            <ReplyMsg el={el} menu={false}  messageRefs={messageRefs} highlightedMessageId={highlightedMessageId} setHighlightedMessageId={setHighlightedMessageId}/>
                           );
 
                         default:
                           return (
                             // Text Message
-                            <TextMsg el={el} menu={false} />
+                            <TextMsg el={el} menu={false}  messageRefs={messageRefs} highlightedMessageId={highlightedMessageId}/>
                           );
                       }
 

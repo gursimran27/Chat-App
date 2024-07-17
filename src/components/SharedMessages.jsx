@@ -118,6 +118,7 @@ const Media = () => {
         coordinates: el?.location?.coordinates.reverse() || null,
         isLiveLocationSharing: el?.isLiveLocationSharing,
         watchId: el?.watchId,
+        replyToMsgId: el?.replyToMsgId,
       };
     });
     return formatted_messages;
@@ -149,6 +150,10 @@ const Media = () => {
 
     fetchData();
   }, []); //first render
+
+  const messageRefs = useRef({});
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
+
 
   return (
     <Box
@@ -280,7 +285,7 @@ const Media = () => {
                     (el) =>
                       el?.subtype == "doc" && (
                         <div style={{ marginRight: "-20px" }}>
-                          <DocMsg el={el} menu={false} />
+                          <DocMsg el={el} menu={false}  messageRefs={messageRefs} highlightedMessageId={highlightedMessageId}/>
                         </div>
                       )
                   );

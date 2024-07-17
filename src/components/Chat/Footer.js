@@ -977,6 +977,21 @@ const Footer = () => {
           boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.25)",
         }}
       >
+        <div
+          className={`z-10 rounded-lg absolute top-[-38px]  border-l-8 border-l-lime-500 w-96 border bg-gray-700 ${
+            reply ? "flex" : "hidden"
+          } ${theme.palette.mode == 'light' ? 'text-black bg-slate-100':null} `}
+        >
+          <div className=" flex  items-center justify-evenly gap-40 w-full">
+            <div className=" flex flex-col">
+              <span className=" text-sm font-light italic">
+                Replying to message:
+              </span>
+              <span className=" text-lg font-bold underline">{replyToMsg}</span>
+            </div>
+            <div onClick={()=>dispatch(UpdateReply_msg({ reply: false, replyToMsg: null, messageId: null }))} className={` z-10 rounded-full border w-6 h-6 flex items-center justify-center cursor-pointer hover:text-red-500 hover:border-red-500 transition-all duration-300 ${theme.palette.mode == 'light' ? 'border-black border hover:text-red-600 hover:border-red-600':null}`}>{<X className=" cursor-pointer"/>}</div>
+          </div>
+        </div>
         <Stack direction="row" alignItems={"center"} spacing={isMobile ? 1 : 3}>
           {!showAudioRecoder ? (
             <Stack sx={{ width: "100%" }}>
