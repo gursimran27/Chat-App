@@ -66,7 +66,7 @@ const Message = ({ isMobile, menu }) => {
     });
 
     dispatch(SetCurrentConversation(current));
-    dispatch(UpdateReply_msg({ reply: false, replyToMsg: null }));
+    dispatch(UpdateReply_msg({ reply: false, replyToMsg: null, messageId: null }));
     dispatch(UpdatePage({ page: 2 }));
     dispatch(UpdateHasMore({ hasMore: true }));
     if(sideBar.open){
@@ -111,6 +111,19 @@ const Message = ({ isMobile, menu }) => {
     // *or
     // messageListRef.current.scrollIntoView({behavior: "smooth", block:"end"})
   }, [conversationId]);
+
+  const messageRefs = useRef({});
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
+
+
+  useEffect(()=>{
+    if(highlightedMessageId){
+      setTimeout(()=>{
+        setHighlightedMessageId(null);
+      },1000)
+    }
+  },[highlightedMessageId]);
+
 
   return (
     <Box
@@ -176,30 +189,30 @@ const Message = ({ isMobile, menu }) => {
                 case "img":
                   return (
                     // Media Message
-                    <MediaMsg el={el} menu={menu} />
+                    <MediaMsg el={el} menu={menu} messageRefs={messageRefs} highlightedMessageId={highlightedMessageId} />
                   );
 
                 case "video":
                   return (
                     // Media Message
-                    <VideoMsg el={el} menu={menu} />
+                    <VideoMsg el={el} menu={menu}  messageRefs={messageRefs} highlightedMessageId={highlightedMessageId}/>
                   );
 
                 case "doc":
                   return (
                     // Doc Message
-                    <DocMsg el={el} menu={menu} />
+                    <DocMsg el={el} menu={menu}  messageRefs={messageRefs} highlightedMessageId={highlightedMessageId}/>
                   );
                 case "Link":
                   return (
                     //  Link Message
-                    <LinkMsg el={el} menu={menu} />
+                    <LinkMsg el={el} menu={menu}  messageRefs={messageRefs} highlightedMessageId={highlightedMessageId}/>
                   );
 
                 case "reply":
                   return (
                     //  ReplyMessage
-                    <ReplyMsg el={el} menu={menu} />
+                    <ReplyMsg el={el} menu={menu} messageRefs={messageRefs} setHighlightedMessageId={setHighlightedMessageId} highlightedMessageId={highlightedMessageId}/>
                   );
 
                 case "deleted":
@@ -211,26 +224,26 @@ const Message = ({ isMobile, menu }) => {
                 case "loc":
                   return (
                     //  deletedMessage
-                    <LocMsg el={el} menu={menu} />
+                    <LocMsg el={el} menu={menu}  messageRefs={messageRefs} highlightedMessageId={highlightedMessageId}/>
                   );
 
                 case  "live-loc":
                   return (
                     //  deletedMessage
-                    <LiveLocMsg el={el} menu={menu} />
+                    <LiveLocMsg el={el} menu={menu}  messageRefs={messageRefs} highlightedMessageId={highlightedMessageId}/>
                   );
 
 
                 case  "audio":
                   return (
                     //  deletedMessage
-                    <VoiceMsg el={el} menu={menu} />
+                    <VoiceMsg el={el} menu={menu}  messageRefs={messageRefs} highlightedMessageId={highlightedMessageId}/>
                   );
 
                 default:
                   return (
                     // Text Message
-                    <TextMsg el={el} menu={menu} />
+                    <TextMsg el={el} menu={menu} messageRefs={messageRefs} highlightedMessageId={highlightedMessageId}/>
                   );
               }
 

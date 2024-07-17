@@ -90,6 +90,10 @@ const oneToOneMessageSchema = new mongoose.Schema({
         type: Number,
         default: null,
       },
+      replyToMsgId: {
+        type: String,
+        default: null,
+      },
     },
   ],
   unreadCount: {

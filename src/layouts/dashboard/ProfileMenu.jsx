@@ -74,7 +74,7 @@ const ProfileMenu = () => {
                     }
                     else {//log-out
                       dispatch(ClearCurrentMessagesAndCurrentConversation());
-                      dispatch(UpdateReply_msg({reply:false, replyToMsg: null}))
+                      dispatch(UpdateReply_msg({ reply: false, replyToMsg: null, messageId: null }));
                       dispatch(LogoutUser());
                       dispatch(UpdatePage({page: 2}));
                       dispatch(UpdateHasMore({hasMore: true}));

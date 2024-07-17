@@ -287,7 +287,11 @@ const MessageOption = ({
               <MenuItem
                 onClick={() => {
                   dispatch(
-                    UpdateReply_msg({ reply: true, replyToMsg: replyToMsg })
+                    UpdateReply_msg({
+                      reply: true,
+                      replyToMsg: replyToMsg,
+                      messageId: messageId,
+                    })
                   );
                   handleClose();
                   dispatch(
@@ -347,7 +351,7 @@ const MessageOption = ({
   );
 };
 
-const DocMsg = ({ el, menu }) => {
+const DocMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
   const theme = useTheme();
   const [openModal, setOpenModal] = useState(false);
 
@@ -412,276 +416,287 @@ const DocMsg = ({ el, menu }) => {
   };
 
   return (
-    <Stack
-      direction="row"
-      justifyContent={el.incoming ? "start" : "end"}
-      sx={{ position: "relative" }}
-    >
-      <Box
-        px={1.5}
-        py={1.5}
-        sx={{
-          backgroundColor: el.incoming
-            ? alpha(theme.palette.background.default, 1)
-            : theme.palette.primary.main,
-          borderRadius: 1.5,
-          width: "max-content",
-          position: "relative",
-          cursor: "pointer",
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            top: "-2px",
-            width: 0,
-            height: 0,
-            borderStyle: "solid",
-            borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
-            borderColor: el.incoming
-              ? `transparent ${alpha(
-                  theme.palette.background.default,
-                  1
-                )} transparent transparent`
-              : `transparent transparent transparent ${theme.palette.primary.main}`,
-            left: el.incoming ? "-8px" : "unset",
-            right: el.incoming ? "unset" : "-8px",
-            transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
-          },
-        }}
-        onDoubleClick={() => {
-          if (!el?.myReaction && menu) {
-            console.log("double click");
-            socket.emit("react_to_message", {
-              conversationId: room_id,
-              from: user_id,
-              to: current_conversation?.user_id,
-              messageId: el?.id,
-              reaction: "❤️",
-            });
-          }
-        }}
+    <div ref={(thisEle) => (messageRefs.current[el?.id] = thisEle)}>
+      <Stack
+        direction="row"
+        justifyContent={el.incoming ? "start" : "end"}
+        sx={{ position: "relative" }}
       >
-        <Typography
-          variant="capton"
-          style={{
-            fontSize: "10px",
-            position: "absolute",
-            bottom: "-3px",
-            right: "4px",
+        <Box
+          className={`transition-all duration-1000 ${
+            el?.id == highlightedMessageId
+              ? el?.incoming
+                ? "translate-x-96 ease-in-out border-4 border-red-500"
+                : "-translate-x-80 ease-in-out border-4 border-red-500"
+              : null
+          }`}
+          px={1.5}
+          py={1.5}
+          sx={{
+            backgroundColor: el.incoming
+              ? alpha(theme.palette.background.default, 1)
+              : theme.palette.primary.main,
+            borderRadius: 1.5,
+            width: "max-content",
+            position: "relative",
+            cursor: "pointer",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: "-2px",
+              width: 0,
+              height: 0,
+              borderStyle: "solid",
+              borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
+              borderColor: el.incoming
+                ? `transparent ${alpha(
+                    theme.palette.background.default,
+                    1
+                  )} transparent transparent`
+                : `transparent transparent transparent ${theme.palette.primary.main}`,
+              left: el.incoming ? "-8px" : "unset",
+              right: el.incoming ? "unset" : "-8px",
+              transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
+            },
+          }}
+          onDoubleClick={() => {
+            if (!el?.myReaction && menu) {
+              console.log("double click");
+              socket.emit("react_to_message", {
+                conversationId: room_id,
+                from: user_id,
+                to: current_conversation?.user_id,
+                messageId: el?.id,
+                reaction: "❤️",
+              });
+            }
           }}
         >
-          {el.time}
-        </Typography>
-        <div
-          className="reactions"
-          style={{
-            zIndex: 10,
-            position: "fixed",
-            display: openPicker ? "inline" : "none",
-            bottom: 100,
-            right: isMobile ? 20 : sideBar.open ? 420 : 100,
-          }}
-        >
-          <Picker
-            data={data}
-            // perLine={9} //The number of emojis to show per line
-            previewPosition={"none"}
-            searchPosition={"none"}
-            onClickOutside={() => handleOpenClick()}
-            theme={theme.palette.mode}
-            onEmojiSelect={(emoji) => {
-              handleEmojiClick(emoji.native, el?.id);
+          <Typography
+            variant="capton"
+            style={{
+              fontSize: "10px",
+              position: "absolute",
+              bottom: "-3px",
+              right: "4px",
             }}
-          />
-        </div>
-        <Stack spacing={2}>
-          <Stack
-            p={2}
-            direction="row"
-            spacing={3}
-            alignItems="center"
-            sx={{
-              backgroundColor: theme.palette.background.paper,
-              borderRadius: 1,
-              cursor: "pointer", // Add cursor pointer to indicate clickable
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenModal();
-            }} // Open modal on click of document preview area
           >
-            <Image size={48} />
-            <Typography variant="caption">{el?.message}</Typography>
-            <IconButton>
-              <DownloadSimple
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDownload();
-                }}
-              />
-            </IconButton>
-          </Stack>
-          <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
-            <Typography
-              variant="body2"
-              sx={{
-                color: el.incoming ? theme.palette.text.primary : "#fff",
+            {el.time}
+          </Typography>
+          <div
+            className="reactions"
+            style={{
+              zIndex: 10,
+              position: "fixed",
+              display: openPicker ? "inline" : "none",
+              bottom: 100,
+              right: isMobile ? 20 : sideBar.open ? 420 : 100,
+            }}
+          >
+            <Picker
+              data={data}
+              // perLine={9} //The number of emojis to show per line
+              previewPosition={"none"}
+              searchPosition={"none"}
+              onClickOutside={() => handleOpenClick()}
+              theme={theme.palette.mode}
+              onEmojiSelect={(emoji) => {
+                handleEmojiClick(emoji.native, el?.id);
               }}
+            />
+          </div>
+          <Stack spacing={2}>
+            <Stack
+              p={2}
+              direction="row"
+              spacing={3}
+              alignItems="center"
+              sx={{
+                backgroundColor: theme.palette.background.paper,
+                borderRadius: 1,
+                cursor: "pointer", // Add cursor pointer to indicate clickable
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenModal();
+              }} // Open modal on click of document preview area
             >
-              {el.message}
-            </Typography>
-          </Tooltip>
-        </Stack>
-        <Stack
-          direction={"row"}
-          alignItems={"center"}
-          justifyContent={"end"}
-          sx={{ marginTop: "3px" }}
-        >
-          {el?.star && <Star size={13} color="black" weight="duotone" />}
-        </Stack>
-        {(el?.myReaction || el?.otherReaction) && (
+              <Image size={48} />
+              <Typography variant="caption">{el?.message}</Typography>
+              <IconButton>
+                <DownloadSimple
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDownload();
+                  }}
+                />
+              </IconButton>
+            </Stack>
+            <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: el.incoming ? theme.palette.text.primary : "#fff",
+                }}
+              >
+                {el.message}
+              </Typography>
+            </Tooltip>
+          </Stack>
           <Stack
             direction={"row"}
             alignItems={"center"}
-            justifyContent={"center"}
-            gap={"1px"}
-            style={{
-              position: "absolute",
-              bottom: "-20px",
-              left: "0px",
-              fontSize: "1.5rem",
-              userSelect: "none",
-            }}
+            justifyContent={"end"}
+            sx={{ marginTop: "3px" }}
           >
-            <Box
-              sx={{ cursor: "pointer" }}
-              onClick={() => {
-                if (menu) {
-                  socket.emit("react_to_message", {
-                    conversationId: room_id,
-                    from: user_id,
-                    to: current_conversation?.user_id,
-                    messageId: el?.id,
-                    reaction: null,
-                  });
-                }
+            {el?.star && <Star size={13} color="black" weight="duotone" />}
+          </Stack>
+          {(el?.myReaction || el?.otherReaction) && (
+            <Stack
+              direction={"row"}
+              alignItems={"center"}
+              justifyContent={"center"}
+              gap={"1px"}
+              style={{
+                position: "absolute",
+                bottom: "-20px",
+                left: "0px",
+                fontSize: "1.5rem",
+                userSelect: "none",
               }}
             >
-              {el?.myReaction && (
-                <Tooltip
-                  placement="left-end"
-                  title={menu && "remove my reaction"}
-                >
-                  {el?.myReaction}
-                </Tooltip>
-              )}
-            </Box>
+              <Box
+                sx={{ cursor: "pointer" }}
+                onClick={() => {
+                  if (menu) {
+                    socket.emit("react_to_message", {
+                      conversationId: room_id,
+                      from: user_id,
+                      to: current_conversation?.user_id,
+                      messageId: el?.id,
+                      reaction: null,
+                    });
+                  }
+                }}
+              >
+                {el?.myReaction && (
+                  <Tooltip
+                    placement="left-end"
+                    title={menu && "remove my reaction"}
+                  >
+                    {el?.myReaction}
+                  </Tooltip>
+                )}
+              </Box>
 
-            <Box sx={{ cursor: "default" }}>
-              {el?.otherReaction && (
-                <Tooltip
-                  placement="right-end"
-                  title={`${current_conversation?.name.split(" ")[0]} reaction`}
-                >
-                  {el?.otherReaction}
-                </Tooltip>
-              )}
-            </Box>
+              <Box sx={{ cursor: "default" }}>
+                {el?.otherReaction && (
+                  <Tooltip
+                    placement="right-end"
+                    title={`${
+                      current_conversation?.name.split(" ")[0]
+                    } reaction`}
+                  >
+                    {el?.otherReaction}
+                  </Tooltip>
+                )}
+              </Box>
+            </Stack>
+          )}
+        </Box>
+        {menu && (
+          <Stack
+            justifyContent={"flex-end"}
+            sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
+          >
+            {!el.incoming &&
+              (el?.status == "Sent" ? (
+                <Check size={22} color="#908989" />
+              ) : el?.status == "Delivered" ? (
+                <Checks size={22} color="#908989" />
+              ) : (
+                <Checks size={22} color="#0949dc" />
+              ))}
           </Stack>
         )}
-      </Box>
-      {menu && (
-        <Stack
-          justifyContent={"flex-end"}
-          sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
-        >
-          {!el.incoming &&
-            (el?.status == "Sent" ? (
-              <Check size={22} color="#908989" />
-            ) : el?.status == "Delivered" ? (
-              <Checks size={22} color="#908989" />
-            ) : (
-              <Checks size={22} color="#0949dc" />
-            ))}
-        </Stack>
-      )}
-      {menu && (
-        <MessageOption
-          replyToMsg={el?.message}
-          messageId={el?.id}
-          star={el?.star}
-          openPicker={openPicker}
-          setOpenPicker={setOpenPicker}
-          deletedForEveryone={el?.deletedForEveryone}
-          created_at={el?.created_at}
-          incomming={el?.incoming}
-        />
-      )}
-
-      <Modal
-        open={openModal}
-        onClose={handleCloseModal}
-        aria-labelledby="document-modal-title"
-        aria-describedby="document-modal-description"
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            maxWidth: "90vw",
-            maxHeight: "90vh",
-            width: "70%",
-            height: "90%",
-            backgroundColor: "#fff",
-            boxShadow: 24,
-            p: 4,
-            borderRadius: "10px",
-            outline: "none",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            overflow: "auto", // Add scrollbar when content overflows
-          }}
-        >
-          {/* Display document preview */}
-          <iframe
-            src={el?.src}
-            title="Document Preview"
-            style={{
-              width: "100%",
-              height: "100%",
-              border: "none",
-              borderRadius: "10px",
-            }}
+        {menu && (
+          <MessageOption
+            replyToMsg={el?.message}
+            messageId={el?.id}
+            star={el?.star}
+            openPicker={openPicker}
+            setOpenPicker={setOpenPicker}
+            deletedForEveryone={el?.deletedForEveryone}
+            created_at={el?.created_at}
+            incomming={el?.incoming}
           />
-          <IconButton
-            aria-label="Close modal"
-            onClick={handleCloseModal}
+        )}
+
+        <Modal
+          open={openModal}
+          onClose={handleCloseModal}
+          aria-labelledby="document-modal-title"
+          aria-describedby="document-modal-description"
+        >
+          <Box
             sx={{
               position: "absolute",
-              top: 8,
-              right: 8,
-              color: "black",
-              backgroundColor: "red",
-              "&:hover": {
-                backgroundColor: "red",
-                color: "black",
-                scale: "0.9",
-                transition: "all 300ms",
-              },
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              width: "70%",
+              height: "90%",
+              backgroundColor: "#fff",
+              boxShadow: 24,
+              p: 4,
+              borderRadius: "10px",
+              outline: "none",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              overflow: "auto", // Add scrollbar when content overflows
             }}
           >
-            <X />
-          </IconButton>
-        </Box>
-      </Modal>
-    </Stack>
+            {/* Display document preview */}
+            <iframe
+              src={el?.src}
+              title="Document Preview"
+              style={{
+                width: "100%",
+                height: "100%",
+                border: "none",
+                borderRadius: "10px",
+              }}
+            />
+            <IconButton
+              aria-label="Close modal"
+              onClick={handleCloseModal}
+              sx={{
+                position: "absolute",
+                top: 8,
+                right: 8,
+                color: "black",
+                backgroundColor: "red",
+                "&:hover": {
+                  backgroundColor: "red",
+                  color: "black",
+                  scale: "0.9",
+                  transition: "all 300ms",
+                },
+              }}
+            >
+              <X />
+            </IconButton>
+          </Box>
+        </Modal>
+      </Stack>
+    </div>
   );
 };
 
-const LinkMsg = ({ el, menu }) => {
+const LinkMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
   const theme = useTheme();
   const [openPicker, setOpenPicker] = useState(false);
   const isMobile = useResponsive("between", "md", "xs", "sm");
@@ -710,120 +725,394 @@ const LinkMsg = ({ el, menu }) => {
   };
 
   return (
-    <Stack
-      direction="row"
-      justifyContent={el.incoming ? "start" : "end"}
-      sx={{ position: "relative" }}
-    >
-      <Box
-        px={1.5}
-        py={1.5}
-        sx={{
-          backgroundColor: el.incoming
-            ? alpha(theme.palette.background.default, 1)
-            : theme.palette.primary.main,
-          borderRadius: 1.5,
-          width: "max-content",
-          position: "relative",
-          cursor: "pointer",
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            top: "-2px",
-            width: 0,
-            height: 0,
-            borderStyle: "solid",
-            borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
-            borderColor: el.incoming
-              ? `transparent ${alpha(
-                  theme.palette.background.default,
-                  1
-                )} transparent transparent`
-              : `transparent transparent transparent ${theme.palette.primary.main}`,
-            left: el.incoming ? "-8px" : "unset",
-            right: el.incoming ? "unset" : "-8px",
-            transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
-          },
-        }}
-        onDoubleClick={() => {
-          if (!el?.myReaction && menu) {
-            console.log("double click");
-            socket.emit("react_to_message", {
-              conversationId: room_id,
-              from: user_id,
-              to: current_conversation?.user_id,
-              messageId: el?.id,
-              reaction: "❤️",
-            });
-          }
-        }}
+    <div ref={(thisEle) => (messageRefs.current[el?.id] = thisEle)}>
+      <Stack
+        direction="row"
+        justifyContent={el.incoming ? "start" : "end"}
+        sx={{ position: "relative" }}
       >
-        <Typography
-          variant="capton"
-          style={{
-            fontSize: "10px",
-            position: "absolute",
-            bottom: "-3px",
-            right: "4px",
+        <Box
+          className={`transition-all duration-1000 ${
+            el?.id == highlightedMessageId
+              ? el?.incoming
+                ? "translate-x-96 ease-in-out border-4 border-red-500"
+                : "-translate-x-80 ease-in-out border-4 border-red-500"
+              : null
+          }`}
+          px={1.5}
+          py={1.5}
+          sx={{
+            backgroundColor: el.incoming
+              ? alpha(theme.palette.background.default, 1)
+              : theme.palette.primary.main,
+            borderRadius: 1.5,
+            width: "max-content",
+            position: "relative",
+            cursor: "pointer",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: "-2px",
+              width: 0,
+              height: 0,
+              borderStyle: "solid",
+              borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
+              borderColor: el.incoming
+                ? `transparent ${alpha(
+                    theme.palette.background.default,
+                    1
+                  )} transparent transparent`
+                : `transparent transparent transparent ${theme.palette.primary.main}`,
+              left: el.incoming ? "-8px" : "unset",
+              right: el.incoming ? "unset" : "-8px",
+              transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
+            },
+          }}
+          onDoubleClick={() => {
+            if (!el?.myReaction && menu) {
+              console.log("double click");
+              socket.emit("react_to_message", {
+                conversationId: room_id,
+                from: user_id,
+                to: current_conversation?.user_id,
+                messageId: el?.id,
+                reaction: "❤️",
+              });
+            }
           }}
         >
-          {el.time}
-        </Typography>
-        <div
-          className="reactions"
-          style={{
-            zIndex: 10,
-            position: "fixed",
-            display: openPicker ? "inline" : "none",
-            bottom: 100,
-            right: isMobile ? 20 : sideBar.open ? 420 : 100,
-          }}
-        >
-          <Picker
-            data={data}
-            // perLine={9} //The number of emojis to show per line
-            previewPosition={"none"}
-            searchPosition={"none"}
-            onClickOutside={() => handleOpenClick()}
-            theme={theme.palette.mode}
-            onEmojiSelect={(emoji) => {
-              handleEmojiClick(emoji.native, el?.id);
-            }}
-          />
-        </div>
-        <Stack spacing={2}>
-          <Stack
-            p={2}
-            spacing={3}
-            alignItems={"start"}
-            direction={"column"}
-            sx={{
-              backgroundColor: theme.palette.background.paper,
-              borderRadius: 1,
+          <Typography
+            variant="capton"
+            style={{
+              fontSize: "10px",
+              position: "absolute",
+              bottom: "-3px",
+              right: "4px",
             }}
           >
-            {/* <img
-              src={el.message}
-              alt={el.message}
-              style={{ maxHeight: 210, borderRadius: "10px" }}
-              loading="lazy"
-            /> */}
-            {/* <Stack spacing={2}>
-              <Typography variant="subtitle2">creating chat app</Typography>
-              <Typography
-                variant="subtitle2"
-                component={Link}
-                sx={{
-                  color: theme.palette.primary.main,
-                }}
-                to={el?.message}
+            {el.time}
+          </Typography>
+          <div
+            className="reactions"
+            style={{
+              zIndex: 10,
+              position: "fixed",
+              display: openPicker ? "inline" : "none",
+              bottom: 100,
+              right: isMobile ? 20 : sideBar.open ? 420 : 100,
+            }}
+          >
+            <Picker
+              data={data}
+              // perLine={9} //The number of emojis to show per line
+              previewPosition={"none"}
+              searchPosition={"none"}
+              onClickOutside={() => handleOpenClick()}
+              theme={theme.palette.mode}
+              onEmojiSelect={(emoji) => {
+                handleEmojiClick(emoji.native, el?.id);
+              }}
+            />
+          </div>
+          <Stack spacing={2}>
+            <Stack
+              p={2}
+              spacing={3}
+              alignItems={"start"}
+              direction={"column"}
+              sx={{
+                backgroundColor: theme.palette.background.paper,
+                borderRadius: 1,
+              }}
+            >
+              {/* <img
+                src={el.message}
+                alt={el.message}
+                style={{ maxHeight: 210, borderRadius: "10px" }}
+                loading="lazy"
+              /> */}
+              {/* <Stack spacing={2}>
+                <Typography variant="subtitle2">creating chat app</Typography>
+                <Typography
+                  variant="subtitle2"
+                  component={Link}
+                  sx={{
+                    color: theme.palette.primary.main,
+                  }}
+                  to={el?.message}
+                >
+                  www.linkedin.com
+                </Typography>
+              </Stack> */}
+              <a style={{ color: "blue" }} href={el?.message} target="_blank">
+                Click Here To Open
+              </a>
+              <Tooltip
+                placement="left-start"
+                title={formatDate(el?.created_at)}
               >
-                www.linkedin.com
+                <Typography
+                  variant="body2"
+                  color={el.incoming ? theme.palette.text : "#fff"}
+                >
+                  {el.message}
+                </Typography>
+              </Tooltip>
+            </Stack>
+          </Stack>
+          <Stack
+            direction={"row"}
+            alignItems={"center"}
+            justifyContent={"end"}
+            sx={{ marginTop: "3px" }}
+          >
+            {el?.star && <Star size={13} color="black" weight="duotone" />}
+          </Stack>
+          {(el?.myReaction || el?.otherReaction) && (
+            <Stack
+              direction={"row"}
+              alignItems={"center"}
+              justifyContent={"center"}
+              gap={"1px"}
+              style={{
+                position: "absolute",
+                bottom: "-20px",
+                left: "0px",
+                fontSize: "1.5rem",
+                userSelect: "none",
+              }}
+            >
+              <Box
+                sx={{ cursor: "pointer" }}
+                onClick={() => {
+                  if (menu) {
+                    socket.emit("react_to_message", {
+                      conversationId: room_id,
+                      from: user_id,
+                      to: current_conversation?.user_id,
+                      messageId: el?.id,
+                      reaction: null,
+                    });
+                  }
+                }}
+              >
+                {el?.myReaction && (
+                  <Tooltip
+                    placement="left-end"
+                    title={menu && "remove my reaction"}
+                  >
+                    {el?.myReaction}
+                  </Tooltip>
+                )}
+              </Box>
+
+              <Box sx={{ cursor: "default" }}>
+                {el?.otherReaction && (
+                  <Tooltip
+                    placement="right-end"
+                    title={`${
+                      current_conversation?.name.split(" ")[0]
+                    } reaction`}
+                  >
+                    {el?.otherReaction}
+                  </Tooltip>
+                )}
+              </Box>
+            </Stack>
+          )}
+        </Box>
+        {menu && (
+          <MessageOption
+            replyToMsg={el?.message}
+            messageId={el?.id}
+            star={el?.star}
+            openPicker={openPicker}
+            setOpenPicker={setOpenPicker}
+            deletedForEveryone={el?.deletedForEveryone}
+            created_at={el?.created_at}
+            incomming={el?.incoming}
+          />
+        )}
+        {menu && (
+          <Stack
+            justifyContent={"flex-end"}
+            sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
+          >
+            {!el.incoming &&
+              (el?.status == "Sent" ? (
+                <Check size={22} color="#908989" />
+              ) : el?.status == "Delivered" ? (
+                <Checks size={22} color="#908989" />
+              ) : (
+                <Checks size={22} color="#0949dc" />
+              ))}
+          </Stack>
+        )}
+      </Stack>
+    </div>
+  );
+};
+
+const ReplyMsg = ({
+  el,
+  menu,
+  messageRefs,
+  setHighlightedMessageId,
+  highlightedMessageId,
+}) => {
+  const theme = useTheme();
+
+  const [openPicker, setOpenPicker] = useState(false);
+  const isMobile = useResponsive("between", "md", "xs", "sm");
+  const { sideBar } = useSelector((state) => state.app);
+  const { room_id } = useSelector((state) => state.app);
+  const user_id = window.localStorage.getItem("user_id");
+  const { current_conversation } = useSelector(
+    (state) => state.conversation.direct_chat
+  );
+
+  function handleEmojiClick(emoji, messageId) {
+    socket.emit("react_to_message", {
+      conversationId: room_id,
+      from: user_id,
+      to: current_conversation?.user_id,
+      messageId: messageId,
+      reaction: emoji,
+    });
+    setOpenPicker(!openPicker);
+  }
+
+  const handleOpenClick = () => {
+    if (openPicker) {
+      setOpenPicker(false);
+    }
+  };
+
+  const dispatch = useDispatch();
+
+  const scrollToMessage = (messageId) => {
+    if (messageRefs.current[messageId]) {
+      messageRefs.current[messageId].scrollIntoView({ behavior: "smooth" });
+      setHighlightedMessageId(messageId);
+    } else {
+      dispatch(
+        showSnackbar({
+          severity: "error",
+          message:
+            "either message was deleted or the message is not yet loaded in the chat",
+        })
+      );
+    }
+  };
+
+  return (
+    <div ref={(thisEle) => (messageRefs.current[el?.id] = thisEle)}>
+      <Stack
+        direction="row"
+        justifyContent={el.incoming ? "start" : "end"}
+        sx={{ position: "relative" }}
+      >
+        <Box
+          className={`transition-all duration-1000 ${
+            el?.id == highlightedMessageId
+              ? el?.incoming
+                ? "translate-x-96 ease-in-out border-4 border-red-500"
+                : "-translate-x-80 ease-in-out border-4 border-red-500"
+              : null
+          }`}
+          px={1.5}
+          py={1.5}
+          sx={{
+            backgroundColor: el.incoming
+              ? alpha(theme.palette.background.default, 1)
+              : theme.palette.primary.main,
+            borderRadius: 1.5,
+            width: "max-content",
+            position: "relative",
+            cursor: "pointer",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: "-2px",
+              width: 0,
+              height: 0,
+              borderStyle: "solid",
+              borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
+              borderColor: el.incoming
+                ? `transparent ${alpha(
+                    theme.palette.background.default,
+                    1
+                  )} transparent transparent`
+                : `transparent transparent transparent ${theme.palette.primary.main}`,
+              left: el.incoming ? "-8px" : "unset",
+              right: el.incoming ? "unset" : "-8px",
+              transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
+            },
+          }}
+          onDoubleClick={() => {
+            if (!el?.myReaction && menu) {
+              console.log("double click");
+              socket.emit("react_to_message", {
+                conversationId: room_id,
+                from: user_id,
+                to: current_conversation?.user_id,
+                messageId: el?.id,
+                reaction: "❤️",
+              });
+            }
+          }}
+        >
+          <Typography
+            variant="capton"
+            style={{
+              fontSize: "10px",
+              position: "absolute",
+              bottom: "-3px",
+              right: "4px",
+            }}
+          >
+            {el.time}
+          </Typography>
+          <div
+            className="reactions"
+            style={{
+              zIndex: 10,
+              position: "fixed",
+              display: openPicker ? "inline" : "none",
+              bottom: 100,
+              right: isMobile ? 20 : sideBar.open ? 420 : 100,
+            }}
+          >
+            <Picker
+              data={data}
+              // perLine={9} //The number of emojis to show per line
+              previewPosition={"none"}
+              searchPosition={"none"}
+              onClickOutside={() => handleOpenClick()}
+              theme={theme.palette.mode}
+              onEmojiSelect={(emoji) => {
+                handleEmojiClick(emoji.native, el?.id);
+              }}
+            />
+          </div>
+          <Stack spacing={2}>
+            {/* <a href={`#${el?.replyToMsgId}`}> */}
+            <Stack
+              p={2}
+              direction={"column"}
+              spacing={3}
+              alignItems={"center"}
+              sx={{
+                backgroundColor: theme.palette.background.paper,
+                borderRadius: 1,
+              }}
+              onClick={() => scrollToMessage(el?.replyToMsgId)}
+            >
+              <Typography variant="body2" color={theme.palette.text}>
+                {el?.replyToMsg}
               </Typography>
-            </Stack> */}
-            <a style={{ color: "blue" }} href={el?.message} target="_blank">
-              Click Here To Open
-            </a>
+            </Stack>
+            {/* </a> */}
             <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
               <Typography
                 variant="body2"
@@ -833,324 +1122,101 @@ const LinkMsg = ({ el, menu }) => {
               </Typography>
             </Tooltip>
           </Stack>
-        </Stack>
-        <Stack
-          direction={"row"}
-          alignItems={"center"}
-          justifyContent={"end"}
-          sx={{ marginTop: "3px" }}
-        >
-          {el?.star && <Star size={13} color="black" weight="duotone" />}
-        </Stack>
-        {(el?.myReaction || el?.otherReaction) && (
           <Stack
             direction={"row"}
             alignItems={"center"}
-            justifyContent={"center"}
-            gap={"1px"}
-            style={{
-              position: "absolute",
-              bottom: "-20px",
-              left: "0px",
-              fontSize: "1.5rem",
-              userSelect: "none",
-            }}
+            justifyContent={"end"}
+            sx={{ marginTop: "3px" }}
           >
-            <Box
-              sx={{ cursor: "pointer" }}
-              onClick={() => {
-                if (menu) {
-                  socket.emit("react_to_message", {
-                    conversationId: room_id,
-                    from: user_id,
-                    to: current_conversation?.user_id,
-                    messageId: el?.id,
-                    reaction: null,
-                  });
-                }
+            {el?.star && <Star size={13} color="black" weight="duotone" />}
+          </Stack>
+          {(el?.myReaction || el?.otherReaction) && (
+            <Stack
+              direction={"row"}
+              alignItems={"center"}
+              justifyContent={"center"}
+              gap={"1px"}
+              style={{
+                position: "absolute",
+                bottom: "-20px",
+                left: "0px",
+                fontSize: "1.5rem",
+                userSelect: "none",
               }}
             >
-              {el?.myReaction && (
-                <Tooltip
-                  placement="left-end"
-                  title={menu && "remove my reaction"}
-                >
-                  {el?.myReaction}
-                </Tooltip>
-              )}
-            </Box>
+              <Box
+                sx={{ cursor: "pointer" }}
+                onClick={() => {
+                  if (menu) {
+                    socket.emit("react_to_message", {
+                      conversationId: room_id,
+                      from: user_id,
+                      to: current_conversation?.user_id,
+                      messageId: el?.id,
+                      reaction: null,
+                    });
+                  }
+                }}
+              >
+                {el?.myReaction && (
+                  <Tooltip
+                    placement="left-end"
+                    title={menu && "remove my reaction"}
+                  >
+                    {el?.myReaction}
+                  </Tooltip>
+                )}
+              </Box>
 
-            <Box sx={{ cursor: "default" }}>
-              {el?.otherReaction && (
-                <Tooltip
-                  placement="right-end"
-                  title={`${current_conversation?.name.split(" ")[0]} reaction`}
-                >
-                  {el?.otherReaction}
-                </Tooltip>
-              )}
-            </Box>
-          </Stack>
-        )}
-      </Box>
-      {menu && (
-        <MessageOption
-          replyToMsg={el?.message}
-          messageId={el?.id}
-          star={el?.star}
-          openPicker={openPicker}
-          setOpenPicker={setOpenPicker}
-          deletedForEveryone={el?.deletedForEveryone}
-          created_at={el?.created_at}
-          incomming={el?.incoming}
-        />
-      )}
-      {menu && (
-        <Stack
-          justifyContent={"flex-end"}
-          sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
-        >
-          {!el.incoming &&
-            (el?.status == "Sent" ? (
-              <Check size={22} color="#908989" />
-            ) : el?.status == "Delivered" ? (
-              <Checks size={22} color="#908989" />
-            ) : (
-              <Checks size={22} color="#0949dc" />
-            ))}
-        </Stack>
-      )}
-    </Stack>
-  );
-};
-
-const ReplyMsg = ({ el, menu }) => {
-  const theme = useTheme();
-
-  const [openPicker, setOpenPicker] = useState(false);
-  const isMobile = useResponsive("between", "md", "xs", "sm");
-  const { sideBar } = useSelector((state) => state.app);
-  const { room_id } = useSelector((state) => state.app);
-  const user_id = window.localStorage.getItem("user_id");
-  const { current_conversation } = useSelector(
-    (state) => state.conversation.direct_chat
-  );
-
-  function handleEmojiClick(emoji, messageId) {
-    socket.emit("react_to_message", {
-      conversationId: room_id,
-      from: user_id,
-      to: current_conversation?.user_id,
-      messageId: messageId,
-      reaction: emoji,
-    });
-    setOpenPicker(!openPicker);
-  }
-
-  const handleOpenClick = () => {
-    if (openPicker) {
-      setOpenPicker(false);
-    }
-  };
-
-  return (
-    <Stack
-      direction="row"
-      justifyContent={el.incoming ? "start" : "end"}
-      sx={{ position: "relative" }}
-    >
-      <Box
-        px={1.5}
-        py={1.5}
-        sx={{
-          backgroundColor: el.incoming
-            ? alpha(theme.palette.background.default, 1)
-            : theme.palette.primary.main,
-          borderRadius: 1.5,
-          width: "max-content",
-          position: "relative",
-          cursor: "pointer",
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            top: "-2px",
-            width: 0,
-            height: 0,
-            borderStyle: "solid",
-            borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
-            borderColor: el.incoming
-              ? `transparent ${alpha(
-                  theme.palette.background.default,
-                  1
-                )} transparent transparent`
-              : `transparent transparent transparent ${theme.palette.primary.main}`,
-            left: el.incoming ? "-8px" : "unset",
-            right: el.incoming ? "unset" : "-8px",
-            transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
-          },
-        }}
-        onDoubleClick={() => {
-          if (!el?.myReaction && menu) {
-            console.log("double click");
-            socket.emit("react_to_message", {
-              conversationId: room_id,
-              from: user_id,
-              to: current_conversation?.user_id,
-              messageId: el?.id,
-              reaction: "❤️",
-            });
-          }
-        }}
-      >
-        <Typography
-          variant="capton"
-          style={{
-            fontSize: "10px",
-            position: "absolute",
-            bottom: "-3px",
-            right: "4px",
-          }}
-        >
-          {el.time}
-        </Typography>
-        <div
-          className="reactions"
-          style={{
-            zIndex: 10,
-            position: "fixed",
-            display: openPicker ? "inline" : "none",
-            bottom: 100,
-            right: isMobile ? 20 : sideBar.open ? 420 : 100,
-          }}
-        >
-          <Picker
-            data={data}
-            // perLine={9} //The number of emojis to show per line
-            previewPosition={"none"}
-            searchPosition={"none"}
-            onClickOutside={() => handleOpenClick()}
-            theme={theme.palette.mode}
-            onEmojiSelect={(emoji) => {
-              handleEmojiClick(emoji.native, el?.id);
-            }}
+              <Box sx={{ cursor: "default" }}>
+                {el?.otherReaction && (
+                  <Tooltip
+                    placement="right-end"
+                    title={`${
+                      current_conversation?.name.split(" ")[0]
+                    } reaction`}
+                  >
+                    {el?.otherReaction}
+                  </Tooltip>
+                )}
+              </Box>
+            </Stack>
+          )}
+        </Box>
+        {menu && (
+          <MessageOption
+            replyToMsg={el?.message}
+            messageId={el?.id}
+            star={el?.star}
+            openPicker={openPicker}
+            setOpenPicker={setOpenPicker}
+            deletedForEveryone={el?.deletedForEveryone}
+            created_at={el?.created_at}
+            incomming={el?.incoming}
           />
-        </div>
-        <Stack spacing={2}>
+        )}
+        {menu && (
           <Stack
-            p={2}
-            direction={"column"}
-            spacing={3}
-            alignItems={"center"}
-            sx={{
-              backgroundColor: theme.palette.background.paper,
-              borderRadius: 1,
-            }}
+            justifyContent={"flex-end"}
+            sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
           >
-            <Typography variant="body2" color={theme.palette.text}>
-              {el?.replyToMsg}
-            </Typography>
-          </Stack>
-          <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
-            <Typography
-              variant="body2"
-              color={el.incoming ? theme.palette.text : "#fff"}
-            >
-              {el.message}
-            </Typography>
-          </Tooltip>
-        </Stack>
-        <Stack
-          direction={"row"}
-          alignItems={"center"}
-          justifyContent={"end"}
-          sx={{ marginTop: "3px" }}
-        >
-          {el?.star && <Star size={13} color="black" weight="duotone" />}
-        </Stack>
-        {(el?.myReaction || el?.otherReaction) && (
-          <Stack
-            direction={"row"}
-            alignItems={"center"}
-            justifyContent={"center"}
-            gap={"1px"}
-            style={{
-              position: "absolute",
-              bottom: "-20px",
-              left: "0px",
-              fontSize: "1.5rem",
-              userSelect: "none",
-            }}
-          >
-            <Box
-              sx={{ cursor: "pointer" }}
-              onClick={() => {
-                if (menu) {
-                  socket.emit("react_to_message", {
-                    conversationId: room_id,
-                    from: user_id,
-                    to: current_conversation?.user_id,
-                    messageId: el?.id,
-                    reaction: null,
-                  });
-                }
-              }}
-            >
-              {el?.myReaction && (
-                <Tooltip
-                  placement="left-end"
-                  title={menu && "remove my reaction"}
-                >
-                  {el?.myReaction}
-                </Tooltip>
-              )}
-            </Box>
-
-            <Box sx={{ cursor: "default" }}>
-              {el?.otherReaction && (
-                <Tooltip
-                  placement="right-end"
-                  title={`${current_conversation?.name.split(" ")[0]} reaction`}
-                >
-                  {el?.otherReaction}
-                </Tooltip>
-              )}
-            </Box>
+            {!el.incoming &&
+              (el?.status == "Sent" ? (
+                <Check size={22} color="#908989" />
+              ) : el?.status == "Delivered" ? (
+                <Checks size={22} color="#908989" />
+              ) : (
+                <Checks size={22} color="#0949dc" />
+              ))}
           </Stack>
         )}
-      </Box>
-      {menu && (
-        <MessageOption
-          replyToMsg={el?.message}
-          messageId={el?.id}
-          star={el?.star}
-          openPicker={openPicker}
-          setOpenPicker={setOpenPicker}
-          deletedForEveryone={el?.deletedForEveryone}
-          created_at={el?.created_at}
-          incomming={el?.incoming}
-        />
-      )}
-      {menu && (
-        <Stack
-          justifyContent={"flex-end"}
-          sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
-        >
-          {!el.incoming &&
-            (el?.status == "Sent" ? (
-              <Check size={22} color="#908989" />
-            ) : el?.status == "Delivered" ? (
-              <Checks size={22} color="#908989" />
-            ) : (
-              <Checks size={22} color="#0949dc" />
-            ))}
-        </Stack>
-      )}
-    </Stack>
+      </Stack>
+    </div>
   );
 };
 
 // for images
-const MediaMsg = ({ el, menu }) => {
+const MediaMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
   const theme = useTheme();
 
   const [openModal, setOpenModal] = useState(false);
@@ -1190,264 +1256,275 @@ const MediaMsg = ({ el, menu }) => {
   };
 
   return (
-    <Stack
-      direction="row"
-      justifyContent={el.incoming ? "start" : "end"}
-      sx={{ position: "relative" }}
-    >
-      <Box
-        px={1.5}
-        py={1.5}
-        sx={{
-          backgroundColor: el.incoming
-            ? alpha(theme.palette.background.default, 1)
-            : theme.palette.primary.main,
-          borderRadius: 1.5,
-          width: "max-content",
-          position: "relative",
-          cursor: "pointer",
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            top: "-2px",
-            width: 0,
-            height: 0,
-            borderStyle: "solid",
-            borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
-            borderColor: el.incoming
-              ? `transparent ${alpha(
-                  theme.palette.background.default,
-                  1
-                )} transparent transparent`
-              : `transparent transparent transparent ${theme.palette.primary.main}`,
-            left: el.incoming ? "-8px" : "unset",
-            right: el.incoming ? "unset" : "-8px",
-            transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
-          },
-        }}
-        onDoubleClick={() => {
-          if (!el?.myReaction && menu) {
-            console.log("double click");
-            socket.emit("react_to_message", {
-              conversationId: room_id,
-              from: user_id,
-              to: current_conversation?.user_id,
-              messageId: el?.id,
-              reaction: "❤️",
-            });
-          }
-        }}
+    <div ref={(thisEle) => (messageRefs.current[el?.id] = thisEle)}>
+      <Stack
+        direction="row"
+        justifyContent={el.incoming ? "start" : "end"}
+        sx={{ position: "relative" }}
       >
-        <Typography
-          variant="capton"
-          style={{
-            fontSize: "10px",
-            position: "absolute",
-            bottom: "-3px",
-            right: "4px",
+        <Box
+          className={`transition-all duration-1000 ${
+            el?.id == highlightedMessageId
+              ? el?.incoming
+                ? "translate-x-96 ease-in-out border-4 border-red-500"
+                : "-translate-x-80 ease-in-out border-4 border-red-500"
+              : null
+          }`}
+          px={1.5}
+          py={1.5}
+          sx={{
+            backgroundColor: el.incoming
+              ? alpha(theme.palette.background.default, 1)
+              : theme.palette.primary.main,
+            borderRadius: 1.5,
+            width: "max-content",
+            position: "relative",
+            cursor: "pointer",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: "-2px",
+              width: 0,
+              height: 0,
+              borderStyle: "solid",
+              borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
+              borderColor: el.incoming
+                ? `transparent ${alpha(
+                    theme.palette.background.default,
+                    1
+                  )} transparent transparent`
+                : `transparent transparent transparent ${theme.palette.primary.main}`,
+              left: el.incoming ? "-8px" : "unset",
+              right: el.incoming ? "unset" : "-8px",
+              transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
+            },
+          }}
+          onDoubleClick={() => {
+            if (!el?.myReaction && menu) {
+              console.log("double click");
+              socket.emit("react_to_message", {
+                conversationId: room_id,
+                from: user_id,
+                to: current_conversation?.user_id,
+                messageId: el?.id,
+                reaction: "❤️",
+              });
+            }
           }}
         >
-          {el.time}
-        </Typography>
-        <div
-          className="reactions"
-          style={{
-            zIndex: 10,
-            position: "fixed",
-            display: openPicker ? "inline" : "none",
-            bottom: 100,
-            right: isMobile ? 20 : sideBar.open ? 420 : 100,
-          }}
-        >
-          <Picker
-            data={data}
-            // perLine={9} //The number of emojis to show per line
-            previewPosition={"none"}
-            searchPosition={"none"}
-            onClickOutside={() => handleOpenClick()}
-            theme={theme.palette.mode}
-            onEmojiSelect={(emoji) => {
-              handleEmojiClick(emoji.native, el?.id);
-            }}
-          />
-        </div>
-        <Stack spacing={1} sx={{ maxWidth: "100%", width: "210px" }}>
-          <img
-            src={el?.src}
-            alt={el.message}
-            loading="lazy"
+          <Typography
+            variant="capton"
             style={{
-              width: "100%",
-              height: "210px",
-              objectFit: "contain",
-              borderRadius: "10px",
-              cursor: "pointer", // Add cursor pointer to indicate clickable
+              fontSize: "10px",
+              position: "absolute",
+              bottom: "-3px",
+              right: "4px",
             }}
-            onClick={handleOpenModal} // Open modal on image click
-          />
-          <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
-            <Typography
-              variant="body2"
-              color={el.incoming ? theme.palette.text : "#fff"}
-            >
-              {el.message}
-            </Typography>
-          </Tooltip>
-        </Stack>
-        <Stack
-          direction={"row"}
-          alignItems={"center"}
-          justifyContent={"end"}
-          sx={{ marginTop: "3px" }}
-        >
-          {el?.star && <Star size={13} color="black" weight="duotone" />}
-        </Stack>
-        {(el?.myReaction || el?.otherReaction) && (
+          >
+            {el.time}
+          </Typography>
+          <div
+            className="reactions"
+            style={{
+              zIndex: 10,
+              position: "fixed",
+              display: openPicker ? "inline" : "none",
+              bottom: 100,
+              right: isMobile ? 20 : sideBar.open ? 420 : 100,
+            }}
+          >
+            <Picker
+              data={data}
+              // perLine={9} //The number of emojis to show per line
+              previewPosition={"none"}
+              searchPosition={"none"}
+              onClickOutside={() => handleOpenClick()}
+              theme={theme.palette.mode}
+              onEmojiSelect={(emoji) => {
+                handleEmojiClick(emoji.native, el?.id);
+              }}
+            />
+          </div>
+          <Stack spacing={1} sx={{ maxWidth: "100%", width: "210px" }}>
+            <img
+              src={el?.src}
+              alt={el.message}
+              loading="lazy"
+              style={{
+                width: "100%",
+                height: "210px",
+                objectFit: "contain",
+                borderRadius: "10px",
+                cursor: "pointer", // Add cursor pointer to indicate clickable
+              }}
+              onClick={handleOpenModal} // Open modal on image click
+            />
+            <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
+              <Typography
+                variant="body2"
+                color={el.incoming ? theme.palette.text : "#fff"}
+              >
+                {el.message}
+              </Typography>
+            </Tooltip>
+          </Stack>
           <Stack
             direction={"row"}
             alignItems={"center"}
-            justifyContent={"center"}
-            gap={"1px"}
-            style={{
-              position: "absolute",
-              bottom: "-20px",
-              left: "0px",
-              fontSize: "1.5rem",
-              userSelect: "none",
-            }}
+            justifyContent={"end"}
+            sx={{ marginTop: "3px" }}
           >
-            <Box
-              sx={{ cursor: "pointer" }}
-              onClick={() => {
-                if (menu) {
-                  socket.emit("react_to_message", {
-                    conversationId: room_id,
-                    from: user_id,
-                    to: current_conversation?.user_id,
-                    messageId: el?.id,
-                    reaction: null,
-                  });
-                }
+            {el?.star && <Star size={13} color="black" weight="duotone" />}
+          </Stack>
+          {(el?.myReaction || el?.otherReaction) && (
+            <Stack
+              direction={"row"}
+              alignItems={"center"}
+              justifyContent={"center"}
+              gap={"1px"}
+              style={{
+                position: "absolute",
+                bottom: "-20px",
+                left: "0px",
+                fontSize: "1.5rem",
+                userSelect: "none",
               }}
             >
-              {el?.myReaction && (
-                <Tooltip
-                  placement="left-end"
-                  title={menu && "remove my reaction"}
-                >
-                  {el?.myReaction}
-                </Tooltip>
-              )}
-            </Box>
+              <Box
+                sx={{ cursor: "pointer" }}
+                onClick={() => {
+                  if (menu) {
+                    socket.emit("react_to_message", {
+                      conversationId: room_id,
+                      from: user_id,
+                      to: current_conversation?.user_id,
+                      messageId: el?.id,
+                      reaction: null,
+                    });
+                  }
+                }}
+              >
+                {el?.myReaction && (
+                  <Tooltip
+                    placement="left-end"
+                    title={menu && "remove my reaction"}
+                  >
+                    {el?.myReaction}
+                  </Tooltip>
+                )}
+              </Box>
 
-            <Box sx={{ cursor: "default" }}>
-              {el?.otherReaction && (
-                <Tooltip
-                  placement="right-end"
-                  title={`${current_conversation?.name.split(" ")[0]} reaction`}
-                >
-                  {el?.otherReaction}
-                </Tooltip>
-              )}
-            </Box>
+              <Box sx={{ cursor: "default" }}>
+                {el?.otherReaction && (
+                  <Tooltip
+                    placement="right-end"
+                    title={`${
+                      current_conversation?.name.split(" ")[0]
+                    } reaction`}
+                  >
+                    {el?.otherReaction}
+                  </Tooltip>
+                )}
+              </Box>
+            </Stack>
+          )}
+        </Box>
+        {menu && (
+          <MessageOption
+            replyToMsg={el?.message}
+            messageId={el?.id}
+            star={el?.star}
+            openPicker={openPicker}
+            setOpenPicker={setOpenPicker}
+            deletedForEveryone={el?.deletedForEveryone}
+            created_at={el?.created_at}
+            incomming={el?.incoming}
+          />
+        )}
+        {menu && (
+          <Stack
+            justifyContent={"flex-end"}
+            sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
+          >
+            {!el.incoming &&
+              (el?.status == "Sent" ? (
+                <Check size={22} color="#908989" />
+              ) : el?.status == "Delivered" ? (
+                <Checks size={22} color="#908989" />
+              ) : (
+                <Checks size={22} color="#0949dc" />
+              ))}
           </Stack>
         )}
-      </Box>
-      {menu && (
-        <MessageOption
-          replyToMsg={el?.message}
-          messageId={el?.id}
-          star={el?.star}
-          openPicker={openPicker}
-          setOpenPicker={setOpenPicker}
-          deletedForEveryone={el?.deletedForEveryone}
-          created_at={el?.created_at}
-          incomming={el?.incoming}
-        />
-      )}
-      {menu && (
-        <Stack
-          justifyContent={"flex-end"}
-          sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
-        >
-          {!el.incoming &&
-            (el?.status == "Sent" ? (
-              <Check size={22} color="#908989" />
-            ) : el?.status == "Delivered" ? (
-              <Checks size={22} color="#908989" />
-            ) : (
-              <Checks size={22} color="#0949dc" />
-            ))}
-        </Stack>
-      )}
 
-      {/* Modal for displaying larger image */}
-      <Modal
-        open={openModal}
-        onClose={handleCloseModal}
-        aria-labelledby="image-modal-title"
-        aria-describedby="image-modal-description"
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            maxWidth: "90vw",
-            maxHeight: "90vh",
-            width: "70%",
-            height: "90%",
-            backgroundColor: "#fff",
-            boxShadow: 24,
-            p: 4,
-            borderRadius: "10px",
-            outline: "none",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            overflow: "auto", // Add scrollbar when content overflows
-          }}
+        {/* Modal for displaying larger image */}
+        <Modal
+          open={openModal}
+          onClose={handleCloseModal}
+          aria-labelledby="image-modal-title"
+          aria-describedby="image-modal-description"
         >
-          <img
-            src={el?.src}
-            alt={el.message}
-            loading="lazy"
-            style={{
-              maxWidth: "100%",
-              maxHeight: "100%",
-              width: "100%",
-              height: "100%",
-              objectFit: "contain",
-              borderRadius: "10px",
-            }}
-          />
-          <IconButton
-            aria-label="Close modal"
-            onClick={handleCloseModal}
+          <Box
             sx={{
               position: "absolute",
-              top: 8,
-              right: 8,
-              color: "black",
-              backgroundColor: "red",
-              "&:hover": {
-                backgroundColor: "red",
-                color: "black",
-                scale: "0.9",
-                transition: "all 300ms",
-              },
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              width: "70%",
+              height: "90%",
+              backgroundColor: "#fff",
+              boxShadow: 24,
+              p: 4,
+              borderRadius: "10px",
+              outline: "none",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              overflow: "auto", // Add scrollbar when content overflows
             }}
           >
-            <X />
-          </IconButton>
-        </Box>
-      </Modal>
-    </Stack>
+            <img
+              src={el?.src}
+              alt={el.message}
+              loading="lazy"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                borderRadius: "10px",
+              }}
+            />
+            <IconButton
+              aria-label="Close modal"
+              onClick={handleCloseModal}
+              sx={{
+                position: "absolute",
+                top: 8,
+                right: 8,
+                color: "black",
+                backgroundColor: "red",
+                "&:hover": {
+                  backgroundColor: "red",
+                  color: "black",
+                  scale: "0.9",
+                  transition: "all 300ms",
+                },
+              }}
+            >
+              <X />
+            </IconButton>
+          </Box>
+        </Modal>
+      </Stack>
+    </div>
   );
 };
 
-const VideoMsg = ({ el, menu }) => {
+const VideoMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
   const theme = useTheme();
   const [openModal, setOpenModal] = useState(false);
 
@@ -1486,265 +1563,276 @@ const VideoMsg = ({ el, menu }) => {
   };
 
   return (
-    <Stack
-      direction="row"
-      justifyContent={el.incoming ? "start" : "end"}
-      sx={{ position: "relative" }}
-    >
-      <Box
-        px={1.5}
-        py={1.5}
-        sx={{
-          backgroundColor: el.incoming
-            ? alpha(theme.palette.background.default, 1)
-            : theme.palette.primary.main,
-          borderRadius: 1.5,
-          width: "max-content",
-          position: "relative",
-          cursor: "pointer",
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            top: "-2px",
-            width: 0,
-            height: 0,
-            borderStyle: "solid",
-            borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
-            borderColor: el.incoming
-              ? `transparent ${alpha(
-                  theme.palette.background.default,
-                  1
-                )} transparent transparent`
-              : `transparent transparent transparent ${theme.palette.primary.main}`,
-            left: el.incoming ? "-8px" : "unset",
-            right: el.incoming ? "unset" : "-8px",
-            transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
-          },
-        }}
-        onDoubleClick={() => {
-          if (!el?.myReaction && menu) {
-            console.log("double click");
-            socket.emit("react_to_message", {
-              conversationId: room_id,
-              from: user_id,
-              to: current_conversation?.user_id,
-              messageId: el?.id,
-              reaction: "❤️",
-            });
-          }
-        }}
+    <div ref={(thisEle) => (messageRefs.current[el?.id] = thisEle)}>
+      <Stack
+        direction="row"
+        justifyContent={el.incoming ? "start" : "end"}
+        sx={{ position: "relative" }}
       >
-        <Typography
-          variant="capton"
-          style={{
-            fontSize: "10px",
-            position: "absolute",
-            bottom: "-3px",
-            right: "4px",
+        <Box
+          className={`transition-all duration-1000 ${
+            el?.id == highlightedMessageId
+              ? el?.incoming
+                ? "translate-x-96 ease-in-out border-4 border-red-500"
+                : "-translate-x-80 ease-in-out border-4 border-red-500"
+              : null
+          }`}
+          px={1.5}
+          py={1.5}
+          sx={{
+            backgroundColor: el.incoming
+              ? alpha(theme.palette.background.default, 1)
+              : theme.palette.primary.main,
+            borderRadius: 1.5,
+            width: "max-content",
+            position: "relative",
+            cursor: "pointer",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: "-2px",
+              width: 0,
+              height: 0,
+              borderStyle: "solid",
+              borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
+              borderColor: el.incoming
+                ? `transparent ${alpha(
+                    theme.palette.background.default,
+                    1
+                  )} transparent transparent`
+                : `transparent transparent transparent ${theme.palette.primary.main}`,
+              left: el.incoming ? "-8px" : "unset",
+              right: el.incoming ? "unset" : "-8px",
+              transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
+            },
+          }}
+          onDoubleClick={() => {
+            if (!el?.myReaction && menu) {
+              console.log("double click");
+              socket.emit("react_to_message", {
+                conversationId: room_id,
+                from: user_id,
+                to: current_conversation?.user_id,
+                messageId: el?.id,
+                reaction: "❤️",
+              });
+            }
           }}
         >
-          {el.time}
-        </Typography>
-        <div
-          className="reactions"
-          style={{
-            zIndex: 10,
-            position: "fixed",
-            display: openPicker ? "inline" : "none",
-            bottom: 100,
-            right: isMobile ? 20 : sideBar.open ? 420 : 100,
-          }}
-        >
-          <Picker
-            data={data}
-            // perLine={9} //The number of emojis to show per line
-            previewPosition={"none"}
-            searchPosition={"none"}
-            onClickOutside={() => handleOpenClick()}
-            theme={theme.palette.mode}
-            onEmojiSelect={(emoji) => {
-              handleEmojiClick(emoji.native, el?.id);
-            }}
-          />
-        </div>
-        <Stack spacing={1} sx={{ maxWidth: "100%", width: "250px" }}>
-          <video
-            src={el?.src}
-            type={el?.type} // Specify the video type if known
-            controls
+          <Typography
+            variant="capton"
             style={{
-              width: "100%",
-              height: "210px",
-              objectFit: "cover",
-              borderRadius: "10px",
-              cursor: "pointer",
+              fontSize: "10px",
+              position: "absolute",
+              bottom: "-3px",
+              right: "4px",
             }}
-            onClick={handleOpenModal}
-          />
-          <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
-            <Typography
-              variant="body2"
-              color={el.incoming ? theme.palette.text : "#fff"}
-            >
-              {el.message}
-            </Typography>
-          </Tooltip>
-        </Stack>
-        <Stack
-          direction={"row"}
-          alignItems={"center"}
-          justifyContent={"end"}
-          sx={{ marginTop: "3px" }}
-        >
-          {el?.star && <Star size={13} color="black" weight="duotone" />}
-        </Stack>
-        {(el?.myReaction || el?.otherReaction) && (
+          >
+            {el.time}
+          </Typography>
+          <div
+            className="reactions"
+            style={{
+              zIndex: 10,
+              position: "fixed",
+              display: openPicker ? "inline" : "none",
+              bottom: 100,
+              right: isMobile ? 20 : sideBar.open ? 420 : 100,
+            }}
+          >
+            <Picker
+              data={data}
+              // perLine={9} //The number of emojis to show per line
+              previewPosition={"none"}
+              searchPosition={"none"}
+              onClickOutside={() => handleOpenClick()}
+              theme={theme.palette.mode}
+              onEmojiSelect={(emoji) => {
+                handleEmojiClick(emoji.native, el?.id);
+              }}
+            />
+          </div>
+          <Stack spacing={1} sx={{ maxWidth: "100%", width: "250px" }}>
+            <video
+              src={el?.src}
+              type={el?.type} // Specify the video type if known
+              controls
+              style={{
+                width: "100%",
+                height: "210px",
+                objectFit: "cover",
+                borderRadius: "10px",
+                cursor: "pointer",
+              }}
+              onClick={handleOpenModal}
+            />
+            <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
+              <Typography
+                variant="body2"
+                color={el.incoming ? theme.palette.text : "#fff"}
+              >
+                {el.message}
+              </Typography>
+            </Tooltip>
+          </Stack>
           <Stack
             direction={"row"}
             alignItems={"center"}
-            justifyContent={"center"}
-            gap={"1px"}
-            style={{
-              position: "absolute",
-              bottom: "-20px",
-              left: "0px",
-              fontSize: "1.5rem",
-              userSelect: "none",
-            }}
+            justifyContent={"end"}
+            sx={{ marginTop: "3px" }}
           >
-            <Box
-              sx={{ cursor: "pointer" }}
-              onClick={() => {
-                if (menu) {
-                  socket.emit("react_to_message", {
-                    conversationId: room_id,
-                    from: user_id,
-                    to: current_conversation?.user_id,
-                    messageId: el?.id,
-                    reaction: null,
-                  });
-                }
+            {el?.star && <Star size={13} color="black" weight="duotone" />}
+          </Stack>
+          {(el?.myReaction || el?.otherReaction) && (
+            <Stack
+              direction={"row"}
+              alignItems={"center"}
+              justifyContent={"center"}
+              gap={"1px"}
+              style={{
+                position: "absolute",
+                bottom: "-20px",
+                left: "0px",
+                fontSize: "1.5rem",
+                userSelect: "none",
               }}
             >
-              {el?.myReaction && (
-                <Tooltip
-                  placement="left-end"
-                  title={menu && "remove my reaction"}
-                >
-                  {el?.myReaction}
-                </Tooltip>
-              )}
-            </Box>
+              <Box
+                sx={{ cursor: "pointer" }}
+                onClick={() => {
+                  if (menu) {
+                    socket.emit("react_to_message", {
+                      conversationId: room_id,
+                      from: user_id,
+                      to: current_conversation?.user_id,
+                      messageId: el?.id,
+                      reaction: null,
+                    });
+                  }
+                }}
+              >
+                {el?.myReaction && (
+                  <Tooltip
+                    placement="left-end"
+                    title={menu && "remove my reaction"}
+                  >
+                    {el?.myReaction}
+                  </Tooltip>
+                )}
+              </Box>
 
-            <Box sx={{ cursor: "default" }}>
-              {el?.otherReaction && (
-                <Tooltip
-                  placement="right-end"
-                  title={`${current_conversation?.name.split(" ")[0]} reaction`}
-                >
-                  {el?.otherReaction}
-                </Tooltip>
-              )}
-            </Box>
+              <Box sx={{ cursor: "default" }}>
+                {el?.otherReaction && (
+                  <Tooltip
+                    placement="right-end"
+                    title={`${
+                      current_conversation?.name.split(" ")[0]
+                    } reaction`}
+                  >
+                    {el?.otherReaction}
+                  </Tooltip>
+                )}
+              </Box>
+            </Stack>
+          )}
+        </Box>
+        {menu && (
+          <MessageOption
+            replyToMsg={el?.message}
+            messageId={el?.id}
+            star={el?.star}
+            openPicker={openPicker}
+            setOpenPicker={setOpenPicker}
+            deletedForEveryone={el?.deletedForEveryone}
+            created_at={el?.created_at}
+            incomming={el?.incoming}
+          />
+        )}
+        {menu && (
+          <Stack
+            justifyContent={"flex-end"}
+            sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
+          >
+            {!el.incoming &&
+              (el?.status == "Sent" ? (
+                <Check size={22} color="#908989" />
+              ) : el?.status == "Delivered" ? (
+                <Checks size={22} color="#908989" />
+              ) : (
+                <Checks size={22} color="#0949dc" />
+              ))}
           </Stack>
         )}
-      </Box>
-      {menu && (
-        <MessageOption
-          replyToMsg={el?.message}
-          messageId={el?.id}
-          star={el?.star}
-          openPicker={openPicker}
-          setOpenPicker={setOpenPicker}
-          deletedForEveryone={el?.deletedForEveryone}
-          created_at={el?.created_at}
-          incomming={el?.incoming}
-        />
-      )}
-      {menu && (
-        <Stack
-          justifyContent={"flex-end"}
-          sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
-        >
-          {!el.incoming &&
-            (el?.status == "Sent" ? (
-              <Check size={22} color="#908989" />
-            ) : el?.status == "Delivered" ? (
-              <Checks size={22} color="#908989" />
-            ) : (
-              <Checks size={22} color="#0949dc" />
-            ))}
-        </Stack>
-      )}
 
-      {/* Modal for displaying larger video */}
-      <Modal
-        open={openModal}
-        onClose={handleCloseModal}
-        aria-labelledby="video-modal-title"
-        aria-describedby="video-modal-description"
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            maxWidth: "90vw",
-            maxHeight: "90vh",
-            width: "70%",
-            height: "90%",
-            backgroundColor: "#fff",
-            boxShadow: 24,
-            p: 4,
-            borderRadius: "10px",
-            outline: "none",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            overflow: "auto", // Add scrollbar when content overflows
-          }}
+        {/* Modal for displaying larger video */}
+        <Modal
+          open={openModal}
+          onClose={handleCloseModal}
+          aria-labelledby="video-modal-title"
+          aria-describedby="video-modal-description"
         >
-          <video
-            src={el?.src}
-            type={el?.type} // Specify the video type if known
-            controls
-            autoPlay
-            style={{
-              maxWidth: "100%",
-              maxHeight: "100%",
-              width: "100%",
-              height: "100%",
-              objectFit: "contain",
-              borderRadius: "10px",
-            }}
-          />
-          <IconButton
-            aria-label="Close modal"
-            onClick={handleCloseModal}
+          <Box
             sx={{
               position: "absolute",
-              top: 8,
-              right: 8,
-              color: "black",
-              backgroundColor: "red",
-              "&:hover": {
-                backgroundColor: "red",
-                color: "black",
-                scale: "0.9",
-                transition: "all 300ms",
-              },
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              width: "70%",
+              height: "90%",
+              backgroundColor: "#fff",
+              boxShadow: 24,
+              p: 4,
+              borderRadius: "10px",
+              outline: "none",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              overflow: "auto", // Add scrollbar when content overflows
             }}
           >
-            <X />
-          </IconButton>
-        </Box>
-      </Modal>
-    </Stack>
+            <video
+              src={el?.src}
+              type={el?.type} // Specify the video type if known
+              controls
+              autoPlay
+              style={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                borderRadius: "10px",
+              }}
+            />
+            <IconButton
+              aria-label="Close modal"
+              onClick={handleCloseModal}
+              sx={{
+                position: "absolute",
+                top: 8,
+                right: 8,
+                color: "black",
+                backgroundColor: "red",
+                "&:hover": {
+                  backgroundColor: "red",
+                  color: "black",
+                  scale: "0.9",
+                  transition: "all 300ms",
+                },
+              }}
+            >
+              <X />
+            </IconButton>
+          </Box>
+        </Modal>
+      </Stack>
+    </div>
   );
 };
 
-const TextMsg = ({ el, menu }) => {
+const TextMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
   // console.log("test message pushed");
   const theme = useTheme();
 
@@ -1775,182 +1863,196 @@ const TextMsg = ({ el, menu }) => {
   };
 
   return (
-    <Stack
-      direction="row"
-      justifyContent={el.incoming ? "start" : "end"}
-      sx={{ position: "relative" }}
-    >
-      <Box
-        px={1.5}
-        py={1.5}
-        sx={{
-          backgroundColor: el.incoming
-            ? alpha(theme.palette.background.default, 1)
-            : theme.palette.primary.main,
-          borderRadius: 1.5,
-          width: "max-content",
-          position: "relative",
-          cursor: "pointer",
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            top: "-2px",
-            width: 0,
-            height: 0,
-            borderStyle: "solid",
-            borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
-            borderColor: el.incoming
-              ? `transparent ${alpha(
-                  theme.palette.background.default,
-                  1
-                )} transparent transparent`
-              : `transparent transparent transparent ${theme.palette.primary.main}`,
-            left: el.incoming ? "-8px" : "unset",
-            right: el.incoming ? "unset" : "-8px",
-            transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
-          },
-        }}
-        onDoubleClick={() => {
-          if (!el?.myReaction && menu) {
-            console.log("double click");
-            socket.emit("react_to_message", {
-              conversationId: room_id,
-              from: user_id,
-              to: current_conversation?.user_id,
-              messageId: el?.id,
-              reaction: "❤️",
-            });
-          }
-        }}
+    <div ref={(thisEle) => (messageRefs.current[el?.id] = thisEle)}>
+      <Stack
+        direction="row"
+        justifyContent={el.incoming ? "start" : "end"}
+        sx={{ position: "relative" }}
       >
-        <Typography
-          variant="capton"
-          style={{
-            fontSize: "10px",
-            position: "absolute",
-            bottom: "-3px",
-            right: "4px",
+        {/* <div className={`${el?.id==highlightedMessageId ? ' mt-2 block w-[500px] h-10 ' : 'hidden'}`}>
+        
+      </div> */}
+        <Box
+          className={`transition-all duration-1000 ${
+            el?.id == highlightedMessageId
+              ? el?.incoming
+                ? "translate-x-96 ease-in-out border-4 border-red-500"
+                : "-translate-x-80 ease-in-out border-4 border-red-500"
+              : null
+          }`}
+          px={1.5}
+          py={1.5}
+          sx={{
+            backgroundColor: el.incoming
+              ? alpha(theme.palette.background.default, 1)
+              : theme.palette.primary.main,
+            borderRadius: 1.5,
+            width: "max-content",
+            position: "relative",
+            cursor: "pointer",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: "-2px",
+              width: 0,
+              height: 0,
+              borderStyle: "solid",
+              borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
+              borderColor: el.incoming
+                ? `transparent ${alpha(
+                    theme.palette.background.default,
+                    1
+                  )} transparent transparent`
+                : `transparent transparent transparent ${theme.palette.primary.main}`,
+              left: el.incoming ? "-8px" : "unset",
+              right: el.incoming ? "unset" : "-8px",
+              transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
+            },
+          }}
+          onDoubleClick={() => {
+            if (!el?.myReaction && menu) {
+              console.log("double click");
+              socket.emit("react_to_message", {
+                conversationId: room_id,
+                from: user_id,
+                to: current_conversation?.user_id,
+                messageId: el?.id,
+                reaction: "❤️",
+              });
+            }
           }}
         >
-          {el?.time}
-        </Typography>
-        <div
-          className="reactions"
-          style={{
-            zIndex: 10,
-            position: "fixed",
-            display: openPicker ? "inline" : "none",
-            bottom: 100,
-            right: isMobile ? 20 : sideBar.open ? 420 : 100,
-          }}
-        >
-          <Picker
-            data={data}
-            // perLine={9} //The number of emojis to show per line
-            previewPosition={"none"}
-            searchPosition={"none"}
-            onClickOutside={() => handleOpenClick()}
-            theme={theme.palette.mode}
-            onEmojiSelect={(emoji) => {
-              handleEmojiClick(emoji.native, el?.id);
-            }}
-          />
-        </div>
-        <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
           <Typography
-            variant="body2"
-            color={el.incoming ? theme.palette.text : "#fff"}
+            variant="capton"
+            style={{
+              fontSize: "10px",
+              position: "absolute",
+              bottom: "-3px",
+              right: "4px",
+            }}
           >
-            {el.message}
+            {el?.time}
           </Typography>
-        </Tooltip>
-        <Stack
-          direction={"row"}
-          alignItems={"center"}
-          justifyContent={"end"}
-          sx={{ marginTop: "3px" }}
-        >
-          {el?.star && <Star size={13} color="black" weight="duotone" />}
-        </Stack>
-        {(el?.myReaction || el?.otherReaction) && (
+          <div
+            className="reactions"
+            style={{
+              zIndex: 10,
+              position: "fixed",
+              display: openPicker ? "inline" : "none",
+              bottom: 100,
+              right: isMobile ? 20 : sideBar.open ? 420 : 100,
+            }}
+          >
+            <Picker
+              data={data}
+              // perLine={9} //The number of emojis to show per line
+              previewPosition={"none"}
+              searchPosition={"none"}
+              onClickOutside={() => handleOpenClick()}
+              theme={theme.palette.mode}
+              onEmojiSelect={(emoji) => {
+                handleEmojiClick(emoji.native, el?.id);
+              }}
+            />
+          </div>
+          <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
+            <Typography
+              variant="body2"
+              color={el.incoming ? theme.palette.text : "#fff"}
+            >
+              {el.message}
+            </Typography>
+          </Tooltip>
           <Stack
             direction={"row"}
             alignItems={"center"}
-            justifyContent={"center"}
-            gap={"1px"}
-            style={{
-              position: "absolute",
-              bottom: "-20px",
-              left: "0px",
-              fontSize: "1.5rem",
-              userSelect: "none",
-            }}
+            justifyContent={"end"}
+            sx={{ marginTop: "3px" }}
           >
-            <Box
-              sx={{ cursor: "pointer" }}
-              onClick={() => {
-                if (menu) {
-                  socket.emit("react_to_message", {
-                    conversationId: room_id,
-                    from: user_id,
-                    to: current_conversation?.user_id,
-                    messageId: el?.id,
-                    reaction: null,
-                  });
-                }
+            {el?.star && <Star size={13} color="black" weight="duotone" />}
+          </Stack>
+          {(el?.myReaction || el?.otherReaction) && (
+            <Stack
+              direction={"row"}
+              alignItems={"center"}
+              justifyContent={"center"}
+              gap={"1px"}
+              style={{
+                position: "absolute",
+                bottom: "-20px",
+                left: "0px",
+                fontSize: "1.5rem",
+                userSelect: "none",
               }}
             >
-              {el?.myReaction && (
-                <Tooltip
-                  placement="left-end"
-                  title={menu && "remove my reaction"}
-                >
-                  {el?.myReaction}
-                </Tooltip>
-              )}
-            </Box>
+              <Box
+                sx={{ cursor: "pointer" }}
+                onClick={() => {
+                  if (menu) {
+                    socket.emit("react_to_message", {
+                      conversationId: room_id,
+                      from: user_id,
+                      to: current_conversation?.user_id,
+                      messageId: el?.id,
+                      reaction: null,
+                    });
+                  }
+                }}
+              >
+                {el?.myReaction && (
+                  <Tooltip
+                    placement="left-end"
+                    title={menu && "remove my reaction"}
+                  >
+                    {el?.myReaction}
+                  </Tooltip>
+                )}
+              </Box>
 
-            <Box sx={{ cursor: "default" }}>
-              {el?.otherReaction && (
-                <Tooltip
-                  placement="right-end"
-                  title={`${current_conversation?.name.split(" ")[0]} reaction`}
-                >
-                  {el?.otherReaction}
-                </Tooltip>
-              )}
-            </Box>
+              <Box sx={{ cursor: "default" }}>
+                {el?.otherReaction && (
+                  <Tooltip
+                    placement="right-end"
+                    title={`${
+                      current_conversation?.name.split(" ")[0]
+                    } reaction`}
+                  >
+                    {el?.otherReaction}
+                  </Tooltip>
+                )}
+              </Box>
+            </Stack>
+          )}
+        </Box>
+        {menu && (
+          <MessageOption
+            replyToMsg={el?.message}
+            messageId={el?.id}
+            star={el?.star}
+            openPicker={openPicker}
+            setOpenPicker={setOpenPicker}
+            deletedForEveryone={el?.deletedForEveryone}
+            created_at={el?.created_at}
+            incomming={el?.incoming}
+          />
+        )}
+        {menu && (
+          <Stack
+            justifyContent={"flex-end"}
+            sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
+          >
+            {!el.incoming &&
+              (el?.status == "Sent" ? (
+                <Check size={22} color="#908989" />
+              ) : el?.status == "Delivered" ? (
+                <Checks size={22} color="#908989" />
+              ) : (
+                <Checks size={22} color="#0949dc" />
+              ))}
           </Stack>
         )}
-      </Box>
-      {menu && (
-        <MessageOption
-          replyToMsg={el?.message}
-          messageId={el?.id}
-          star={el?.star}
-          openPicker={openPicker}
-          setOpenPicker={setOpenPicker}
-          deletedForEveryone={el?.deletedForEveryone}
-          created_at={el?.created_at}
-          incomming={el?.incoming}
-        />
-      )}
-      {menu && (
-        <Stack
-          justifyContent={"flex-end"}
-          sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
-        >
-          {!el.incoming &&
-            (el?.status == "Sent" ? (
-              <Check size={22} color="#908989" />
-            ) : el?.status == "Delivered" ? (
-              <Checks size={22} color="#908989" />
-            ) : (
-              <Checks size={22} color="#0949dc" />
-            ))}
-        </Stack>
-      )}
-    </Stack>
+      </Stack>
+    </div>
   );
 };
 
@@ -1959,59 +2061,61 @@ const DeletedMsg = ({ el, menu }) => {
   const theme = useTheme();
 
   return (
-    <Stack
-      direction="row"
-      justifyContent={el.incoming ? "start" : "end"}
-      sx={{ position: "relative" }}
-    >
-      <Box
-        px={1.5}
-        py={1}
-        sx={{
-          backgroundColor: "#919EAB",
-          borderRadius: 1.5,
-          width: "max-content",
-          position: "relative",
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            top: "-2px",
-            width: 0,
-            height: 0,
-            borderStyle: "solid",
-            borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
-            borderColor: el.incoming
-              ? `transparent ${alpha("#919EAB", 1)} transparent transparent`
-              : `transparent transparent transparent ${"#919EAB"}`,
-            left: el.incoming ? "-8px" : "unset",
-            right: el.incoming ? "unset" : "-8px",
-            transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
-          },
-        }}
+    <div>
+      <Stack
+        direction="row"
+        justifyContent={el.incoming ? "start" : "end"}
+        sx={{ position: "relative" }}
       >
-        <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
-          <Typography
-            variant="caption"
-            color={el.incoming ? theme.palette.text : "#fff"}
-            sx={{ fontStyle: "italic" }}
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              userSelect: "none",
-            }}
-          >
-            <XCircle size={20} />
-            {"This message was deleted"}
-          </Typography>
-        </Tooltip>
-      </Box>
-    </Stack>
+        <Box
+          px={1.5}
+          py={1}
+          sx={{
+            backgroundColor: "#919EAB",
+            borderRadius: 1.5,
+            width: "max-content",
+            position: "relative",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: "-2px",
+              width: 0,
+              height: 0,
+              borderStyle: "solid",
+              borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
+              borderColor: el.incoming
+                ? `transparent ${alpha("#919EAB", 1)} transparent transparent`
+                : `transparent transparent transparent ${"#919EAB"}`,
+              left: el.incoming ? "-8px" : "unset",
+              right: el.incoming ? "unset" : "-8px",
+              transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
+            },
+          }}
+        >
+          <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
+            <Typography
+              variant="caption"
+              color={el.incoming ? theme.palette.text : "#fff"}
+              sx={{ fontStyle: "italic" }}
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                userSelect: "none",
+              }}
+            >
+              <XCircle size={20} />
+              {"This message was deleted"}
+            </Typography>
+          </Tooltip>
+        </Box>
+      </Stack>
+    </div>
   );
 };
 
-const LocMsg = ({ el, menu }) => {
+const LocMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
   const theme = useTheme();
 
   const [openModal, setOpenModal] = useState(false);
@@ -2083,301 +2187,312 @@ const LocMsg = ({ el, menu }) => {
   }, [openModal]);
 
   return (
-    <Stack
-      direction="row"
-      justifyContent={el.incoming ? "start" : "end"}
-      sx={{ position: "relative" }}
-    >
-      <Box
-        px={1.5}
-        py={1.5}
-        sx={{
-          backgroundColor: el.incoming
-            ? alpha(theme.palette.background.default, 1)
-            : theme.palette.primary.main,
-          borderRadius: 1.5,
-          width: "340px",
-          position: "relative",
-          cursor: "pointer",
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            top: "-2px",
-            width: 0,
-            height: 0,
-            borderStyle: "solid",
-            borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
-            borderColor: el.incoming
-              ? `transparent ${alpha(
-                  theme.palette.background.default,
-                  1
-                )} transparent transparent`
-              : `transparent transparent transparent ${theme.palette.primary.main}`,
-            left: el.incoming ? "-8px" : "unset",
-            right: el.incoming ? "unset" : "-8px",
-            transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
-          },
-        }}
-        onDoubleClick={() => {
-          if (!el?.myReaction && menu) {
-            console.log("double click");
-            socket.emit("react_to_message", {
-              conversationId: room_id,
-              from: user_id,
-              to: current_conversation?.user_id,
-              messageId: el?.id,
-              reaction: "❤️",
-            });
-          }
-        }}
+    <div ref={(thisEle) => (messageRefs.current[el?.id] = thisEle)}>
+      <Stack
+        direction="row"
+        justifyContent={el.incoming ? "start" : "end"}
+        sx={{ position: "relative" }}
       >
-        <Typography
-          variant="capton"
-          style={{
-            fontSize: "10px",
-            position: "absolute",
-            bottom: "-3px",
-            right: "4px",
+        <Box
+          className={`transition-all duration-1000 ${
+            el?.id == highlightedMessageId
+              ? el?.incoming
+                ? "translate-x-96 ease-in-out border-4 border-red-500"
+                : "-translate-x-80 ease-in-out border-4 border-red-500"
+              : null
+          }`}
+          px={1.5}
+          py={1.5}
+          sx={{
+            backgroundColor: el.incoming
+              ? alpha(theme.palette.background.default, 1)
+              : theme.palette.primary.main,
+            borderRadius: 1.5,
+            width: "340px",
+            position: "relative",
+            cursor: "pointer",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: "-2px",
+              width: 0,
+              height: 0,
+              borderStyle: "solid",
+              borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
+              borderColor: el.incoming
+                ? `transparent ${alpha(
+                    theme.palette.background.default,
+                    1
+                  )} transparent transparent`
+                : `transparent transparent transparent ${theme.palette.primary.main}`,
+              left: el.incoming ? "-8px" : "unset",
+              right: el.incoming ? "unset" : "-8px",
+              transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
+            },
+          }}
+          onDoubleClick={() => {
+            if (!el?.myReaction && menu) {
+              console.log("double click");
+              socket.emit("react_to_message", {
+                conversationId: room_id,
+                from: user_id,
+                to: current_conversation?.user_id,
+                messageId: el?.id,
+                reaction: "❤️",
+              });
+            }
           }}
         >
-          {el.time}
-        </Typography>
-        <div
-          className="reactions"
-          style={{
-            zIndex: 10,
-            position: "fixed",
-            display: openPicker ? "inline" : "none",
-            bottom: 100,
-            right: isMobile ? 20 : sideBar.open ? 420 : 100,
-          }}
-        >
-          <Picker
-            data={data}
-            // perLine={9} //The number of emojis to show per line
-            previewPosition={"none"}
-            searchPosition={"none"}
-            onClickOutside={() => handleOpenClick()}
-            theme={theme.palette.mode}
-            onEmojiSelect={(emoji) => {
-              handleEmojiClick(emoji.native, el?.id);
-            }}
-          />
-        </div>
-        <Stack spacing={1} sx={{ maxWidth: "100%" }}>
-          <div
-            className="border w-full -z-0"
+          <Typography
+            variant="capton"
             style={{
-              height: "210px",
-              borderRadius: "10px",
-              cursor: "pointer", // Add cursor pointer to indicate clickable
+              fontSize: "10px",
+              position: "absolute",
+              bottom: "-3px",
+              right: "4px",
             }}
-            onClick={handleOpenModal} // Open modal on image click
           >
+            {el.time}
+          </Typography>
+          <div
+            className="reactions"
+            style={{
+              zIndex: 10,
+              position: "fixed",
+              display: openPicker ? "inline" : "none",
+              bottom: 100,
+              right: isMobile ? 20 : sideBar.open ? 420 : 100,
+            }}
+          >
+            <Picker
+              data={data}
+              // perLine={9} //The number of emojis to show per line
+              previewPosition={"none"}
+              searchPosition={"none"}
+              onClickOutside={() => handleOpenClick()}
+              theme={theme.palette.mode}
+              onEmojiSelect={(emoji) => {
+                handleEmojiClick(emoji.native, el?.id);
+              }}
+            />
+          </div>
+          <Stack spacing={1} sx={{ maxWidth: "100%" }}>
+            <div
+              className="border w-full -z-0"
+              style={{
+                height: "210px",
+                borderRadius: "10px",
+                cursor: "pointer", // Add cursor pointer to indicate clickable
+              }}
+              onClick={handleOpenModal} // Open modal on image click
+            >
+              <MapContainer
+                center={el?.coordinates}
+                zoom={9}
+                scrollWheelZoom={false}
+                zoomControl={false}
+                dragging={false}
+                attributionControl={false}
+                doubleClickZoom={false}
+              >
+                {/* OPEN STREEN MAPS TILES */}
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {/* Hard coded markers */}
+                <Marker position={el?.coordinates} icon={customIcon}>
+                  {/* <Popup>{el?.message}</Popup> */}
+                  {/* <TP>{el?.message}</TP> */}
+                </Marker>
+                {/* <Marker position={myCoordinates} icon={customIconForMyLoc}>
+                    <Popup>My Locaiton</Popup>
+                    <TP>Your Location</TP>
+                  </Marker> */}
+              </MapContainer>
+            </div>
+            <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
+              <Typography
+                variant="body2"
+                color={el.incoming ? theme.palette.text : "#fff"}
+              >
+                {el.message}
+              </Typography>
+            </Tooltip>
+          </Stack>
+          <Stack
+            direction={"row"}
+            alignItems={"center"}
+            justifyContent={"end"}
+            sx={{ marginTop: "3px" }}
+          >
+            {el?.star && <Star size={13} color="black" weight="duotone" />}
+          </Stack>
+          {(el?.myReaction || el?.otherReaction) && (
+            <Stack
+              direction={"row"}
+              alignItems={"center"}
+              justifyContent={"center"}
+              gap={"1px"}
+              style={{
+                position: "absolute",
+                bottom: "-20px",
+                left: "0px",
+                fontSize: "1.5rem",
+                userSelect: "none",
+              }}
+            >
+              <Box
+                sx={{ cursor: "pointer" }}
+                onClick={() => {
+                  if (menu) {
+                    socket.emit("react_to_message", {
+                      conversationId: room_id,
+                      from: user_id,
+                      to: current_conversation?.user_id,
+                      messageId: el?.id,
+                      reaction: null,
+                    });
+                  }
+                }}
+              >
+                {el?.myReaction && (
+                  <Tooltip
+                    placement="left-end"
+                    title={menu && "remove my reaction"}
+                  >
+                    {el?.myReaction}
+                  </Tooltip>
+                )}
+              </Box>
+
+              <Box sx={{ cursor: "default" }}>
+                {el?.otherReaction && (
+                  <Tooltip
+                    placement="right-end"
+                    title={`${
+                      current_conversation?.name.split(" ")[0]
+                    } reaction`}
+                  >
+                    {el?.otherReaction}
+                  </Tooltip>
+                )}
+              </Box>
+            </Stack>
+          )}
+        </Box>
+        {menu && (
+          <MessageOption
+            replyToMsg={el?.message}
+            messageId={el?.id}
+            star={el?.star}
+            openPicker={openPicker}
+            setOpenPicker={setOpenPicker}
+            deletedForEveryone={el?.deletedForEveryone}
+            created_at={el?.created_at}
+            incomming={el?.incoming}
+          />
+        )}
+        {menu && (
+          <Stack
+            justifyContent={"flex-end"}
+            sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
+          >
+            {!el.incoming &&
+              (el?.status == "Sent" ? (
+                <Check size={22} color="#908989" />
+              ) : el?.status == "Delivered" ? (
+                <Checks size={22} color="#908989" />
+              ) : (
+                <Checks size={22} color="#0949dc" />
+              ))}
+          </Stack>
+        )}
+
+        {/* Modal for displaying larger image */}
+        <Modal
+          open={openModal}
+          onClose={handleCloseModal}
+          aria-labelledby="image-modal-title"
+          aria-describedby="image-modal-description"
+        >
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              width: "90%",
+              height: "90%",
+              backgroundColor: "#fff",
+              boxShadow: 24,
+              p: 4,
+              borderRadius: "10px",
+              outline: "none",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              overflow: "auto", // Add scrollbar when content overflows
+            }}
+          >
+            {/* <div style={{width:'90%', height:'90%'}}> */}
             <MapContainer
               center={el?.coordinates}
-              zoom={9}
-              scrollWheelZoom={false}
-              zoomControl={false}
-              dragging={false}
+              zoom={10}
               attributionControl={false}
-              doubleClickZoom={false}
             >
               {/* OPEN STREEN MAPS TILES */}
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-              {/* Hard coded markers */}
-              <Marker position={el?.coordinates} icon={customIcon}>
-                {/* <Popup>{el?.message}</Popup> */}
-                {/* <TP>{el?.message}</TP> */}
-              </Marker>
-              {/* <Marker position={myCoordinates} icon={customIconForMyLoc}>
-                  <Popup>My Locaiton</Popup>
-                  <TP>Your Location</TP>
-                </Marker> */}
+              <MarkerClusterGroup chunkedLoading>
+                {/* Hard coded markers */}
+                {el?.coordinates && (
+                  <Marker position={el?.coordinates} icon={customIcon}>
+                    <Popup>{el?.message}</Popup>
+                    <TP>{el?.message}</TP>
+                  </Marker>
+                )}
+                {myCoordinates && (
+                  <Marker position={myCoordinates} icon={customIconForMyLoc}>
+                    <Popup>My Locaiton</Popup>
+                    <TP>Your Location</TP>
+                  </Marker>
+                )}
+              </MarkerClusterGroup>
             </MapContainer>
-          </div>
-          <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
-            <Typography
-              variant="body2"
-              color={el.incoming ? theme.palette.text : "#fff"}
-            >
-              {el.message}
-            </Typography>
-          </Tooltip>
-        </Stack>
-        <Stack
-          direction={"row"}
-          alignItems={"center"}
-          justifyContent={"end"}
-          sx={{ marginTop: "3px" }}
-        >
-          {el?.star && <Star size={13} color="black" weight="duotone" />}
-        </Stack>
-        {(el?.myReaction || el?.otherReaction) && (
-          <Stack
-            direction={"row"}
-            alignItems={"center"}
-            justifyContent={"center"}
-            gap={"1px"}
-            style={{
-              position: "absolute",
-              bottom: "-20px",
-              left: "0px",
-              fontSize: "1.5rem",
-              userSelect: "none",
-            }}
-          >
-            <Box
-              sx={{ cursor: "pointer" }}
-              onClick={() => {
-                if (menu) {
-                  socket.emit("react_to_message", {
-                    conversationId: room_id,
-                    from: user_id,
-                    to: current_conversation?.user_id,
-                    messageId: el?.id,
-                    reaction: null,
-                  });
-                }
+            {/* </div> */}
+            <IconButton
+              aria-label="Close modal"
+              onClick={handleCloseModal}
+              className="z-10"
+              sx={{
+                position: "absolute",
+                top: 5,
+                right: 5,
+                color: "black",
+                backgroundColor: "red",
+                "&:hover": {
+                  backgroundColor: "red",
+                  color: "black",
+                  scale: "0.9",
+                  transition: "all 300ms",
+                },
               }}
             >
-              {el?.myReaction && (
-                <Tooltip
-                  placement="left-end"
-                  title={menu && "remove my reaction"}
-                >
-                  {el?.myReaction}
-                </Tooltip>
-              )}
-            </Box>
-
-            <Box sx={{ cursor: "default" }}>
-              {el?.otherReaction && (
-                <Tooltip
-                  placement="right-end"
-                  title={`${current_conversation?.name.split(" ")[0]} reaction`}
-                >
-                  {el?.otherReaction}
-                </Tooltip>
-              )}
-            </Box>
-          </Stack>
-        )}
-      </Box>
-      {menu && (
-        <MessageOption
-          replyToMsg={el?.message}
-          messageId={el?.id}
-          star={el?.star}
-          openPicker={openPicker}
-          setOpenPicker={setOpenPicker}
-          deletedForEveryone={el?.deletedForEveryone}
-          created_at={el?.created_at}
-          incomming={el?.incoming}
-        />
-      )}
-      {menu && (
-        <Stack
-          justifyContent={"flex-end"}
-          sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
-        >
-          {!el.incoming &&
-            (el?.status == "Sent" ? (
-              <Check size={22} color="#908989" />
-            ) : el?.status == "Delivered" ? (
-              <Checks size={22} color="#908989" />
-            ) : (
-              <Checks size={22} color="#0949dc" />
-            ))}
-        </Stack>
-      )}
-
-      {/* Modal for displaying larger image */}
-      <Modal
-        open={openModal}
-        onClose={handleCloseModal}
-        aria-labelledby="image-modal-title"
-        aria-describedby="image-modal-description"
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            maxWidth: "90vw",
-            maxHeight: "90vh",
-            width: "90%",
-            height: "90%",
-            backgroundColor: "#fff",
-            boxShadow: 24,
-            p: 4,
-            borderRadius: "10px",
-            outline: "none",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            overflow: "auto", // Add scrollbar when content overflows
-          }}
-        >
-          {/* <div style={{width:'90%', height:'90%'}}> */}
-          <MapContainer
-            center={el?.coordinates}
-            zoom={10}
-            attributionControl={false}
-          >
-            {/* OPEN STREEN MAPS TILES */}
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <MarkerClusterGroup chunkedLoading>
-              {/* Hard coded markers */}
-              {el?.coordinates && (
-                <Marker position={el?.coordinates} icon={customIcon}>
-                  <Popup>{el?.message}</Popup>
-                  <TP>{el?.message}</TP>
-                </Marker>
-              )}
-              {myCoordinates && (
-                <Marker position={myCoordinates} icon={customIconForMyLoc}>
-                  <Popup>My Locaiton</Popup>
-                  <TP>Your Location</TP>
-                </Marker>
-              )}
-            </MarkerClusterGroup>
-          </MapContainer>
-          {/* </div> */}
-          <IconButton
-            aria-label="Close modal"
-            onClick={handleCloseModal}
-            className="z-10"
-            sx={{
-              position: "absolute",
-              top: 5,
-              right: 5,
-              color: "black",
-              backgroundColor: "red",
-              "&:hover": {
-                backgroundColor: "red",
-                color: "black",
-                scale: "0.9",
-                transition: "all 300ms",
-              },
-            }}
-          >
-            <X />
-          </IconButton>
-        </Box>
-      </Modal>
-    </Stack>
+              <X />
+            </IconButton>
+          </Box>
+        </Modal>
+      </Stack>
+    </div>
   );
 };
 
-const LiveLocMsg = ({ el, menu }) => {
+const LiveLocMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
   const theme = useTheme();
 
   const dispatch = useDispatch();
@@ -2472,358 +2587,372 @@ const LiveLocMsg = ({ el, menu }) => {
   };
 
   return (
-    <Stack
-      direction="row"
-      justifyContent={el.incoming ? "start" : "end"}
-      sx={{ position: "relative" }}
-    >
-      <Box
-        px={1.5}
-        py={1.5}
-        sx={{
-          backgroundColor: el.incoming
-            ? alpha(theme.palette.background.default, 1)
-            : theme.palette.primary.main,
-          borderRadius: 1.5,
-          width: "340px",
-          position: "relative",
-          cursor: "pointer",
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            top: "-2px",
-            width: 0,
-            height: 0,
-            borderStyle: "solid",
-            borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
-            borderColor: el.incoming
-              ? `transparent ${alpha(
-                  theme.palette.background.default,
-                  1
-                )} transparent transparent`
-              : `transparent transparent transparent ${theme.palette.primary.main}`,
-            left: el.incoming ? "-8px" : "unset",
-            right: el.incoming ? "unset" : "-8px",
-            transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
-          },
-        }}
-        onDoubleClick={() => {
-          if (!el?.myReaction && menu) {
-            console.log("double click");
-            socket.emit("react_to_message", {
-              conversationId: room_id,
-              from: user_id,
-              to: current_conversation?.user_id,
-              messageId: el?.id,
-              reaction: "❤️",
-            });
-          }
-        }}
+    <div ref={(thisEle) => (messageRefs.current[el?.id] = thisEle)}>
+      <Stack
+        direction="row"
+        justifyContent={el.incoming ? "start" : "end"}
+        sx={{ position: "relative" }}
       >
-        <Typography
-          variant="capton"
-          style={{
-            fontSize: "10px",
-            position: "absolute",
-            bottom: "-3px",
-            right: "4px",
+        <Box
+          className={`transition-all duration-1000 ${
+            el?.id == highlightedMessageId
+              ? el?.incoming
+                ? "translate-x-96 ease-in-out border-4 border-red-500"
+                : "-translate-x-80 ease-in-out border-4 border-red-500"
+              : null
+          }`}
+          px={1.5}
+          py={1.5}
+          sx={{
+            backgroundColor: el.incoming
+              ? alpha(theme.palette.background.default, 1)
+              : theme.palette.primary.main,
+            borderRadius: 1.5,
+            width: "340px",
+            position: "relative",
+            cursor: "pointer",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: "-2px",
+              width: 0,
+              height: 0,
+              borderStyle: "solid",
+              borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
+              borderColor: el.incoming
+                ? `transparent ${alpha(
+                    theme.palette.background.default,
+                    1
+                  )} transparent transparent`
+                : `transparent transparent transparent ${theme.palette.primary.main}`,
+              left: el.incoming ? "-8px" : "unset",
+              right: el.incoming ? "unset" : "-8px",
+              transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
+            },
+          }}
+          onDoubleClick={() => {
+            if (!el?.myReaction && menu) {
+              console.log("double click");
+              socket.emit("react_to_message", {
+                conversationId: room_id,
+                from: user_id,
+                to: current_conversation?.user_id,
+                messageId: el?.id,
+                reaction: "❤️",
+              });
+            }
           }}
         >
-          {el.time}
-        </Typography>
-        <div
-          className="reactions"
-          style={{
-            zIndex: 10,
-            position: "fixed",
-            display: openPicker ? "inline" : "none",
-            bottom: 100,
-            right: isMobile ? 20 : sideBar.open ? 420 : 100,
-          }}
-        >
-          <Picker
-            data={data}
-            // perLine={9} //The number of emojis to show per line
-            previewPosition={"none"}
-            searchPosition={"none"}
-            onClickOutside={() => handleOpenClick()}
-            theme={theme.palette.mode}
-            onEmojiSelect={(emoji) => {
-              handleEmojiClick(emoji.native, el?.id);
+          <Typography
+            variant="capton"
+            style={{
+              fontSize: "10px",
+              position: "absolute",
+              bottom: "-3px",
+              right: "4px",
             }}
-          />
-        </div>
-        <Stack spacing={1} sx={{ maxWidth: "100%" }}>
-          {el?.incoming ? (
-            <div
-              className={`border w-full ${
-                el?.isLiveLocationSharing ? "opacity-100" : "opacity-40"
-              } -z-0`}
-              style={{
-                height: "210px",
-                borderRadius: "10px",
-                cursor: "pointer", // Add cursor pointer to indicate clickable
+          >
+            {el.time}
+          </Typography>
+          <div
+            className="reactions"
+            style={{
+              zIndex: 10,
+              position: "fixed",
+              display: openPicker ? "inline" : "none",
+              bottom: 100,
+              right: isMobile ? 20 : sideBar.open ? 420 : 100,
+            }}
+          >
+            <Picker
+              data={data}
+              // perLine={9} //The number of emojis to show per line
+              previewPosition={"none"}
+              searchPosition={"none"}
+              onClickOutside={() => handleOpenClick()}
+              theme={theme.palette.mode}
+              onEmojiSelect={(emoji) => {
+                handleEmojiClick(emoji.native, el?.id);
               }}
-              onClick={handleOpenModal} // Open modal
-            >
-              <MapContainer
-                center={current_conversation?.coordinates}
-                zoom={10}
-                scrollWheelZoom={false}
-                zoomControl={false}
-                dragging={false}
-                attributionControl={false}
-                doubleClickZoom={false}
+            />
+          </div>
+          <Stack spacing={1} sx={{ maxWidth: "100%" }}>
+            {el?.incoming ? (
+              <div
+                className={`border w-full ${
+                  el?.isLiveLocationSharing ? "opacity-100" : "opacity-40"
+                } -z-0`}
+                style={{
+                  height: "210px",
+                  borderRadius: "10px",
+                  cursor: "pointer", // Add cursor pointer to indicate clickable
+                }}
+                onClick={handleOpenModal} // Open modal
               >
-                {/* OPEN STREEN MAPS TILES */}
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                {/* Hard coded markers */}
-                <Marker
-                  position={current_conversation?.coordinates}
-                  icon={customIcon}
+                <MapContainer
+                  center={current_conversation?.coordinates}
+                  zoom={10}
+                  scrollWheelZoom={false}
+                  zoomControl={false}
+                  dragging={false}
+                  attributionControl={false}
+                  doubleClickZoom={false}
                 >
-                  {/* <Popup>{el?.message}</Popup> */}
-                  {/* <TP>{el?.message}</TP> */}
-                </Marker>
-                {/* <Marker position={myCoordinates} icon={customIconForMyLoc}>
-                  <Popup>My Locaiton</Popup>
-                  <TP>Your Location</TP>
-                </Marker> */}
-              </MapContainer>
-            </div>
-          ) : (
-            <div
-              className={`border w-full ${
-                el?.isLiveLocationSharing ? "opacity-100" : "opacity-55"
-              } -z-0`}
-              style={{
-                height: "210px",
-                borderRadius: "10px",
-                cursor: "pointer", // Add cursor pointer to indicate clickable
-              }}
-            >
-              <MapContainer
-                center={[31, 80]}
-                zoom={3}
-                scrollWheelZoom={false}
-                zoomControl={false}
-                dragging={false}
-                attributionControl={false}
-                doubleClickZoom={false}
+                  {/* OPEN STREEN MAPS TILES */}
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  {/* Hard coded markers */}
+                  <Marker
+                    position={current_conversation?.coordinates}
+                    icon={customIcon}
+                  >
+                    {/* <Popup>{el?.message}</Popup> */}
+                    {/* <TP>{el?.message}</TP> */}
+                  </Marker>
+                  {/* <Marker position={myCoordinates} icon={customIconForMyLoc}>
+                    <Popup>My Locaiton</Popup>
+                    <TP>Your Location</TP>
+                  </Marker> */}
+                </MapContainer>
+              </div>
+            ) : (
+              <div
+                className={`border w-full ${
+                  el?.isLiveLocationSharing ? "opacity-100" : "opacity-55"
+                } -z-0`}
+                style={{
+                  height: "210px",
+                  borderRadius: "10px",
+                  cursor: "pointer", // Add cursor pointer to indicate clickable
+                }}
               >
-                {/* OPEN STREEN MAPS TILES */}
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-              </MapContainer>
-            </div>
-          )}
-          {el?.outgoing ? (
-            <button
-              disabled={el?.isLiveLocationSharing ? false : true}
-              onClick={() => handleCloseLiveLocation(el?.watchId, el?.id)}
-              className={`border  rounded-md transition-all duration-300 bg-blue-950 py-1 ${
-                el?.isLiveLocationSharing ? "animate-pulse" : "animate-none"
-              }  ${
-                el?.isLiveLocationSharing ? "hover:scale-[0.95]" : ""
-              } hover:animate-none select-none text-white`}
-            >
-              {el?.isLiveLocationSharing
-                ? "Stop sharing location"
-                : "Live location ended"}
-            </button>
-          ) : (
-            <Tooltip placement="left-start" title={formatDate(el?.created_at)}>
-              <Typography
-                variant="body2"
-                color={el.incoming ? theme.palette.text : "#fff"}
+                <MapContainer
+                  center={[31, 80]}
+                  zoom={3}
+                  scrollWheelZoom={false}
+                  zoomControl={false}
+                  dragging={false}
+                  attributionControl={false}
+                  doubleClickZoom={false}
+                >
+                  {/* OPEN STREEN MAPS TILES */}
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                </MapContainer>
+              </div>
+            )}
+            {el?.outgoing ? (
+              <button
+                disabled={el?.isLiveLocationSharing ? false : true}
+                onClick={() => handleCloseLiveLocation(el?.watchId, el?.id)}
+                className={`border  rounded-md transition-all duration-300 bg-blue-950 py-1 ${
+                  el?.isLiveLocationSharing ? "animate-pulse" : "animate-none"
+                }  ${
+                  el?.isLiveLocationSharing ? "hover:scale-[0.95]" : ""
+                } hover:animate-none select-none text-white`}
               >
                 {el?.isLiveLocationSharing
-                  ? el?.message
+                  ? "Stop sharing location"
                   : "Live location ended"}
-              </Typography>
-            </Tooltip>
-          )}
-        </Stack>
-        <Stack
-          direction={"row"}
-          alignItems={"center"}
-          justifyContent={"end"}
-          sx={{ marginTop: "3px" }}
-        >
-          {el?.star && <Star size={13} color="black" weight="duotone" />}
-        </Stack>
-        {(el?.myReaction || el?.otherReaction) && (
+              </button>
+            ) : (
+              <Tooltip
+                placement="left-start"
+                title={formatDate(el?.created_at)}
+              >
+                <Typography
+                  variant="body2"
+                  color={el.incoming ? theme.palette.text : "#fff"}
+                >
+                  {el?.isLiveLocationSharing
+                    ? el?.message
+                    : "Live location ended"}
+                </Typography>
+              </Tooltip>
+            )}
+          </Stack>
           <Stack
             direction={"row"}
             alignItems={"center"}
-            justifyContent={"center"}
-            gap={"1px"}
-            style={{
-              position: "absolute",
-              bottom: "-20px",
-              left: "0px",
-              fontSize: "1.5rem",
-              userSelect: "none",
-            }}
+            justifyContent={"end"}
+            sx={{ marginTop: "3px" }}
           >
-            <Box
-              sx={{ cursor: "pointer" }}
-              onClick={() => {
-                if (menu) {
-                  socket.emit("react_to_message", {
-                    conversationId: room_id,
-                    from: user_id,
-                    to: current_conversation?.user_id,
-                    messageId: el?.id,
-                    reaction: null,
-                  });
-                }
+            {el?.star && <Star size={13} color="black" weight="duotone" />}
+          </Stack>
+          {(el?.myReaction || el?.otherReaction) && (
+            <Stack
+              direction={"row"}
+              alignItems={"center"}
+              justifyContent={"center"}
+              gap={"1px"}
+              style={{
+                position: "absolute",
+                bottom: "-20px",
+                left: "0px",
+                fontSize: "1.5rem",
+                userSelect: "none",
               }}
             >
-              {el?.myReaction && (
-                <Tooltip
-                  placement="left-end"
-                  title={menu && "remove my reaction"}
-                >
-                  {el?.myReaction}
-                </Tooltip>
-              )}
-            </Box>
+              <Box
+                sx={{ cursor: "pointer" }}
+                onClick={() => {
+                  if (menu) {
+                    socket.emit("react_to_message", {
+                      conversationId: room_id,
+                      from: user_id,
+                      to: current_conversation?.user_id,
+                      messageId: el?.id,
+                      reaction: null,
+                    });
+                  }
+                }}
+              >
+                {el?.myReaction && (
+                  <Tooltip
+                    placement="left-end"
+                    title={menu && "remove my reaction"}
+                  >
+                    {el?.myReaction}
+                  </Tooltip>
+                )}
+              </Box>
 
-            <Box sx={{ cursor: "default" }}>
-              {el?.otherReaction && (
-                <Tooltip
-                  placement="right-end"
-                  title={`${current_conversation?.name.split(" ")[0]} reaction`}
-                >
-                  {el?.otherReaction}
-                </Tooltip>
-              )}
-            </Box>
+              <Box sx={{ cursor: "default" }}>
+                {el?.otherReaction && (
+                  <Tooltip
+                    placement="right-end"
+                    title={`${
+                      current_conversation?.name.split(" ")[0]
+                    } reaction`}
+                  >
+                    {el?.otherReaction}
+                  </Tooltip>
+                )}
+              </Box>
+            </Stack>
+          )}
+        </Box>
+        {menu && (
+          <MessageOption
+            replyToMsg={el?.message}
+            messageId={el?.id}
+            star={el?.star}
+            openPicker={openPicker}
+            setOpenPicker={setOpenPicker}
+            deletedForEveryone={el?.deletedForEveryone}
+            created_at={el?.created_at}
+            incomming={el?.incoming}
+            watchId={el?.watchId}
+            type={el?.subtype}
+          />
+        )}
+        {menu && (
+          <Stack
+            justifyContent={"flex-end"}
+            sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
+          >
+            {!el.incoming &&
+              (el?.status == "Sent" ? (
+                <Check size={22} color="#908989" />
+              ) : el?.status == "Delivered" ? (
+                <Checks size={22} color="#908989" />
+              ) : (
+                <Checks size={22} color="#0949dc" />
+              ))}
           </Stack>
         )}
-      </Box>
-      {menu && (
-        <MessageOption
-          replyToMsg={el?.message}
-          messageId={el?.id}
-          star={el?.star}
-          openPicker={openPicker}
-          setOpenPicker={setOpenPicker}
-          deletedForEveryone={el?.deletedForEveryone}
-          created_at={el?.created_at}
-          incomming={el?.incoming}
-          watchId={el?.watchId}
-          type={el?.subtype}
-        />
-      )}
-      {menu && (
-        <Stack
-          justifyContent={"flex-end"}
-          sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
-        >
-          {!el.incoming &&
-            (el?.status == "Sent" ? (
-              <Check size={22} color="#908989" />
-            ) : el?.status == "Delivered" ? (
-              <Checks size={22} color="#908989" />
-            ) : (
-              <Checks size={22} color="#0949dc" />
-            ))}
-        </Stack>
-      )}
 
-      {/* Modal for displaying larger image */}
-      <Modal
-        open={openModal}
-        onClose={handleCloseModal}
-        aria-labelledby="image-modal-title"
-        aria-describedby="image-modal-description"
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            maxWidth: "90vw",
-            maxHeight: "90vh",
-            width: "90%",
-            height: "90%",
-            backgroundColor: "#fff",
-            boxShadow: 24,
-            p: 4,
-            borderRadius: "10px",
-            outline: "none",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            overflow: "auto", // Add scrollbar when content overflows
-          }}
+        {/* Modal for displaying larger image */}
+        <Modal
+          open={openModal}
+          onClose={handleCloseModal}
+          aria-labelledby="image-modal-title"
+          aria-describedby="image-modal-description"
         >
-          {/* <div style={{width:'90%', height:'90%'}}> */}
-          <MapContainer
-            center={current_conversation?.coordinates}
-            zoom={10}
-            attributionControl={false}
-          >
-            {/* OPEN STREEN MAPS TILES */}
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <MarkerClusterGroup chunkedLoading>
-              {/* Hard coded markers */}
-              {current_conversation?.coordinates && (
-                <Marker
-                  position={current_conversation?.coordinates}
-                  icon={customIcon}
-                >
-                  <Popup>{el?.message}</Popup>
-                  <TP>{el?.message}</TP>
-                </Marker>
-              )}
-              {myCoordinates && (
-                <Marker position={myCoordinates} icon={customIconForMyLoc}>
-                  <Popup>My Locaiton</Popup>
-                  <TP>Your Location</TP>
-                </Marker>
-              )}
-            </MarkerClusterGroup>
-          </MapContainer>
-          {/* </div> */}
-          <IconButton
-            aria-label="Close modal"
-            onClick={handleCloseModal}
-            className="z-10"
+          <Box
             sx={{
               position: "absolute",
-              top: 5,
-              right: 5,
-              color: "black",
-              backgroundColor: "red",
-              "&:hover": {
-                backgroundColor: "red",
-                color: "black",
-                scale: "0.9",
-                transition: "all 300ms",
-              },
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              width: "90%",
+              height: "90%",
+              backgroundColor: "#fff",
+              boxShadow: 24,
+              p: 4,
+              borderRadius: "10px",
+              outline: "none",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              overflow: "auto", // Add scrollbar when content overflows
             }}
           >
-            <X />
-          </IconButton>
-        </Box>
-      </Modal>
-    </Stack>
+            {/* <div style={{width:'90%', height:'90%'}}> */}
+            <MapContainer
+              center={current_conversation?.coordinates}
+              zoom={10}
+              attributionControl={false}
+            >
+              {/* OPEN STREEN MAPS TILES */}
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <MarkerClusterGroup chunkedLoading>
+                {/* Hard coded markers */}
+                {current_conversation?.coordinates && (
+                  <Marker
+                    position={current_conversation?.coordinates}
+                    icon={customIcon}
+                  >
+                    <Popup>{el?.message}</Popup>
+                    <TP>{el?.message}</TP>
+                  </Marker>
+                )}
+                {myCoordinates && (
+                  <Marker position={myCoordinates} icon={customIconForMyLoc}>
+                    <Popup>My Locaiton</Popup>
+                    <TP>Your Location</TP>
+                  </Marker>
+                )}
+              </MarkerClusterGroup>
+            </MapContainer>
+            {/* </div> */}
+            <IconButton
+              aria-label="Close modal"
+              onClick={handleCloseModal}
+              className="z-10"
+              sx={{
+                position: "absolute",
+                top: 5,
+                right: 5,
+                color: "black",
+                backgroundColor: "red",
+                "&:hover": {
+                  backgroundColor: "red",
+                  color: "black",
+                  scale: "0.9",
+                  transition: "all 300ms",
+                },
+              }}
+            >
+              <X />
+            </IconButton>
+          </Box>
+        </Modal>
+      </Stack>
+    </div>
   );
 };
 
-const VoiceMsg = ({ el, menu }) => {
+const VoiceMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
   // console.log("test message pushed");
   const theme = useTheme();
 
@@ -2950,217 +3079,237 @@ const VoiceMsg = ({ el, menu }) => {
   };
 
   return (
-    <Stack
-      direction="row"
-      justifyContent={el.incoming ? "start" : "end"}
-      sx={{ position: "relative" }}
-    >
-      <Box
-        px={1.5}
-        py={1.5}
-        sx={{
-          backgroundColor: el.incoming
-            ? alpha(theme.palette.background.default, 1)
-            : theme.palette.primary.main,
-          borderRadius: 1.5,
-          width: "max-content",
-          position: "relative",
-          cursor: "pointer",
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            top: "-2px",
-            width: 0,
-            height: 0,
-            borderStyle: "solid",
-            borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
-            borderColor: el.incoming
-              ? `transparent ${alpha(
-                  theme.palette.background.default,
-                  1
-                )} transparent transparent`
-              : `transparent transparent transparent ${theme.palette.primary.main}`,
-            left: el.incoming ? "-8px" : "unset",
-            right: el.incoming ? "unset" : "-8px",
-            transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
-          },
-        }}
-        onDoubleClick={() => {
-          if (!el?.myReaction && menu) {
-            // console.log("double click");
-            socket.emit("react_to_message", {
-              conversationId: room_id,
-              from: user_id,
-              to: current_conversation?.user_id,
-              messageId: el?.id,
-              reaction: "❤️",
-            });
-          }
-        }}
+    <div ref={(thisEle) => (messageRefs.current[el?.id] = thisEle)}>
+      <Stack
+        direction="row"
+        justifyContent={el.incoming ? "start" : "end"}
+        sx={{ position: "relative" }}
       >
-        <Typography
-          variant="capton"
-          style={{
-            fontSize: "10px",
-            position: "absolute",
-            bottom: "-3px",
-            right: "4px",
+        <Box
+          className={`transition-all duration-1000 ${
+            el?.id == highlightedMessageId
+              ? el?.incoming
+                ? "translate-x-96 ease-in-out border-4 border-red-500"
+                : "-translate-x-80 ease-in-out border-4 border-red-500"
+              : null
+          }`}
+          px={1.5}
+          py={1.5}
+          sx={{
+            backgroundColor: el.incoming
+              ? alpha(theme.palette.background.default, 1)
+              : theme.palette.primary.main,
+            borderRadius: 1.5,
+            width: "max-content",
+            position: "relative",
+            cursor: "pointer",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: "-2px",
+              width: 0,
+              height: 0,
+              borderStyle: "solid",
+              borderWidth: el.incoming ? "0 22px 22px 0" : "0 0 20px 20px",
+              borderColor: el.incoming
+                ? `transparent ${alpha(
+                    theme.palette.background.default,
+                    1
+                  )} transparent transparent`
+                : `transparent transparent transparent ${theme.palette.primary.main}`,
+              left: el.incoming ? "-8px" : "unset",
+              right: el.incoming ? "unset" : "-8px",
+              transform: el.incoming ? "rotate(20deg)" : "rotate(-20deg)",
+            },
+          }}
+          onDoubleClick={() => {
+            if (!el?.myReaction && menu) {
+              // console.log("double click");
+              socket.emit("react_to_message", {
+                conversationId: room_id,
+                from: user_id,
+                to: current_conversation?.user_id,
+                messageId: el?.id,
+                reaction: "❤️",
+              });
+            }
           }}
         >
-          {el?.time}
-        </Typography>
-        <div
-          className="reactions"
-          style={{
-            zIndex: 10,
-            position: "fixed",
-            display: openPicker ? "inline" : "none",
-            bottom: 100,
-            right: isMobile ? 20 : sideBar.open ? 420 : 100,
-          }}
-        >
-          <Picker
-            data={data}
-            // perLine={9} //The number of emojis to show per line
-            previewPosition={"none"}
-            searchPosition={"none"}
-            onClickOutside={() => handleOpenClick()}
-            theme={theme.palette.mode}
-            onEmojiSelect={(emoji) => {
-              handleEmojiClick(emoji.native, el?.id);
+          <Typography
+            variant="capton"
+            style={{
+              fontSize: "10px",
+              position: "absolute",
+              bottom: "-3px",
+              right: "4px",
             }}
-          />
-        </div>
-
-        <div className="flex items-center gap-5 text-white px-4 pr-2 py-4 text-sm rounded-md">
-          <div className={`cursor-pointer text-xl`}>
-            {!isPlaying ? (
-              <FaPlay
-                onClick={handlePlayAudio}
-                className={`hover:text-green-500 ${
-                  el?.incoming && theme.palette.mode == "light"
-                    ? "text-gray-500"
-                    : null
-                } transition-colors duration-300`}
-              />
-            ) : (
-              <FaStop
-                onClick={handlePauseAudio}
-                className={`hover:text-green-500 ${
-                  el?.incoming && theme.palette.mode == "light"
-                    ? "text-gray-500"
-                    : null
-                } transition-colors duration-300`}
-              />
-            )}
+          >
+            {el?.time}
+          </Typography>
+          <div
+            className="reactions"
+            style={{
+              zIndex: 10,
+              position: "fixed",
+              display: openPicker ? "inline" : "none",
+              bottom: 100,
+              right: isMobile ? 20 : sideBar.open ? 420 : 100,
+            }}
+          >
+            <Picker
+              data={data}
+              // perLine={9} //The number of emojis to show per line
+              previewPosition={"none"}
+              searchPosition={"none"}
+              onClickOutside={() => handleOpenClick()}
+              theme={theme.palette.mode}
+              onEmojiSelect={(emoji) => {
+                handleEmojiClick(emoji.native, el?.id);
+              }}
+            />
           </div>
 
-          <div className=" relative">
-            <div className=" flex flex-row justify-between gap-2 items-center">
-            <div className=" w-60" ref={waveformRef} />
-            <div className={`rounded-[10px] select-none w-10 cursor-pointer font-semibold bg-white text-black text-center ${(theme.palette.mode== 'light' && el?.incoming)  ? 'bg-gray-500 text-[#ffff]': null} `}onClick={handleIncreaseSpeed}>{playbackRates[currentRateIndex]}x</div>
+          <div className="flex items-center gap-5 text-white px-4 pr-2 py-4 text-sm rounded-md">
+            <div className={`cursor-pointer text-xl`}>
+              {!isPlaying ? (
+                <FaPlay
+                  onClick={handlePlayAudio}
+                  className={`hover:text-green-500 ${
+                    el?.incoming && theme.palette.mode == "light"
+                      ? "text-gray-500"
+                      : null
+                  } transition-colors duration-300`}
+                />
+              ) : (
+                <FaStop
+                  onClick={handlePauseAudio}
+                  className={`hover:text-green-500 ${
+                    el?.incoming && theme.palette.mode == "light"
+                      ? "text-gray-500"
+                      : null
+                  } transition-colors duration-300`}
+                />
+              )}
             </div>
-            <div className="text-white text-[11px] pt-1 flex justify-between absolute bottom-[-22px] w-full">
-              <span
-                className={`${
-                  el?.incoming && theme.palette.mode == "light"
-                    ? "text-gray-600"
-                    : null
-                }`}
-              >
-                {formatTime(isPlaying ? currentPlayBackTime : totalDuration)}
-              </span>
+
+            <div className=" relative">
+              <div className=" flex flex-row justify-between gap-2 items-center">
+                <div className=" w-60" ref={waveformRef} />
+                <div
+                  className={`rounded-[10px] select-none w-10 cursor-pointer font-semibold bg-white text-black text-center ${
+                    theme.palette.mode == "light" && el?.incoming
+                      ? "bg-gray-500 text-[#ffff]"
+                      : null
+                  } `}
+                  onClick={handleIncreaseSpeed}
+                >
+                  {playbackRates[currentRateIndex]}x
+                </div>
+              </div>
+              <div className="text-white text-[11px] pt-1 flex justify-between absolute bottom-[-22px] w-full">
+                <span
+                  className={`${
+                    el?.incoming && theme.palette.mode == "light"
+                      ? "text-gray-600"
+                      : null
+                  }`}
+                >
+                  {formatTime(isPlaying ? currentPlayBackTime : totalDuration)}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <Stack
-          direction={"row"}
-          alignItems={"center"}
-          justifyContent={"end"}
-          sx={{ marginTop: "3px" }}
-        >
-          {el?.star && <Star size={13} color="black" weight="duotone" />}
-        </Stack>
-        {(el?.myReaction || el?.otherReaction) && (
           <Stack
             direction={"row"}
             alignItems={"center"}
-            justifyContent={"center"}
-            gap={"1px"}
-            style={{
-              position: "absolute",
-              bottom: "-20px",
-              left: "0px",
-              fontSize: "1.5rem",
-              userSelect: "none",
-            }}
+            justifyContent={"end"}
+            sx={{ marginTop: "3px" }}
           >
-            <Box
-              sx={{ cursor: "pointer" }}
-              onClick={() => {
-                if (menu) {
-                  socket.emit("react_to_message", {
-                    conversationId: room_id,
-                    from: user_id,
-                    to: current_conversation?.user_id,
-                    messageId: el?.id,
-                    reaction: null,
-                  });
-                }
+            {el?.star && <Star size={13} color="black" weight="duotone" />}
+          </Stack>
+          {(el?.myReaction || el?.otherReaction) && (
+            <Stack
+              direction={"row"}
+              alignItems={"center"}
+              justifyContent={"center"}
+              gap={"1px"}
+              style={{
+                position: "absolute",
+                bottom: "-20px",
+                left: "0px",
+                fontSize: "1.5rem",
+                userSelect: "none",
               }}
             >
-              {el?.myReaction && (
-                <Tooltip
-                  placement="left-end"
-                  title={menu && "remove my reaction"}
-                >
-                  {el?.myReaction}
-                </Tooltip>
-              )}
-            </Box>
+              <Box
+                sx={{ cursor: "pointer" }}
+                onClick={() => {
+                  if (menu) {
+                    socket.emit("react_to_message", {
+                      conversationId: room_id,
+                      from: user_id,
+                      to: current_conversation?.user_id,
+                      messageId: el?.id,
+                      reaction: null,
+                    });
+                  }
+                }}
+              >
+                {el?.myReaction && (
+                  <Tooltip
+                    placement="left-end"
+                    title={menu && "remove my reaction"}
+                  >
+                    {el?.myReaction}
+                  </Tooltip>
+                )}
+              </Box>
 
-            <Box sx={{ cursor: "default" }}>
-              {el?.otherReaction && (
-                <Tooltip
-                  placement="right-end"
-                  title={`${current_conversation?.name.split(" ")[0]} reaction`}
-                >
-                  {el?.otherReaction}
-                </Tooltip>
-              )}
-            </Box>
+              <Box sx={{ cursor: "default" }}>
+                {el?.otherReaction && (
+                  <Tooltip
+                    placement="right-end"
+                    title={`${
+                      current_conversation?.name.split(" ")[0]
+                    } reaction`}
+                  >
+                    {el?.otherReaction}
+                  </Tooltip>
+                )}
+              </Box>
+            </Stack>
+          )}
+        </Box>
+        {menu && (
+          <MessageOption
+            replyToMsg={el?.message}
+            messageId={el?.id}
+            star={el?.star}
+            openPicker={openPicker}
+            setOpenPicker={setOpenPicker}
+            deletedForEveryone={el?.deletedForEveryone}
+            created_at={el?.created_at}
+            incomming={el?.incoming}
+          />
+        )}
+        {menu && (
+          <Stack
+            justifyContent={"flex-end"}
+            sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
+          >
+            {!el.incoming &&
+              (el?.status == "Sent" ? (
+                <Check size={22} color="#908989" />
+              ) : el?.status == "Delivered" ? (
+                <Checks size={22} color="#908989" />
+              ) : (
+                <Checks size={22} color="#0949dc" />
+              ))}
           </Stack>
         )}
-      </Box>
-      {menu && (
-        <MessageOption
-          replyToMsg={el?.message}
-          messageId={el?.id}
-          star={el?.star}
-          openPicker={openPicker}
-          setOpenPicker={setOpenPicker}
-          deletedForEveryone={el?.deletedForEveryone}
-          created_at={el?.created_at}
-          incomming={el?.incoming}
-        />
-      )}
-      {menu && (
-        <Stack
-          justifyContent={"flex-end"}
-          sx={{ position: "absolute", bottom: "0px", right: "-5px" }}
-        >
-          {!el.incoming &&
-            (el?.status == "Sent" ? (
-              <Check size={22} color="#908989" />
-            ) : el?.status == "Delivered" ? (
-              <Checks size={22} color="#908989" />
-            ) : (
-              <Checks size={22} color="#0949dc" />
-            ))}
-        </Stack>
-      )}
-    </Stack>
+      </Stack>
+    </div>
   );
 };
 

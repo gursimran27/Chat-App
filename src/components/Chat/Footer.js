@@ -75,7 +75,7 @@ const Actions = [
   },
   {
     color: "#0159b2",
-    icon: <LuFile size={24}/>,
+    icon: <LuFile size={24} />,
     y: 312,
     title: "Document",
   },
@@ -412,25 +412,25 @@ const ChatInput = ({
       // Fetch the base64 encoded image data
       const response = await fetch(base64String);
       const blob = await response.blob();
-  
+
       // Create a File object with the blob and additional metadata
       const file = new File([blob], fileName, { type: blob.type });
-  
+
       return file;
     } catch (error) {
-      console.error('Error converting base64 to file:', error);
+      console.error("Error converting base64 to file:", error);
       throw error;
     }
   };
 
   const [openModal, setOpenModal] = useState(false);
-  const webcamRef = useRef(null); 
+  const webcamRef = useRef(null);
 
   const capture = async () => {
     const screenshot = webcamRef.current.getScreenshot();
     // console.log(screenshot)
     if (screenshot) {
-      const file = await base64ToFile(screenshot, 'captured_photo.png');
+      const file = await base64ToFile(screenshot, "captured_photo.png");
       if (file) {
         handleCloseModal();
         setImageFile(file);
@@ -570,7 +570,7 @@ const ChatInput = ({
 
       {/* preview dialoag */}
       <Box
-      className=" z-10"
+        className=" z-10"
         sx={{
           display: previewSource ? "block" : "none", // Conditionally set display
           color: "red", // Text color
@@ -802,12 +802,12 @@ const ChatInput = ({
               height={600}
               mirrored={true}
             />
-              <button
-                className=" absolute bottom-4 right-[100px] px-3 py-4 rounded-full bg-blue-400 text-black hover:scale-[0.9] transition-all duration-300 animate-pulse hover:animate-none border border-yellow-300"
-                onClick={capture}
-              >
-                Capture photo
-              </button>
+            <button
+              className=" absolute bottom-4 right-[100px] px-3 py-4 rounded-full bg-blue-400 text-black hover:scale-[0.9] transition-all duration-300 animate-pulse hover:animate-none border border-yellow-300"
+              onClick={capture}
+            >
+              Capture photo
+            </button>
           </div>
           <IconButton
             aria-label="Close modal"
@@ -862,7 +862,7 @@ const Footer = () => {
 
   const { sideBar, room_id } = useSelector((state) => state.app);
 
-  const { reply, replyToMsg } = useSelector(
+  const { reply, replyToMsg, messageId } = useSelector(
     (state) => state.conversation.reply_msg
   );
 
@@ -1056,11 +1056,16 @@ const Footer = () => {
                         ? "reply"
                         : "Text",
                       replyToMsg: reply ? replyToMsg : null,
+                      replyToMsgId: reply ? messageId : null,
                     });
                     setValue("");
                     if (reply) {
                       dispatch(
-                        UpdateReply_msg({ reply: false, replyToMsg: null })
+                        UpdateReply_msg({
+                          reply: false,
+                          replyToMsg: null,
+                          messageId: null,
+                        })
                       );
                     }
                   }}

@@ -260,6 +260,7 @@ const DashboardLayout = () => {
               coordinates: message?.location?.coordinates.reverse() || null,
               isLiveLocationSharing: message?.isLiveLocationSharing,
               watchId: message?.watchId,
+              replyToMsgId: message?.replyToMsgId,
             })
           );
         }

@@ -163,7 +163,7 @@ const ChatHeader = () => {
     console.log("close chat clicked");
     dispatch(SelectConversation({ room_id: null }));
     dispatch(ClearCurrentMessagesAndCurrentConversation());
-    dispatch(UpdateReply_msg({ reply: false, replyToMsg: null }));
+    dispatch(UpdateReply_msg({ reply: false, replyToMsg: null, messageId: null }));
     dispatch(UpdatePage({ page: 2 }));
     dispatch(UpdateHasMore({ hasMore: true }));
     if (sideBar.open) {

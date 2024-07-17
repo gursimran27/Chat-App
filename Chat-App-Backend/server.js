@@ -304,6 +304,7 @@ io.on("connection", async (socket) => {
       replyToMsg,
       latitude,
       longitude,
+      replyToMsgId
     } = data;
 
     const to_user = await User.findById(to);
@@ -343,6 +344,7 @@ io.on("connection", async (socket) => {
         text: message,
         status: "Delivered", // Update the status to Delivered if the conversation IDs do not match
         replyToMsg: replyToMsg,
+        replyToMsgId: replyToMsgId,
       };
       // }
     } else {
@@ -354,6 +356,7 @@ io.on("connection", async (socket) => {
         text: message,
         status: "Sent",
         replyToMsg: replyToMsg,
+        replyToMsgId: replyToMsgId,
       };
     }
 

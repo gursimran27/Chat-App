@@ -45,6 +45,7 @@ const initialState = {
   reply_msg: {
     reply: false,
     replyToMsg: null,
+    messageId: null,
   },
 };
 
@@ -248,6 +249,7 @@ const slice = createSlice({
             coordinates: el?.location?.coordinates.reverse() || null,
             isLiveLocationSharing: el?.isLiveLocationSharing,
             watchId: el?.watchId,
+            replyToMsgId: el?.replyToMsgId,
           };
         } else {
           return el;
@@ -304,6 +306,7 @@ const slice = createSlice({
             coordinates: el?.location?.coordinates.reverse() || null,
             isLiveLocationSharing: el?.isLiveLocationSharing,
             watchId: el?.watchId,
+            replyToMsgId: el?.replyToMsgId,
           };
         } else {
           return el;
@@ -631,9 +634,10 @@ const slice = createSlice({
         });
     },
     updateReply_msg(state, action) {
-      console.log("reply msg");
+      // console.log("reply msg");
       state.reply_msg.reply = action.payload.reply;
       state.reply_msg.replyToMsg = action.payload.replyToMsg;
+      state.reply_msg.messageId = action.payload.messageId;
     },
     updatePage(state, action) {
       state.direct_chat.page = action.payload.page;
@@ -817,10 +821,10 @@ export const UpdateMessageStatus = ({ status }) => {
     dispatch(slice.actions.updateMessageStatus({ status: status }));
   };
 };
-export const UpdateReply_msg = ({ reply, replyToMsg }) => {
+export const UpdateReply_msg = ({ reply, replyToMsg, messageId }) => {
   return async (dispatch, getState) => {
     dispatch(
-      slice.actions.updateReply_msg({ reply: reply, replyToMsg: replyToMsg })
+      slice.actions.updateReply_msg({ reply: reply, replyToMsg: replyToMsg, messageId: messageId })
     );
   };
 };
