@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 dotenv.config({ path: "./config.env" });
 const { cloudinaryConnect } = require("./config/cloudinary");
-const cloudinary = require("cloudinary").v2
+const cloudinary = require("cloudinary").v2;
 
 const oldMessages = new Map(); //store in reverse order//TODO store userid and obj of conversationID
 
@@ -44,6 +44,7 @@ const AudioCall = require("./models/audioCall");
 const VideoCall = require("./models/videoCall");
 const { uploadImageToCloudinary } = require("./utils/imageUploader");
 const { format, isToday, isYesterday } = require("date-fns");
+const Status = require("./models/status");
 
 // Add this
 // Create an io server and allow for CORS from http://localhost:3000 with GET and POST methods
@@ -88,6 +89,70 @@ const formatDate = (date) => {
     return "Yesterday";
   } else {
     return format(messageDate, "MMMM dd, yyyy");
+  }
+};
+
+const scheduledTasks = new Map();
+
+const scheduleStatusRemoval = async (statusId, user_id) => {
+  try {
+    const status = await Status.findById(statusId);
+    if (status) {
+      let options = {
+        resource_type: "image",
+      };
+
+      if (status?.type == "video") {
+        options.resource_type = "video";
+      }
+      //delete from cloudinary
+      const ID = status?.content.split("/").pop().split(".")[0];
+      if (ID.includes("?") && ID.includes("=")) {
+        console.log(`no image uploaded to cloudinary`);
+      } else {
+        try {
+          console.log(`Deleting from media server...`, ID);
+          // not using await as it add wait the thread , we can delete in background
+          cloudinary.uploader
+            .destroy(
+              `${process.env.FOLDER_NAME}-status-${user_id}/${ID}`,
+              options
+            )
+            .then((res) => console.log(res));
+        } catch (error) {
+          console.log(`Unable to delete profile pic from cloudinary`);
+          console.log(error.message);
+        }
+      }
+
+      await status.remove();
+
+      const user = await User.findById(user_id).populate(
+        "friends",
+        "socket_id"
+      );
+
+      // Emit a socket event to the user
+      io.to(user?.socket_id).emit("statusRemoved", statusId);
+
+      // Emit a socket event to each friend
+      if (user && user.friends) {
+        // Broadcast to all friends
+        user.friends.forEach((friend) => {
+          if (friend.socket_id) {
+            io.to(friend.socket_id).emit("friendStatusRemoved", {
+              userId: user?._id,
+              statusId: statusId,
+            });
+          }
+        });
+      }
+    }
+
+    const timeoutId = scheduledTasks.get(statusId.toString());
+    clearTimeout(timeoutId);
+  } catch (err) {
+    console.error("Error removing status:", err);
   }
 };
 
@@ -184,10 +249,16 @@ io.on("connection", async (socket) => {
     // *for chat list rendering
     const existing_conversations = await OneToOneMessage.find({
       participants: { $all: [user_id] },
-    }).populate(
-      "participants",
-      "firstName lastName avatar _id email status about location"
-    );
+    }).populate({
+      path: "participants",
+      select:
+        "firstName lastName avatar _id email status about location statuses",
+      populate: {
+        path: "statuses",
+        model: "Status",
+        // select: "content createdAt", // Add any other fields you want to select from the Status model
+      },
+    });
 
     // db.books.find({ authors: { $elemMatch: { name: "John Smith" } } })
 
@@ -304,7 +375,7 @@ io.on("connection", async (socket) => {
       replyToMsg,
       latitude,
       longitude,
-      replyToMsgId
+      replyToMsgId,
     } = data;
 
     const to_user = await User.findById(to);
@@ -786,9 +857,9 @@ io.on("connection", async (socket) => {
           if (message?.file) {
             let options = {
               resource_type: "image",
-            }
-            
-            if(message?.type == "video" || message?.type == "audio"){
+            };
+
+            if (message?.type == "video" || message?.type == "audio") {
               options.resource_type = "video";
             }
             //delete from cloudinary
@@ -799,8 +870,12 @@ io.on("connection", async (socket) => {
               try {
                 console.log(`Deleting from media server...`, ID);
                 // not using await as it add wait the thread , we can delete in background
-                cloudinary.uploader.destroy(`${process.env.FOLDER_NAME}-${conversationId}/${ID}`, options).then((res)=> console.log(res));
-                
+                cloudinary.uploader
+                  .destroy(
+                    `${process.env.FOLDER_NAME}-${conversationId}/${ID}`,
+                    options
+                  )
+                  .then((res) => console.log(res));
               } catch (error) {
                 console.log(`Unable to delete profile pic from cloudinary`);
                 console.log(error.message);
@@ -1078,6 +1153,121 @@ io.on("connection", async (socket) => {
       messageId: messageId,
       from: from,
     });
+  });
+
+  // *----------------------------status---------------------------------------//
+  socket.on("addStatus", async (data) => {
+    const { user_id, type, mediaUrl } = data;
+
+    try {
+      const newStatus = new Status({
+        userId: user_id,
+        content: mediaUrl,
+        type: type,
+      });
+      await newStatus.save();
+
+      // Add the status ID to the user's statuses array
+      const user = await User.findByIdAndUpdate(
+        user_id,
+        { $push: { statuses: newStatus._id } },
+        { new: true }
+      ).populate("friends", "socket_id");
+
+      // Emit a socket event to the user
+      // todo check for online?
+      io.to(user?.socket_id).emit("statusAdded", newStatus);
+
+      // Emit a socket event to each friend
+      if (user && user.friends) {
+        // Broadcast to all friends
+        user.friends.forEach((friend) => {
+          if (friend.socket_id) {
+            io.to(friend.socket_id).emit("friendStatusAdded", {
+              userId: user_id,
+              status: newStatus,
+            });
+          }
+        });
+      }
+
+      // Schedule the status removal after 24 hours
+      // const delay = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+      const delay = 1 * 60 * 1000; // 2 min in milliseconds
+
+      // Schedule the task
+      const timeoutId = setTimeout(() => {
+        scheduleStatusRemoval(newStatus._id, user_id);
+      }, delay);
+
+      scheduledTasks.set(newStatus._id.toString(), timeoutId);
+    } catch (err) {
+      console.log("Inside addStatus", err.message);
+    }
+  });
+
+  socket.on("deleteStatus", async (data) => {
+    const { user_id, statusId } = data;
+
+    try {
+      const status = await Status.findById(statusId);
+      if (status) {
+        let options = {
+          resource_type: "image",
+        };
+
+        if (status?.type == "video") {
+          options.resource_type = "video";
+        }
+        //delete from cloudinary
+        const ID = status?.content.split("/").pop().split(".")[0];
+        if (ID.includes("?") && ID.includes("=")) {
+          console.log(`no image uploaded to cloudinary`);
+        } else {
+          try {
+            console.log(`Deleting from media server...`, ID);
+            // not using await as it add wait the thread , we can delete in background
+            cloudinary.uploader
+              .destroy(
+                `${process.env.FOLDER_NAME}-status-${user_id}/${ID}`,
+                options
+              )
+              .then((res) => console.log(res));
+          } catch (error) {
+            console.log(`Unable to delete profile pic from cloudinary`);
+            console.log(error.message);
+          }
+        }
+
+        await status.remove();
+
+        const user = await User.findById(user_id).populate(
+          "friends",
+          "socket_id"
+        );
+
+        // Emit a socket event to the user
+        io.to(user?.socket_id).emit("statusRemoved", statusId);
+
+        // Emit a socket event to each friend
+        if (user && user.friends) {
+          // Broadcast to all friends
+          user.friends.forEach((friend) => {
+            if (friend.socket_id) {
+              io.to(friend.socket_id).emit("friendStatusRemoved", {
+                userId: user?._id,
+                statusId: statusId,
+              });
+            }
+          });
+        }
+      }
+
+      const timeoutId = scheduledTasks.get(statusId.toString());
+      clearTimeout(timeoutId);
+    } catch (err) {
+      console.error("Error removing status:", err);
+    }
   });
 
   // *-------------- HANDLE AUDIO CALL SOCKET EVENTS ----------------- //

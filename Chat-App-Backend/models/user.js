@@ -100,6 +100,7 @@ const userSchema = new mongoose.Schema({
     },
     coordinates: [Number],
   },
+  statuses: [{ type: mongoose.Schema.ObjectId, ref: "Status" }],
 });
 
 // * HOOK's

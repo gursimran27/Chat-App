@@ -5,7 +5,9 @@ import useResponsive from "../../hooks/useResponsive";
 import SideNav from "./SideBar";
 import { useDispatch, useSelector } from "react-redux";
 import {
+  AddStatus,
   FetchUserProfile,
+  RemoveStatus,
   SelectConversation,
   showSnackbar,
   UpdateUserLocation,
@@ -29,6 +31,8 @@ import {
   UpdateMessagesForLiveLocEnded,
   UpdateCurrent_conversationRecordingAudioStatus,
   UpdateConversationRecordingAudioStatus,
+  FriendStatusAdded,
+  FriendStatusRemoved,
 } from "../../redux/slices/conversation";
 import AudioCallNotification from "../../sections/Dashboard/Audio/CallNotification";
 import VideoCallNotification from "../../sections/Dashboard/video/CallNotification";
@@ -546,6 +550,41 @@ const DashboardLayout = () => {
       }
     });
 
+
+    socket.on("statusAdded", async (data) => {
+      console.log('statusadded',data)
+        dispatch(AddStatus({newStatus: data}));
+
+    });
+
+    socket.on("statusRemoved", async (data) => {
+        console.log("statusremoved",data)
+        dispatch(RemoveStatus({statusId: data}));
+
+    });
+
+    socket.on("friendStatusAdded", async (data) => {
+      // const currentConversationID = currentConversationIDRef.current;
+
+      // if (currentConversationID === data.conversationId) {
+      //   dispatch(UpdateMessagesForLiveLocEnded({ messageId: data.messageId }));
+      // }
+        console.log('friendadded',data)
+        dispatch(FriendStatusAdded({userId: data?.userId, status: data?.status}));
+
+    });
+
+    socket.on("friendStatusRemoved", async (data) => {
+      // const currentConversationID = currentConversationIDRef.current;
+
+      // if (currentConversationID === data.conversationId) {
+      //   dispatch(UpdateMessagesForLiveLocEnded({ messageId: data.messageId }));
+      // }
+        console.log("friendremoved",data)
+        dispatch(FriendStatusRemoved({userId: data?.userId, statusId: data?.statusId}));
+
+    });
+
     // // Listen for the 'isSeen' event from the server
     // socket.on("isSeen", () => {
     //   // Get the current conversation ID
@@ -574,6 +613,10 @@ const DashboardLayout = () => {
       socket?.off("updateCoordinates");
       socket?.off("updateUser");
       socket?.off("liveLocEnded");
+      socket?.off("statusAdded");
+      socket?.off("friendStatusAdded");
+      socket?.off("statusRemoved");
+      socket?.off("friendStatusRemoved");
     };
   }, [isLoggedIn, socket]);
 

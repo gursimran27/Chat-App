@@ -5,6 +5,7 @@ import {
   Divider,
   IconButton,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import {
@@ -28,6 +29,9 @@ import Friends from "../../sections/Dashboard/Friends";
 import { socket } from "../../socket";
 import { useDispatch, useSelector } from "react-redux";
 import { FetchDirectConversations } from "../../redux/slices/conversation";
+import Status from "./Status";
+import Carousel from "./Carousel";
+import Carousels from "./Carousel";
 
 const user_id = window.localStorage.getItem("user_id");
 
@@ -35,19 +39,32 @@ const Chats = () => {
   const theme = useTheme();
   const isDesktop = useResponsive("up", "md");
 
+  const { statuses } = useSelector((state) => state.app.user);
+
   const dispatch = useDispatch();
 
-  const {conversations} = useSelector((state) => state.conversation.direct_chat);
+  const { conversations } = useSelector(
+    (state) => state.conversation.direct_chat
+  );
   // Sort conversations by unread count in descending order
   // const sortedConversations = [...conversations].sort((a, b) => b.unread - a.unread);
 
   useEffect(() => {
-    socket.emit("get_direct_conversations", { user_id }, (data,pinnedChats) => {
-      console.log(data); // this data is the list of conversations
-      // dispatch action
+    socket.emit(
+      "get_direct_conversations",
+      { user_id },
+      (data, pinnedChats) => {
+        console.log(data); // this data is the list of conversations
+        // dispatch action
 
-      dispatch(FetchDirectConversations({ conversations: data,pinnedChats:  pinnedChats }));
-    });
+        dispatch(
+          FetchDirectConversations({
+            conversations: data,
+            pinnedChats: pinnedChats,
+          })
+        );
+      }
+    );
   }, []);
 
   const [openDialog, setOpenDialog] = useState(false);
@@ -57,6 +74,27 @@ const Chats = () => {
   };
   const handleOpenDialog = () => {
     setOpenDialog(true);
+  };
+
+  const [openModal, setOpenModal] = useState(false);
+
+  const handleOpenModal = () => {
+    setOpenModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+  };
+
+  const [openStatusModal, setOpenStatusModal] = useState(false);
+
+  const handleopenStatusModal = () => {
+    handleCloseModal();
+    setOpenStatusModal(true);
+  };
+
+  const handleCloseStatusModal = () => {
+    setOpenStatusModal(false);
   };
 
   return (
@@ -96,8 +134,18 @@ const Chats = () => {
               >
                 <Users />
               </IconButton>
-              <IconButton sx={{ width: "max-content" }}>
+              <IconButton
+                sx={{ width: "max-content", position: "relative" }}
+                onClick={handleOpenModal}
+              >
                 <CircleDashed />
+                {statuses.length > 0 && (
+                  <Tooltip placement="left-end" title="My Status">
+                    <div className=" text-sm absolute -top-1 bg-green-500 rounded-full text-black w-5 flex items-center justify-center -left-0 animate-bounce">
+                      {statuses.length}
+                    </div>
+                  </Tooltip>
+                )}
               </IconButton>
             </Stack>
           </Stack>
@@ -126,16 +174,20 @@ const Chats = () => {
                   Pinned
                 </Typography>
                 {/* Chat List */}
-                {conversations.filter((el) => el.pinned).map((el, idx) => {
-                  return <ChatElement {...el} />;
-                })}
+                {conversations
+                  .filter((el) => el.pinned)
+                  .map((el, idx) => {
+                    return <ChatElement {...el} />;
+                  })}
                 <Typography variant="subtitle2" sx={{ color: "#676667" }}>
                   All Chats
                 </Typography>
                 {/* Chat List */}
-                {conversations.filter((el) => !el.pinned).map((el, idx) => {
-                  return <ChatElement {...el} />;
-                })}
+                {conversations
+                  .filter((el) => !el.pinned)
+                  .map((el, idx) => {
+                    return <ChatElement {...el} />;
+                  })}
               </Stack>
             </SimpleBarStyle>
           </Stack>
@@ -143,6 +195,21 @@ const Chats = () => {
       </Box>
       {openDialog && (
         <Friends open={openDialog} handleClose={handleCloseDialog} />
+      )}
+      {openModal && (
+        <Status
+          openModal={openModal}
+          handleCloseModal={handleCloseModal}
+          handleopenStatusModal={handleopenStatusModal}
+        />
+      )}
+      {openStatusModal && (
+        <Carousels
+          openStatusModal={openStatusModal}
+          handleCloseStatusModal={handleCloseStatusModal}
+          owner={true}
+          status={null}
+        />
       )}
     </>
   );

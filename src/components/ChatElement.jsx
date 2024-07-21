@@ -7,6 +7,7 @@ import {
   Typography,
   MenuItem,
   Menu,
+  Tooltip,
 } from "@mui/material";
 import { styled, useTheme, alpha } from "@mui/material/styles";
 // import { useSearchParams } from "react-router-dom";
@@ -23,6 +24,7 @@ import {
 } from "../redux/slices/conversation";
 import { DotsThreeVertical } from "phosphor-react";
 import axios from "../utils/axios";
+import Carousels from "../pages/dashboard/Carousel";
 
 const Message_options = [
   {
@@ -197,7 +199,17 @@ const MessageOption = ({ conversationId, name, pinned }) => {
   );
 };
 
-const ChatElement = ({ img, name, msg, time, unread, online, id, pinned }) => {
+const ChatElement = ({
+  img,
+  name,
+  msg,
+  time,
+  unread,
+  online,
+  id,
+  pinned,
+  statuses,
+}) => {
   // console.log("msg",msg);
   const dispatch = useDispatch();
   const { room_id } = useSelector((state) => state.app); //state variable
@@ -213,12 +225,28 @@ const ChatElement = ({ img, name, msg, time, unread, online, id, pinned }) => {
 
   const theme = useTheme();
 
+  const [openStatusModal, setOpenStatusModal] = useState(false);
+
+  const handleopenStatusModal = () => {
+    setOpenStatusModal(true);
+  };
+
+  const handleCloseStatusModal = () => {
+    setOpenStatusModal(false);
+  };
+
+  const handleClickAvatar = (e) => {
+    if (statuses.length) {
+      e.stopPropagation();
+      handleopenStatusModal();
+    }
+  };
+
   return (
     <Stack direction="row">
       <StyledChatBox
         onClick={() => {
-          if(id==room_id) 
-            return;
+          if (id == room_id) return;
           dispatch(ClearCurrentMessagesAndCurrentConversation());
           dispatch(SelectConversation({ room_id: id }));
           dispatch(UpdateConversationUnread({ conversationId: id }));
@@ -247,17 +275,42 @@ const ChatElement = ({ img, name, msg, time, unread, online, id, pinned }) => {
         >
           <Stack direction="row" spacing={1}>
             {" "}
-            {online ? (
-              <StyledBadge
-                overlap="circular"
-                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                variant="dot"
-              >
-                <Avatar alt={name} src={img} />
-              </StyledBadge>
-            ) : (
-              <Avatar alt={name} src={img} />
-            )}
+            <div onClick={(e) => handleClickAvatar(e)} className=" relative">
+              {online ? (
+                <StyledBadge
+                  overlap="circular"
+                  anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                  variant="dot"
+                >
+                  <Avatar
+                    alt={name}
+                    src={img}
+                    className={`${
+                      statuses.length > 0
+                        ? "border-[3.5px] border-green-600"
+                        : null
+                    }`}
+                  />
+                </StyledBadge>
+              ) : (
+                <Avatar
+                  alt={name}
+                  src={img}
+                  className={`${
+                    statuses.length > 0
+                      ? "border-[3.5px] border-green-600"
+                      : null
+                  }`}
+                />
+              )}
+              {statuses.length>0 && (
+                <Tooltip placement="left-end" title="Statueses">
+                  <div className=" text-sm absolute -top-1 bg-green-400 rounded-full text-black w-5 flex items-center justify-center -left-2 animate-bounce">
+                  {statuses.length}
+                  </div>
+                </Tooltip>
+              )}
+            </div>
             <Stack spacing={0.3}>
               <Typography variant="subtitle2">{name}</Typography>
               <Typography variant="caption">{truncateText(msg, 18)}</Typography>
@@ -276,6 +329,14 @@ const ChatElement = ({ img, name, msg, time, unread, online, id, pinned }) => {
         </Stack>
       </StyledChatBox>
       <MessageOption conversationId={id} name={name} pinned={pinned} />
+      {openStatusModal && (
+        <Carousels
+          openStatusModal={openStatusModal}
+          handleCloseStatusModal={handleCloseStatusModal}
+          owner={false}
+          status={statuses}
+        />
+      )}
     </Stack>
   );
 };

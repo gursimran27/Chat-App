@@ -992,6 +992,7 @@ const ReplyMsg = ({
   const dispatch = useDispatch();
 
   const scrollToMessage = (messageId) => {
+    if(!menu) return;
     if (messageRefs.current[messageId]) {
       messageRefs.current[messageId].scrollIntoView({ behavior: "smooth" });
       setHighlightedMessageId(messageId);
@@ -1099,6 +1100,7 @@ const ReplyMsg = ({
           <Stack spacing={2}>
             {/* <a href={`#${el?.replyToMsgId}`}> */}
             <Stack
+            className="border-l-4 border-l-purple-600"
               p={2}
               direction={"column"}
               spacing={3}
@@ -3050,7 +3052,8 @@ const VoiceMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
   //   }
   // }, [audioMessage]);
 
-  const handleIncreaseSpeed = () => {
+  const handleIncreaseSpeed = (e) => {
+    e.stopPropagation();
     setCurrentRateIndex((prevIndex) => (prevIndex + 1) % playbackRates.length);
   };
 
@@ -3202,7 +3205,7 @@ const VoiceMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
                       ? "bg-gray-500 text-[#ffff]"
                       : null
                   } `}
-                  onClick={handleIncreaseSpeed}
+                  onClick={(e)=>handleIncreaseSpeed(e)}
                 >
                   {playbackRates[currentRateIndex]}x
                 </div>

@@ -20,9 +20,12 @@ const appID = process.env.ZEGO_APP_ID; // type: number
 const serverSecret = process.env.ZEGO_SERVER_SECRET; // type: 32 byte length string
 
 exports.getMe = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.user._id).populate("statuses");
   res.status(200).json({
     status: "success",
-    data: req.user,//as added while jwt verification
+    // data: req.user,//as added while jwt verification
+    data: user,
+    // statuses: user?.statuses,
   });
 });
 
@@ -106,6 +109,40 @@ exports.upload = async (req, res) => {
       success: true,
       mediaUrl: mediaUrl,
       message: "uploaded successfully to cloudinary",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+exports.uploadStatus = async (req, res) => {
+  try {
+    // console.log(req.body.conversation_id);
+    // console.log(req.files.file)
+    // fetch the data from req
+
+    const file = req.files.file;
+    //  the imageFile represent the key/name of the  file that is snet in http request
+    console.log(file);
+
+    let mediaUrl = null;
+
+    const cloud = await uploadImageToCloudinary(
+      file,
+      `${process.env.FOLDER_NAME}-status-${req.user?._id}`,
+      1000,
+      1000
+    );
+    mediaUrl = cloud.secure_url;
+
+    res.status(200).json({
+      success: true,
+      mediaUrl: mediaUrl,
+      message: "Status uploaded successfully to cloudinary",
     });
   } catch (error) {
     res.status(500).json({

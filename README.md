@@ -84,6 +84,10 @@
 
     - Indicates when a user is recording audio and stops indicating when the user stops recording audio.
 
+21.  Status Feature**
+
+    - Users can add statuses that automatically disappear after 1 hours or the user can delete status also.
+
 
 ## Installation
 

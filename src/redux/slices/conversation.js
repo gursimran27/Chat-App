@@ -5,13 +5,15 @@ import { useSelector } from "react-redux";
 
 const user_id = window.localStorage.getItem("user_id");
 
-const getLastVisibleMessage = (messages, userId) => {//for constact chat
+const getLastVisibleMessage = (messages, userId) => {
+  //for constact chat
   //* message.type
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i];
     if (
       (!message?.deletedFor || !message?.deletedFor[userId]) &&
-      message?.type != "deleted" && message?.type != "divider"
+      message?.type != "deleted" &&
+      message?.type != "divider"
     ) {
       return message;
     }
@@ -19,13 +21,15 @@ const getLastVisibleMessage = (messages, userId) => {//for constact chat
   return null;
 };
 
-const getLastVisibleMessageForDeleteForEveryOne = (messages, userId) => {//for messages
+const getLastVisibleMessageForDeleteForEveryOne = (messages, userId) => {
+  //for messages
   //* message.subtype
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i];
     if (
       (!message?.deletedFor || !message?.deletedFor[userId]) &&
-      message?.subtype != "deleted" && message?.type != "divider"
+      message?.subtype != "deleted" &&
+      message?.type != "divider"
     ) {
       return message;
     }
@@ -97,6 +101,7 @@ const slice = createSlice({
           typing: el?.typing[user?._id.toString()] || false,
           coordinates: user?.location.coordinates.reverse() || null,
           recordingAudio: el?.recordingAudio[user?._id.toString()] || false,
+          statuses: user?.statuses || [],
         };
       });
 
@@ -148,6 +153,7 @@ const slice = createSlice({
               typing: el?.typing[user?._id.toString()] || false,
               coordinates: user?.location.coordinates.reverse() || null,
               recordingAudio: el?.recordingAudio[user?._id.toString()] || false,
+              statuses: user?.statuses || [],
             };
           }
         }
@@ -195,7 +201,9 @@ const slice = createSlice({
         email: user?.email,
         typing: this_conversation?.typing[user?._id.toString()] || false,
         coordinates: user?.location.coordinates.reverse() || null,
-        recordingAudio: this_conversation?.recordingAudio[user?._id.toString()] || false,
+        recordingAudio:
+          this_conversation?.recordingAudio[user?._id.toString()] || false,
+        statuses: user?.statuses || [],
       });
     },
 
@@ -584,6 +592,30 @@ const slice = createSlice({
       );
       console.log("conversations setting status to 0");
     },
+    friendStatusAdded(state, action) {
+      state.direct_chat.conversations = state.direct_chat.conversations.map(
+        (conversation) =>
+          conversation.user_id === action.payload.userId
+            ? {
+                ...conversation,
+                statuses: [...conversation.statuses, action.payload.status],
+              }
+            : conversation
+      );
+    },
+    friendStatusRemoved(state, action) {
+      state.direct_chat.conversations = state.direct_chat.conversations.map(
+        (conversation) =>
+          conversation.user_id === action.payload.userId
+            ? {
+                ...conversation,
+                statuses: conversation.statuses.filter(
+                  (status) => status?._id !== action.payload.statusId
+                ),
+              }
+            : conversation
+      );
+    },
     updateConversationForNewMessage(state, action) {
       const this_conversation = action.payload.conversation;
       state.direct_chat.conversations = state.direct_chat.conversations.map(
@@ -736,10 +768,14 @@ export const UpdateCurrent_conversationTypingStatus = ({ typing }) => {
   };
 };
 
-export const UpdateCurrent_conversationRecordingAudioStatus = ({ recordingAudio }) => {
+export const UpdateCurrent_conversationRecordingAudioStatus = ({
+  recordingAudio,
+}) => {
   return async (dispatch, getState) => {
     dispatch(
-      slice.actions.updateCurrent_conversationRecordingAudioStatus({ recordingAudio: recordingAudio })
+      slice.actions.updateCurrent_conversationRecordingAudioStatus({
+        recordingAudio: recordingAudio,
+      })
     );
   };
 };
@@ -779,7 +815,10 @@ export const UpdateConversationTypingStatus = ({ typing, conversationId }) => {
   };
 };
 
-export const UpdateConversationRecordingAudioStatus = ({ recordingAudio, conversationId }) => {
+export const UpdateConversationRecordingAudioStatus = ({
+  recordingAudio,
+  conversationId,
+}) => {
   return async (dispatch, getState) => {
     dispatch(
       slice.actions.updateConversationRecordingAudioStatus({
@@ -795,6 +834,28 @@ export const UpdateConversationUnread = ({ conversationId }) => {
     dispatch(
       slice.actions.updateConversationUnread({
         conversationId: conversationId,
+      })
+    );
+  };
+};
+
+export const FriendStatusAdded = ({ userId, status }) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.friendStatusAdded({
+        userId: userId,
+        status: status,
+      })
+    );
+  };
+};
+
+export const FriendStatusRemoved = ({ userId, statusId }) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.friendStatusRemoved({
+        userId: userId,
+        statusId: statusId,
       })
     );
   };
@@ -824,7 +885,11 @@ export const UpdateMessageStatus = ({ status }) => {
 export const UpdateReply_msg = ({ reply, replyToMsg, messageId }) => {
   return async (dispatch, getState) => {
     dispatch(
-      slice.actions.updateReply_msg({ reply: reply, replyToMsg: replyToMsg, messageId: messageId })
+      slice.actions.updateReply_msg({
+        reply: reply,
+        replyToMsg: replyToMsg,
+        messageId: messageId,
+      })
     );
   };
 };
@@ -865,9 +930,7 @@ export const UpdateMessagesForDeleteForMe = ({ messageId, conversationId }) => {
     );
   };
 };
-export const UpdateMessagesForLiveLocEnded = ({
-  messageId,
-}) => {
+export const UpdateMessagesForLiveLocEnded = ({ messageId }) => {
   return async (dispatch, getState) => {
     dispatch(
       slice.actions.updateMessagesForLiveLocEnded({

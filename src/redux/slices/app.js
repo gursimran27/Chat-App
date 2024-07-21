@@ -38,6 +38,12 @@ const slice = createSlice({
     fetchUser(state, action) {
       state.user = action.payload.user;
     },
+    addStatus(state, action) {
+      state.user.statuses.push(action.payload.newStatus);
+    },
+    removeStatus(state, action) {
+      state.user.statuses =  state.user.statuses.filter((status)=>status?._id!==action.payload.statusId)
+    },
     updateUser(state, action) {
       state.user = action.payload.user;
     },
@@ -346,6 +352,22 @@ export const UpdateUserLocationEnded = () => {
   return async (dispatch, getState) => {
     dispatch(
       slice.actions.updateUserLocationEnded()
+    );
+  };
+};
+
+export const AddStatus = ({newStatus}) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.addStatus({newStatus: newStatus})
+    );
+  };
+};
+
+export const RemoveStatus = ({statusId}) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.removeStatus({statusId: statusId})
     );
   };
 };
