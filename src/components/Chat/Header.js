@@ -34,6 +34,7 @@ import axios from "../../utils/axios";
 import { format, isToday, isYesterday } from "date-fns";
 import "./UserLastSeen.css"; // Import CSS file
 import {
+  ClearChat,
   ClearCurrentMessagesAndCurrentConversation,
   UpdateHasMore,
   UpdatePage,
@@ -74,10 +75,10 @@ const Conversation_Menu = [
     title: "Contact info",
   },
   {
-    title: "Mute notifications",
+    title: "Clear messages",
   },
   {
-    title: "Clear messages",
+    title: "Mute notifications",
   },
   {
     title: "Delete chat",
@@ -92,6 +93,9 @@ const ChatHeader = () => {
   const { current_conversation } = useSelector(
     (state) => state.conversation.direct_chat
   );
+
+
+  const { open } = useSelector((state) => state.app.sideBar);
 
   const [conversationMenuAnchorEl, setConversationMenuAnchorEl] =
     React.useState(null);
@@ -160,10 +164,12 @@ const ChatHeader = () => {
   const { sideBar } = useSelector((state) => state.app);
 
   const handleCloseChat = () => {
-    console.log("close chat clicked");
+    // console.log("close chat clicked");
     dispatch(SelectConversation({ room_id: null }));
     dispatch(ClearCurrentMessagesAndCurrentConversation());
-    dispatch(UpdateReply_msg({ reply: false, replyToMsg: null, messageId: null }));
+    dispatch(
+      UpdateReply_msg({ reply: false, replyToMsg: null, messageId: null })
+    );
     dispatch(UpdatePage({ page: 2 }));
     dispatch(UpdateHasMore({ hasMore: true }));
     if (sideBar.open) {
@@ -171,6 +177,29 @@ const ChatHeader = () => {
       dispatch(UpdateSidebarType("CONTACT"));
     }
   };
+
+  const handleClearChat = async ()=>{
+    handleCloseConversationMenu();
+    try {
+      const response = await axios.put(
+        `http://localhost:3001/api/v1/user/clearChat/${current_conversation?.id}`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log(response)
+
+      dispatch(ClearChat({conversationId: response?.data?.conversationId}));
+
+    } catch (error) {
+      console.error("Error clearing the char", error);
+    }
+  }
 
   return (
     <>
@@ -327,18 +356,48 @@ const ChatHeader = () => {
             >
               <Box p={1}>
                 <Stack spacing={1}>
-                  {Conversation_Menu.map((el) => (
-                    <MenuItem onClick={handleCloseConversationMenu}>
-                      <Stack
-                        sx={{ minWidth: 100 }}
-                        direction="row"
-                        alignItems={"center"}
-                        justifyContent="space-between"
+                  {Conversation_Menu.map((el) =>
+                    el.title == "Contact info" ? (
+                      <MenuItem
+                        onClick={() => {
+                          dispatch(ToggleSidebar());
+                          dispatch(UpdateSidebarType("CONTACT"));
+                          handleCloseConversationMenu();
+                        }}
                       >
-                        <span>{el.title}</span>
-                      </Stack>{" "}
-                    </MenuItem>
-                  ))}
+                        <Stack
+                          sx={{ minWidth: 100 }}
+                          direction="row"
+                          alignItems={"center"}
+                          justifyContent="space-between"
+                        >
+                          <span>{open ? "Close conatct info" : el?.title}</span>
+                        </Stack>{" "}
+                      </MenuItem>
+                    ) : el.title == "Clear messages" ? (
+                      <MenuItem onClick={handleClearChat}>
+                        <Stack
+                          sx={{ minWidth: 100 }}
+                          direction="row"
+                          alignItems={"center"}
+                          justifyContent="space-between"
+                        >
+                          <span>{el.title}</span>
+                        </Stack>{" "}
+                      </MenuItem>
+                    ) : (
+                      <MenuItem onClick={handleCloseConversationMenu}>
+                        <Stack
+                          sx={{ minWidth: 100 }}
+                          direction="row"
+                          alignItems={"center"}
+                          justifyContent="space-between"
+                        >
+                          <span>{el.title}</span>
+                        </Stack>{" "}
+                      </MenuItem>
+                    )
+                  )}
                 </Stack>
               </Box>
             </Menu>

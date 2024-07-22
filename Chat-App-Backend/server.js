@@ -198,6 +198,22 @@ io.on("connection", async (socket) => {
     const to = await User.findById(data.to).select("socket_id");
     const from = await User.findById(data.from).select("socket_id");
 
+    const existing_FriendRequest = await FriendRequest.find({
+      sender: data.from,
+      recipient: data.to,
+    });
+
+    if (existing_FriendRequest.length > 0) {
+      console.log(existing_FriendRequest);
+      io.to(to?.socket_id).emit("new_friend_request", {
+        message: "New friend request received",
+      });
+      io.to(from?.socket_id).emit("request_sent", {
+        message: "Request Sent successfully!",
+      });
+      return;
+    }
+
     // create a friend request
     await FriendRequest.create({
       sender: data.from, //user_id
@@ -280,7 +296,10 @@ io.on("connection", async (socket) => {
 
     const existing_conversations = await OneToOneMessage.find({
       participants: { $size: 2, $all: [to, from] },
-    }).populate("participants", "firstName lastName _id email status about");
+    }).populate(
+      "participants",
+      "firstName lastName avatar _id email status about location"
+    );
 
     console.log(existing_conversations[0], "Existing Conversation");
 
@@ -292,7 +311,7 @@ io.on("connection", async (socket) => {
 
       new_chat = await OneToOneMessage.findById(new_chat).populate(
         "participants",
-        "firstName lastName _id email status about"
+        "firstName lastName avatar _id email status about location"
       );
 
       console.log(new_chat);
@@ -319,42 +338,51 @@ io.on("connection", async (socket) => {
       // chat.messages.reverse();
 
       // get those messages that are not deleted for me
-      const notDeletedMessages = chat.messages.filter(
-        (msg) => !msg.deletedFor.get(data.user_id)
-      );
 
-      const messagesWithTimeLine = [];
-      let lastTimeline = "";
+      if (chat?.messages.length > 0) {
+        const notDeletedMessages = chat?.messages.filter(
+          (msg) => !msg.deletedFor.get(data.user_id)
+        );
 
-      notDeletedMessages.forEach((message) => {
-        const timelineText = formatDate(message.created_at);
+        if (notDeletedMessages.length>0) {
+          console.log("lol")
+          const messagesWithTimeLine = [];
+          let lastTimeline = "";
 
-        if (timelineText !== lastTimeline) {
-          messagesWithTimeLine.push({
-            type: "divider",
-            text: timelineText,
-            created_at: new Date(),
+          notDeletedMessages.forEach((message) => {
+            const timelineText = formatDate(message.created_at);
+
+            if (timelineText !== lastTimeline) {
+              messagesWithTimeLine.push({
+                type: "divider",
+                text: timelineText,
+                created_at: new Date(),
+              });
+              lastTimeline = timelineText;
+            }
+
+            messagesWithTimeLine.push(message);
           });
-          lastTimeline = timelineText;
+
+          messagesWithTimeLine.reverse(); // so that the lasted msg come to first
+
+          const innerMap = new Map();
+          innerMap.set(data.conversation_id, messagesWithTimeLine);
+          oldMessages.set(data.user_id, innerMap); //cache for the use of fetching prv msg's
+
+          const result = messagesWithTimeLine.slice(skip).slice(0, limit);
+          // console.log(result)
+
+          // console.log(result);
+
+          // result.reverse();
+
+          callback(result); //fire on frontend side
+        } else {
+          callback([{ subtype: "new", type: "msg", text: "no messages" }]); //fire on frontend side
         }
-
-        messagesWithTimeLine.push(message);
-      });
-
-      messagesWithTimeLine.reverse(); // so that the lasted msg come to first
-
-      const innerMap = new Map();
-      innerMap.set(data.conversation_id, messagesWithTimeLine);
-      oldMessages.set(data.user_id, innerMap); //cache for the use of fetching prv msg's
-
-      const result = messagesWithTimeLine.slice(skip).slice(0, limit);
-      // console.log(result)
-
-      // console.log(result);
-
-      // result.reverse();
-
-      callback(result); //fire on frontend side
+      }
+      callback([{ subtype: "new", type: "msg", text: "no messages" }]); //fire on frontend side
     } catch (error) {
       console.log(error);
     }

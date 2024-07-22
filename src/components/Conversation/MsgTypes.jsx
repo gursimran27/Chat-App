@@ -3335,6 +3335,22 @@ const Timeline = ({ el }) => {
   );
 };
 
+
+const NewMessage = ({ el }) => {
+  const theme = useTheme();
+  return (
+    <Stack
+      direction="row"
+      alignItems={"center"}
+      justifyContent={"space-between"}
+    >
+      <Divider width="39%" />
+      <span className=" text-wrap text-xl">Start Chatting</span>
+      <Divider width="39%" />
+    </Stack>
+  );
+};
+
 export {
   Timeline,
   TextMsg,
@@ -3347,4 +3363,5 @@ export {
   LocMsg,
   LiveLocMsg,
   VoiceMsg,
+  NewMessage
 };

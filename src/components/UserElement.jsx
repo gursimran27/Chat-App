@@ -11,8 +11,18 @@ import {
 import { styled, useTheme } from "@mui/material/styles";
 import { Chat } from "phosphor-react";
 import { socket } from "../socket";
-
-
+import {
+  SelectConversation,
+  ToggleSidebar,
+  UpdateSidebarType,
+} from "../redux/slices/app";
+import {
+  ClearCurrentMessagesAndCurrentConversation,
+  UpdateHasMore,
+  UpdatePage,
+  UpdateReply_msg,
+} from "../redux/slices/conversation";
+import { useDispatch, useSelector } from "react-redux";
 
 const StyledChatBox = styled(Box)(({ theme }) => ({
   "&:hover": {
@@ -49,8 +59,7 @@ const StyledBadge = styled(Badge)(({ theme }) => ({
   },
 }));
 
-const UserElement = ({ img, firstName, lastName, online, _id }) => {
-
+const UserElement = ({ avatar, firstName, lastName, status, _id }) => {
   const user_id = window.localStorage.getItem("user_id");
   const theme = useTheme();
 
@@ -74,16 +83,16 @@ const UserElement = ({ img, firstName, lastName, online, _id }) => {
       >
         <Stack direction="row" alignItems={"center"} spacing={2}>
           {" "}
-          {online ? (
+          {status == "Online" ? (
             <StyledBadge
               overlap="circular"
               anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
               variant="dot"
             >
-              <Avatar alt={name} src={img} />
+              <Avatar alt={name} src={avatar || `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`} />
             </StyledBadge>
           ) : (
-            <Avatar alt={name} src={img} />
+            <Avatar alt={name} src={avatar || `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`} />
           )}
           <Stack spacing={0.3}>
             <Typography variant="subtitle2">{name}</Typography>
@@ -92,10 +101,10 @@ const UserElement = ({ img, firstName, lastName, online, _id }) => {
         <Stack direction={"row"} spacing={2} alignItems={"center"}>
           <Button
             onClick={() => {
-            console.log('entering...')
+              console.log("entering...");
               socket.emit("friend_request", { to: _id, from: user_id }, () => {
                 // alert("request sent");
-                console.log("rquest sent")
+                console.log("rquest sent");
               });
             }}
           >
@@ -108,13 +117,14 @@ const UserElement = ({ img, firstName, lastName, online, _id }) => {
 };
 
 const FriendRequestElement = ({
-  img,
+  avatar,
   firstName,
   lastName,
   incoming,
   missed,
-  online,
+  status,
   id,
+  handleClose
 }) => {
   const user_id = window.localStorage.getItem("user_id");
   const theme = useTheme();
@@ -139,16 +149,16 @@ const FriendRequestElement = ({
       >
         <Stack direction="row" alignItems={"center"} spacing={2}>
           {" "}
-          {online ? (
+          {status == "Online" ? (
             <StyledBadge
               overlap="circular"
               anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
               variant="dot"
             >
-              <Avatar alt={name} src={img} />
+              <Avatar alt={name} src={avatar || `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`} />
             </StyledBadge>
           ) : (
-            <Avatar alt={name} src={img} />
+            <Avatar alt={name} src={avatar || `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`} />
           )}
           <Stack spacing={0.3}>
             <Typography variant="subtitle2">{name}</Typography>
@@ -159,6 +169,7 @@ const FriendRequestElement = ({
             onClick={() => {
               //  emit "accept_request" event
               socket.emit("accept_request", { request_id: id });
+              handleClose();
             }}
           >
             Accept Request
@@ -172,18 +183,23 @@ const FriendRequestElement = ({
 // FriendElement
 
 const FriendElement = ({
-  img,
+  avatar,
   firstName,
   lastName,
   incoming,
   missed,
-  online,
+  status,
   _id,
+  handleClose,
 }) => {
   const user_id = window.localStorage.getItem("user_id");
   const theme = useTheme();
 
   const name = `${firstName} ${lastName}`;
+
+  const { sideBar } = useSelector((state) => state.app);
+
+  const dispatch = useDispatch();
 
   return (
     <StyledChatBox
@@ -203,16 +219,16 @@ const FriendElement = ({
       >
         <Stack direction="row" alignItems={"center"} spacing={2}>
           {" "}
-          {online ? (
+          {status == "Online" ? (
             <StyledBadge
               overlap="circular"
               anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
               variant="dot"
             >
-              <Avatar alt={name} src={img} />
+              <Avatar alt={name} src={avatar || `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`} />
             </StyledBadge>
           ) : (
-            <Avatar alt={name} src={img} />
+            <Avatar alt={name} src={avatar || `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`} />
           )}
           <Stack spacing={0.3}>
             <Typography variant="subtitle2">{name}</Typography>
@@ -221,8 +237,24 @@ const FriendElement = ({
         <Stack direction={"row"} spacing={2} alignItems={"center"}>
           <IconButton
             onClick={() => {
+              dispatch(SelectConversation({ room_id: null }));
+              dispatch(ClearCurrentMessagesAndCurrentConversation());
+              dispatch(
+                UpdateReply_msg({
+                  reply: false,
+                  replyToMsg: null,
+                  messageId: null,
+                })
+              );
+              dispatch(UpdatePage({ page: 2 }));
+              dispatch(UpdateHasMore({ hasMore: true }));
+              if (sideBar.open) {
+                dispatch(ToggleSidebar());
+                dispatch(UpdateSidebarType("CONTACT"));
+              }
               // start a new conversation
               socket.emit("start_conversation", { to: _id, from: user_id });
+              handleClose();
             }}
           >
             <Chat />

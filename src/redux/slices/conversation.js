@@ -93,13 +93,13 @@ const slice = createSlice({
           msg: lastVisibleMessage ? lastVisibleMessage.text : "No messages",
           time: lastVisibleMessage
             ? formatTimeTo24Hrs(lastVisibleMessage.created_at)
-            : "9:36",
+            : formatTimeTo24Hrs(Date.now()),
           unread: el?.unreadCount[user_id.toString()] || 0,
           pinned: isPinned,
           about: user?.about || "No Discription",
           email: user?.email,
           typing: el?.typing[user?._id.toString()] || false,
-          coordinates: user?.location.coordinates.reverse() || null,
+          coordinates: user?.location?.coordinates.reverse() || null,
           recordingAudio: el?.recordingAudio[user?._id.toString()] || false,
           statuses: user?.statuses || [],
         };
@@ -146,12 +146,12 @@ const slice = createSlice({
               msg: lastVisibleMessage ? lastVisibleMessage.text : "No messages",
               time: lastVisibleMessage
                 ? formatTimeTo24Hrs(lastVisibleMessage.created_at)
-                : "9:36",
+                : formatTimeTo24Hrs(Date.now()),
               unread: el?.unreadCount[user_id.toString()] || 0,
               pinned: false,
               email: user?.email,
               typing: el?.typing[user?._id.toString()] || false,
-              coordinates: user?.location.coordinates.reverse() || null,
+              coordinates: user?.location?.coordinates.reverse() || null,
               recordingAudio: el?.recordingAudio[user?._id.toString()] || false,
               statuses: user?.statuses || [],
             };
@@ -194,13 +194,13 @@ const slice = createSlice({
           user?.avatar ||
           `https://api.dicebear.com/5.x/initials/svg?seed=${user?.firstName} ${user?.lastName}`,
         about: user?.about || "No Discription",
-        msg: user?.text,
-        time: "9:36",
+        msg: user?.text || "No messages",
+        time: "00:00",
         unread: this_conversation?.unreadCount[user_id.toString()] || 0,
         pinned: false,
         email: user?.email,
         typing: this_conversation?.typing[user?._id.toString()] || false,
-        coordinates: user?.location.coordinates.reverse() || null,
+        coordinates: user?.location?.coordinates.reverse() || null,
         recordingAudio:
           this_conversation?.recordingAudio[user?._id.toString()] || false,
         statuses: user?.statuses || [],
@@ -214,9 +214,10 @@ const slice = createSlice({
       const messages = action.payload.messages;
 
       messages.reverse();
+      console.log("d", messages);
 
       const formatted_messages = messages.map((el) => {
-        if (el?.type != "divider") {
+        if (el?.type != "divider" && el?.subtype != "new") {
           const reaction = el?.reaction;
           let myReaction = null;
           let otherReaction = null;
@@ -399,7 +400,7 @@ const slice = createSlice({
             conversation.id === action.payload.conversationId
               ? {
                   ...conversation,
-                  msg: lastVisibleMessage
+                  msg: lastVisibleMessage?.message
                     ? lastVisibleMessage.message
                     : "No messages",
                   time: lastVisibleMessage ? lastVisibleMessage?.time : "9:36",
@@ -424,7 +425,7 @@ const slice = createSlice({
           conversation.id === action.payload.conversationId
             ? {
                 ...conversation,
-                msg: lastVisibleMessage
+                msg: lastVisibleMessage?.message
                   ? lastVisibleMessage.message
                   : "No messages",
                 time: lastVisibleMessage ? lastVisibleMessage?.time : "9:36",
@@ -450,7 +451,7 @@ const slice = createSlice({
             conversation.id === action.payload.conversationId
               ? {
                   ...conversation,
-                  msg: lastVisibleMessage
+                  msg: lastVisibleMessage?.message
                     ? lastVisibleMessage.message
                     : "No messages",
                   time: lastVisibleMessage ? lastVisibleMessage?.time : "9:36",
@@ -470,7 +471,7 @@ const slice = createSlice({
           conversation.id === action.payload.conversationId
             ? {
                 ...conversation,
-                msg: lastVisibleMessage
+                msg: lastVisibleMessage?.message
                   ? lastVisibleMessage.message
                   : "No messages",
                 time: lastVisibleMessage ? lastVisibleMessage?.time : "9:36",
@@ -676,6 +677,28 @@ const slice = createSlice({
     },
     updateHasMore(state, action) {
       state.direct_chat.hasMore = action.payload.hasMore;
+    },
+    clearChat(state, action) {
+      console.log("clearing>.........");
+      if (
+        state.direct_chat.current_conversation.id ===
+        action.payload.conversationId
+      ) {
+        state.direct_chat.current_messages = [
+          { subtype: "new", type: "msg", text: "no messages" },
+        ];
+
+        state.direct_chat.conversations = state.direct_chat.conversations.map(
+          (conversation) =>
+            conversation.id === action.payload.conversationId
+              ? {
+                  ...conversation,
+                  msg:"No messages",
+                  time:"00:00",
+                }
+              : conversation
+        );
+      }
     },
   },
 });
@@ -978,6 +1001,16 @@ export const UpdateHasMore = ({ hasMore }) => {
     dispatch(
       slice.actions.updateHasMore({
         hasMore: hasMore,
+      })
+    );
+  };
+};
+
+export const ClearChat = ({ conversationId }) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.clearChat({
+        conversationId: conversationId,
       })
     );
   };

@@ -32,7 +32,7 @@ const UsersList = () => {
   );
 };
 
-const FriendsList = () => {
+const FriendsList = ({handleClose}) => {
   const dispatch = useDispatch();
 
   const { friends } = useSelector((state) => state.app);
@@ -44,13 +44,13 @@ const FriendsList = () => {
   return (
     <>
       {friends.map((el, idx) => {
-        return <FriendElement key={idx} {...el} />;
+        return <FriendElement key={idx} {...el} handleClose={handleClose}/>;
       })}
     </>
   );
 };
 
-const RequestsList = () => {
+const RequestsList = ({handleClose}) => {
   const dispatch = useDispatch();
 
   const { friendRequests } = useSelector((state) => state.app);
@@ -62,7 +62,7 @@ const RequestsList = () => {
   return (
     <>
       {friendRequests.map((el, idx) => {
-        return <FriendRequestElement key={idx} {...el.sender} id={el._id} />;
+        return <FriendRequestElement key={idx} {...el.sender} id={el._id} handleClose={handleClose}/>;
       })}
     </>
   );
@@ -103,10 +103,10 @@ const Friends = ({ open, handleClose }) => {
                   return <UsersList />;
 
                 case 1: // display friends in this list
-                  return <FriendsList />;
+                  return <FriendsList handleClose={handleClose}/>;
 
                 case 2: // display request in this list
-                  return <RequestsList />;
+                  return <RequestsList handleClose={handleClose}/>;
 
                 default:
                   break;

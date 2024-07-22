@@ -28,16 +28,19 @@ import {
 import Friends from "../../sections/Dashboard/Friends";
 import { socket } from "../../socket";
 import { useDispatch, useSelector } from "react-redux";
-import { FetchDirectConversations } from "../../redux/slices/conversation";
+import { ClearCurrentMessagesAndCurrentConversation, FetchDirectConversations, UpdateHasMore, UpdatePage, UpdateReply_msg } from "../../redux/slices/conversation";
 import Status from "./Status";
 import Carousel from "./Carousel";
 import Carousels from "./Carousel";
+import { SelectConversation, ToggleSidebar, UpdateSidebarType } from "../../redux/slices/app";
 
 const user_id = window.localStorage.getItem("user_id");
 
 const Chats = () => {
   const theme = useTheme();
   const isDesktop = useResponsive("up", "md");
+
+  const { sideBar } = useSelector((state) => state.app);
 
   const { statuses } = useSelector((state) => state.app.user);
 
@@ -128,6 +131,21 @@ const Chats = () => {
             <Stack direction={"row"} alignItems="center" spacing={1}>
               <IconButton
                 onClick={() => {
+                  dispatch(SelectConversation({ room_id: null }));
+                  dispatch(ClearCurrentMessagesAndCurrentConversation());
+                  dispatch(
+                    UpdateReply_msg({
+                      reply: false,
+                      replyToMsg: null,
+                      messageId: null,
+                    })
+                  );
+                  dispatch(UpdatePage({ page: 2 }));
+                  dispatch(UpdateHasMore({ hasMore: true }));
+                  if (sideBar.open) {
+                    dispatch(ToggleSidebar());
+                    dispatch(UpdateSidebarType("CONTACT"));
+                  }
                   handleOpenDialog();
                 }}
                 sx={{ width: "max-content" }}

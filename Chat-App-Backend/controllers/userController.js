@@ -50,18 +50,18 @@ exports.updateMe = catchAsync(async (req, res, next) => {
   //   "avatar"
   // );
 
-  const { firstName, about }= req.body;
-  if(!firstName && !about){
+  const { firstName, about } = req.body;
+  if (!firstName && !about) {
     return res.status(400).json({
-      status:"Error",
-      Message:'All fields are required'
-    })
+      status: "Error",
+      Message: "All fields are required",
+    });
   }
   const file = req.files?.file;
 
   let mediaUrl = null;
 
-  if(file){
+  if (file) {
     const cloud = await uploadImageToCloudinary(
       file,
       `${process.env.FOLDER_NAME}-${req.user._id}-avatar`,
@@ -71,11 +71,15 @@ exports.updateMe = catchAsync(async (req, res, next) => {
     mediaUrl = cloud.secure_url;
   }
 
-  const userDoc = await User.findByIdAndUpdate(req.user._id, {
-    firstName,
-    about,
-    avatar: mediaUrl,
-  },{new:true});
+  const userDoc = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      firstName,
+      about,
+      avatar: mediaUrl,
+    },
+    { new: true }
+  );
 
   res.status(200).json({
     status: "success",
@@ -117,7 +121,6 @@ exports.upload = async (req, res) => {
     });
   }
 };
-
 
 exports.uploadStatus = async (req, res) => {
   try {
@@ -175,7 +178,7 @@ exports.getUsers = catchAsync(async (req, res, next) => {
 exports.getAllVerifiedUsers = catchAsync(async (req, res, next) => {
   const all_users = await User.find({
     verified: true,
-  }).select("firstName lastName _id");
+  }).select("firstName lastName _id avatar status");
 
   const remaining_users = all_users.filter(
     (user) => user._id.toString() !== req.user._id.toString()
@@ -191,7 +194,7 @@ exports.getAllVerifiedUsers = catchAsync(async (req, res, next) => {
 exports.getRequests = catchAsync(async (req, res, next) => {
   const requests = await FriendRequest.find({ recipient: req.user._id })
     .populate("sender")
-    .select("_id firstName lastName");
+    .select("_id firstName lastName avater status");
 
   res.status(200).json({
     status: "success",
@@ -203,7 +206,7 @@ exports.getRequests = catchAsync(async (req, res, next) => {
 exports.getFriends = catchAsync(async (req, res, next) => {
   const this_user = await User.findById(req.user._id).populate(
     "friends",
-    "_id firstName lastName"
+    "_id firstName lastName avatar status"
   );
   res.status(200).json({
     status: "success",
@@ -386,59 +389,56 @@ exports.getCallLogs = catchAsync(async (req, res, next) => {
   });
 });
 
-
 exports.pin = catchAsync(async (req, res, next) => {
   try {
     const userId = req.user._id; // Assuming you have user authentication and can get the user ID from the request
     const conversationId = req.params.id;
-    
+
     const user = await User.findByIdAndUpdate(
       userId,
       { $addToSet: { pinnedChats: conversationId } }, // Add to set ensures no duplicates
       { new: true }
     );
-    
+
     res.status(200).json(user.pinnedChats);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to pin conversation' });
+    res.status(500).json({ error: "Failed to pin conversation" });
   }
 });
-
 
 exports.unpin = catchAsync(async (req, res, next) => {
   try {
     const userId = req.user.id; // Assuming you have user authentication and can get the user ID from the request
     const conversationId = req.params.id;
-    
+
     const user = await User.findByIdAndUpdate(
       userId,
       { $pull: { pinnedChats: conversationId } }, // Remove the conversation ID from pinnedChats
       { new: true }
     );
-    
+
     res.status(200).json(user.pinnedChats);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to unpin conversation' });
+    res.status(500).json({ error: "Failed to unpin conversation" });
   }
 });
-
 
 exports.star = catchAsync(async (req, res, next) => {
   try {
     const { conversationId, messageId } = req.params;
     const { star } = req.body;
-    const userId = req.user.id; 
+    const userId = req.user.id;
 
     const conversation = await OneToOneMessage.findById(conversationId);
 
     if (!conversation) {
-      return res.status(404).json({ error: 'Conversation not found' });
+      return res.status(404).json({ error: "Conversation not found" });
     }
 
-    const message = conversation.messages.id(messageId);//Mongoose method to find a subdocument
+    const message = conversation.messages.id(messageId); //Mongoose method to find a subdocument
 
-    if (!message) { 
-      return res.status(404).json({ error:'Message not found' });
+    if (!message) {
+      return res.status(404).json({ error: "Message not found" });
     }
 
     // Update the star status for the user
@@ -446,18 +446,21 @@ exports.star = catchAsync(async (req, res, next) => {
 
     await conversation.save();
 
-    res.status(200).json({ success: true, message: 'Star status updated as ',star });
+    res
+      .status(200)
+      .json({ success: true, message: "Star status updated as ", star });
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error',message: error.message });
+    res
+      .status(500)
+      .json({ error: "Internal server error", message: error.message });
   }
 });
-
 
 exports.fetchMsg = catchAsync(async (req, res, next) => {
   try {
     const { conversationId, page } = req.params;
-    const userId = req.user.id; 
-    console.log('page',page,conversationId)
+    const userId = req.user.id;
+    console.log("page", page, conversationId);
 
     // if(!oldMessages.has(userId)){
     //   const innerMap = new Map();
@@ -471,28 +474,34 @@ exports.fetchMsg = catchAsync(async (req, res, next) => {
     //   oldMessages.set(userId, innerMap);
     // }
 
-      const limit = 10;
-      const skip = (page - 1) * limit;  
+    const limit = 10;
+    const skip = (page - 1) * limit;
 
-      const innerMap = oldMessages.get(userId);
-      if(!innerMap){
-        console.log('not innermap',innerMap)
-      }
-      const messages = innerMap.get(conversationId);
-      if(!messages){
-        console.log("not messages",messages)
-      }for (const key of oldMessages.get(userId).keys()) {
-        console.log(key);
-      }
-      const result = messages.slice(skip).slice(0, limit);
-      // console.log(result)
+    const innerMap = oldMessages.get(userId);
+    if (!innerMap) {
+      console.log("not innermap", innerMap);
+    }
+    const messages = innerMap.get(conversationId);
+    if (!messages) {
+      console.log("not messages", messages);
+    }
+    for (const key of oldMessages.get(userId).keys()) {
+      console.log(key);
+    }
+    const result = messages.slice(skip).slice(0, limit);
+    // console.log(result)
 
-    res.status(200).json({ success: true, message: `messages fetch for page=${page}`,data:result });
+    res.status(200).json({
+      success: true,
+      message: `messages fetch for page=${page}`,
+      data: result,
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error',message: error.message });
+    res
+      .status(500)
+      .json({ error: "Internal server error", message: error.message });
   }
 });
-
 
 exports.fetchStarMsg = catchAsync(async (req, res, next) => {
   try {
@@ -503,24 +512,32 @@ exports.fetchStarMsg = catchAsync(async (req, res, next) => {
     const conversation = await OneToOneMessage.findById(conversationID);
 
     if (!conversation) {
-      return res.status(404).json({ error: 'Conversation not found' });
+      return res.status(404).json({ error: "Conversation not found" });
     }
 
     const message = conversation.messages;
 
-    if (!message) { 
-      return res.status(404).json({ error:'Message not found' });
+    if (!message) {
+      return res.status(404).json({ error: "Message not found" });
     }
 
-    const result = message.filter( msg => msg.star.get(userId) === true)
+    const notDeletedMessages = message.filter(
+      (msg) => !msg.deletedFor.get(userId)
+    );
 
-    res.status(200).json({ success: true, message: 'Star messages fetched',data: result });
+    const result = notDeletedMessages.filter(
+      (msg) => msg.star.get(userId) === true
+    );
+
+    res
+      .status(200)
+      .json({ success: true, message: "Star messages fetched", data: result });
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error',message: error.message });
+    res
+      .status(500)
+      .json({ error: "Internal server error", message: error.message });
   }
 });
-
-
 
 exports.fetchMediaMsg = catchAsync(async (req, res, next) => {
   try {
@@ -531,26 +548,38 @@ exports.fetchMediaMsg = catchAsync(async (req, res, next) => {
     const conversation = await OneToOneMessage.findById(conversationID);
 
     if (!conversation) {
-      return res.status(404).json({ error: 'Conversation not found' });
+      return res.status(404).json({ error: "Conversation not found" });
     }
 
     const message = conversation.messages;
 
-    if (!message) { 
-      return res.status(404).json({ error:'Message not found' });
+    if (!message) {
+      return res.status(404).json({ error: "Message not found" });
     }
 
-    const imageVideoMsg = message.filter( msg => msg.type === 'img' || msg.type === 'video');
-    const linkMsg = message.filter( msg => msg.type === 'Link');
-    const docMsg = message.filter( msg => msg.type === 'doc');
+    const notDeletedMessages = message.filter(
+      (msg) => !msg.deletedFor.get(userId)
+    );
 
-    res.status(200).json({ success: true, message: 'Star messages fetched',imageVideoMsg: imageVideoMsg, linkMsg:linkMsg, docMsg:docMsg  });
+    const imageVideoMsg = notDeletedMessages.filter(
+      (msg) => msg.type === "img" || msg.type === "video"
+    );
+    const linkMsg = notDeletedMessages.filter((msg) => msg.type === "Link");
+    const docMsg = notDeletedMessages.filter((msg) => msg.type === "doc");
+
+    res.status(200).json({
+      success: true,
+      message: "Star messages fetched",
+      imageVideoMsg: imageVideoMsg,
+      linkMsg: linkMsg,
+      docMsg: docMsg,
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error',message: error.message });
+    res
+      .status(500)
+      .json({ error: "Internal server error", message: error.message });
   }
 });
-
-
 
 exports.deleteMessageForUser = catchAsync(async (req, res, next) => {
   try {
@@ -559,28 +588,30 @@ exports.deleteMessageForUser = catchAsync(async (req, res, next) => {
 
     const conversation = await OneToOneMessage.findById(conversationId);
     if (!conversation) {
-      return res.status(404).json({ error: 'Conversation not found' });
+      return res.status(404).json({ error: "Conversation not found" });
     }
 
     const message = conversation.messages.id(messageId);
     if (!message) {
-      return res.status(404).json({ error: 'Message not found' });
+      return res.status(404).json({ error: "Message not found" });
     }
 
     message.deletedFor.set(userId, true);
-    
+
     // set the star to false
-    message.star.set(userId,false);
+    message.star.set(userId, false);
 
     await conversation.save({ new: true });
 
-    res.status(200).json({ success: true, message: 'Message deleted for user' });
+    res
+      .status(200)
+      .json({ success: true, message: "Message deleted for user" });
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error', message: error.message });
+    res
+      .status(500)
+      .json({ error: "Internal server error", message: error.message });
   }
 });
-
-
 
 // !this API functionality is shifted to socket event
 exports.updateDeleteForEveryone = catchAsync(async (req, res, next) => {
@@ -589,23 +620,58 @@ exports.updateDeleteForEveryone = catchAsync(async (req, res, next) => {
 
     const conversation = await OneToOneMessage.findById(conversationId);
     if (!conversation) {
-      return res.status(404).json({ error: 'Conversation not found' });
+      return res.status(404).json({ error: "Conversation not found" });
     }
 
     const message = conversation.messages.id(messageId);
     if (!message) {
-      return res.status(404).json({ error: 'Message not found' });
+      return res.status(404).json({ error: "Message not found" });
     }
 
     message.deletedForEveryone = false;
 
     await conversation.save({ new: true });
 
-    res.status(200).json({ success: true, message: 'deletedForEveryone updated to false', conversationId: conversationId });
+    res.status(200).json({
+      success: true,
+      message: "deletedForEveryone updated to false",
+      conversationId: conversationId,
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error', message: error.message });
+    res
+      .status(500)
+      .json({ error: "Internal server error", message: error.message });
   }
 });
 
+exports.clearChat = catchAsync(async (req, res, next) => {
+  try {
+    const { conversationId } = req.params;
+    const userId = req.user._id;
 
+    const conversation = await OneToOneMessage.findById(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ error: "Conversation not found" });
+    }
 
+    // Iterate over each message and mark it as deleted for the user
+    conversation?.messages.forEach((message) => {
+      message.deletedFor.set(userId, true);
+      message.star.set(userId, false);
+    });
+
+    // Save the updated conversation
+    await conversation.save();
+
+    oldMessages?.get(userId.toString()).delete(conversationId.toString());
+
+    res
+      .status(200)
+      .json({
+        message: "Chat cleared successfully",
+        conversationId: conversationId,
+      });
+  } catch (error) {
+    res.status(500).json({ message: "Error clearing chat", error });
+  }
+});

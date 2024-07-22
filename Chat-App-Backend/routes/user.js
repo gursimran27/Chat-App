@@ -38,5 +38,7 @@ router.delete('/deletemessage/:conversationId/:messageId', authController.protec
 
 router.put('/updatedeleteforeveryone/:conversationId/:messageId', authController.protect, userController.updateDeleteForEveryone);
 
+router.put('/clearChat/:conversationId', authController.protect, userController.clearChat);
+
 
 module.exports = router;

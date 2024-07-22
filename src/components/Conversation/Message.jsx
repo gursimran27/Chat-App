@@ -10,6 +10,7 @@ import {
   LiveLocMsg,
   LocMsg,
   MediaMsg,
+  NewMessage,
   ReplyMsg,
   TextMsg,
   Timeline,
@@ -30,6 +31,7 @@ import { useTheme } from "@emotion/react";
 import Loading from "./Loading";
 import axios from "../../utils/axios";
 import { ToggleSidebar, UpdateSidebarType } from "../../redux/slices/app";
+import { current } from "@reduxjs/toolkit";
 
 const Message = ({ isMobile, menu }) => {
   const dispatch = useDispatch();
@@ -60,7 +62,7 @@ const Message = ({ isMobile, menu }) => {
 
     socket.emit("get_messages", { conversation_id: current?.id, user_id: user_id }, (data) => {
       // data => list of messages
-      // console.log(data, "List of messages");
+      console.log(data, "List of messages");  
       dispatch(FetchCurrentMessages({ messages: data }));
       // console.log(data);
     });
@@ -238,6 +240,13 @@ const Message = ({ isMobile, menu }) => {
                   return (
                     //  deletedMessage
                     <VoiceMsg el={el} menu={menu}  messageRefs={messageRefs} highlightedMessageId={highlightedMessageId}/>
+                  );
+
+                case  "new":
+                  return (
+                    //  deletedMessage
+                    current_messages.length==1 &&
+                    <NewMessage />
                   );
 
                 default:

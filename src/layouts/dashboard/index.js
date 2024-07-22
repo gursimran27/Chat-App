@@ -138,6 +138,7 @@ const DashboardLayout = () => {
   };
 
   const formatDate = (date) => {
+    if (!date) return "Yesterday";
     const today = new Date();
     const messageDate = new Date(date);
 
@@ -192,7 +193,7 @@ const DashboardLayout = () => {
       socket.on("new_message", async (data) => {
         const currentConversationID = currentConversationIDRef.current;
         const message = data.message;
-        // console.log("current_conversation", current_conversation, "data", data);
+        console.log("current_conversation", current_conversation, "data", data);
         // check if msg we got is from currently selected conversation
 
         // const reaction = message?.reaction;
@@ -290,6 +291,11 @@ const DashboardLayout = () => {
           const notiSound = new Audio(sound);
           notiSound.play();
 
+          const conversations = concersationsRef.current;
+          const openChat = conversations.find(
+            (el) => el?.user_id === message.from
+          );
+
           toast.custom((t) => (
             <div
               className={`${
@@ -299,6 +305,17 @@ const DashboardLayout = () => {
               <div
                 className="flex-1 w-0 p-4 cursor-pointer"
                 onClick={() => {
+                  if (openChat.length <= 0) {
+                    toast.dismiss(t.id);
+                    dispatch(
+                      showSnackbar({
+                        severity: "Error",
+                        message: "Start-chat from friends section",
+                      })
+                    );
+
+                    return;
+                  }
                   dispatch(
                     SelectConversation({ room_id: data.conversation_id })
                   );
@@ -360,6 +377,8 @@ const DashboardLayout = () => {
       });
 
       socket.on("new_friend_request", (data) => {
+        const notiSound = new Audio(sound);
+        notiSound.play();
         dispatch(
           showSnackbar({
             severity: "success",
@@ -369,6 +388,8 @@ const DashboardLayout = () => {
       });
 
       socket.on("request_accepted", (data) => {
+        const notiSound = new Audio(sound);
+        notiSound.play();
         dispatch(
           showSnackbar({
             severity: "success",
@@ -439,13 +460,14 @@ const DashboardLayout = () => {
       );
     });
 
-
     socket.on("updateRecordingAudio", (data) => {
       const currentConversationID = currentConversationIDRef.current;
 
       if (currentConversationID === data.conversationId) {
         dispatch(
-          UpdateCurrent_conversationRecordingAudioStatus({ recordingAudio: data.recordingAudio })
+          UpdateCurrent_conversationRecordingAudioStatus({
+            recordingAudio: data.recordingAudio,
+          })
         );
       }
 
@@ -545,22 +567,19 @@ const DashboardLayout = () => {
       }
 
       if (user_id == data.from) {
-        console.log("loll")
+        console.log("loll");
         dispatch(UpdateUserLocationEnded());
       }
     });
 
-
     socket.on("statusAdded", async (data) => {
-      console.log('statusadded',data)
-        dispatch(AddStatus({newStatus: data}));
-
+      console.log("statusadded", data);
+      dispatch(AddStatus({ newStatus: data }));
     });
 
     socket.on("statusRemoved", async (data) => {
-        console.log("statusremoved",data)
-        dispatch(RemoveStatus({statusId: data}));
-
+      console.log("statusremoved", data);
+      dispatch(RemoveStatus({ statusId: data }));
     });
 
     socket.on("friendStatusAdded", async (data) => {
@@ -569,9 +588,10 @@ const DashboardLayout = () => {
       // if (currentConversationID === data.conversationId) {
       //   dispatch(UpdateMessagesForLiveLocEnded({ messageId: data.messageId }));
       // }
-        console.log('friendadded',data)
-        dispatch(FriendStatusAdded({userId: data?.userId, status: data?.status}));
-
+      console.log("friendadded", data);
+      dispatch(
+        FriendStatusAdded({ userId: data?.userId, status: data?.status })
+      );
     });
 
     socket.on("friendStatusRemoved", async (data) => {
@@ -580,9 +600,10 @@ const DashboardLayout = () => {
       // if (currentConversationID === data.conversationId) {
       //   dispatch(UpdateMessagesForLiveLocEnded({ messageId: data.messageId }));
       // }
-        console.log("friendremoved",data)
-        dispatch(FriendStatusRemoved({userId: data?.userId, statusId: data?.statusId}));
-
+      console.log("friendremoved", data);
+      dispatch(
+        FriendStatusRemoved({ userId: data?.userId, statusId: data?.statusId })
+      );
     });
 
     // // Listen for the 'isSeen' event from the server
