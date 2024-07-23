@@ -235,6 +235,7 @@ const CaptureAudio = ({ hide }) => {
       setLoading(true);
       const formData = new FormData(); //used to gather form data from HTML forms.
       formData.append("conversation_id", room_id);
+      formData.append("type", "audio");
       // if(imageFile){
       formData.append("file", renderAudio.current); // make a key-value pair so to send it in form-data section of request
       // }
@@ -256,6 +257,7 @@ const CaptureAudio = ({ hide }) => {
             type: "audio",
             msg: "audio-message",
             mediaUrl: response?.data?.mediaUrl,
+            filePath: response?.data?.filePath,
           });
           play();
         })
@@ -339,7 +341,7 @@ const CaptureAudio = ({ hide }) => {
         ) : (
           <FaPauseCircle
             size={24}
-            className=" text-red-500 text-xl cursor-pointer" 
+            className=" text-red-500 text-xl cursor-pointer"
             onClick={handleStopRecording}
           />
         )}

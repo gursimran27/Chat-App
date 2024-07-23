@@ -40,5 +40,7 @@ router.put('/updatedeleteforeveryone/:conversationId/:messageId', authController
 
 router.put('/clearChat/:conversationId', authController.protect, userController.clearChat);
 
+router.put('/download', authController.protect, userController.downlaod);
+
 
 module.exports = router;

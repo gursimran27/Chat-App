@@ -151,6 +151,14 @@ const ChatInput = ({
       setLoading(true);
       const formData = new FormData(); //used to gather form data from HTML forms.
       formData.append("conversation_id", room_id);
+      formData.append(
+        "type",
+        fileType.startsWith("image/")
+          ? "img"
+          : fileType.startsWith("video/")
+          ? "video"
+          : "doc"
+      );
       // if(imageFile){
       formData.append("file", imageFile); // make a key-value pair so to send it in form-data section of request
       // }
@@ -176,6 +184,7 @@ const ChatInput = ({
               : "doc",
             msg: msg,
             mediaUrl: response?.data?.mediaUrl,
+            filePath: response?.data?.filePath,
           });
           play();
         })
@@ -980,7 +989,9 @@ const Footer = () => {
         <div
           className={`z-10 rounded-lg absolute top-[-38px]  border-l-8 border-l-lime-500 w-96 border bg-gray-700 ${
             reply ? "flex" : "hidden"
-          } ${theme.palette.mode == 'light' ? 'text-black bg-slate-100':null} `}
+          } ${
+            theme.palette.mode == "light" ? "text-black bg-slate-100" : null
+          } `}
         >
           <div className=" flex  items-center justify-evenly gap-40 w-full">
             <div className=" flex flex-col">
@@ -989,7 +1000,24 @@ const Footer = () => {
               </span>
               <span className=" text-lg font-bold underline">{replyToMsg}</span>
             </div>
-            <div onClick={()=>dispatch(UpdateReply_msg({ reply: false, replyToMsg: null, messageId: null }))} className={` z-10 rounded-full border w-6 h-6 flex items-center justify-center cursor-pointer hover:text-red-500 hover:border-red-500 transition-all duration-300 ${theme.palette.mode == 'light' ? 'border-black border hover:text-red-600 hover:border-red-600':null}`}>{<X className=" cursor-pointer"/>}</div>
+            <div
+              onClick={() =>
+                dispatch(
+                  UpdateReply_msg({
+                    reply: false,
+                    replyToMsg: null,
+                    messageId: null,
+                  })
+                )
+              }
+              className={` z-10 rounded-full border w-6 h-6 flex items-center justify-center cursor-pointer hover:text-red-500 hover:border-red-500 transition-all duration-300 ${
+                theme.palette.mode == "light"
+                  ? "border-black border hover:text-red-600 hover:border-red-600"
+                  : null
+              }`}
+            >
+              {<X className=" cursor-pointer" />}
+            </div>
           </div>
         </div>
         <Stack direction="row" alignItems={"center"} spacing={isMobile ? 1 : 3}>

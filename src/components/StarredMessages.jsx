@@ -103,6 +103,7 @@ const StarredMessages = () => {
           isLiveLocationSharing: el?.isLiveLocationSharing,
           watchId: el?.watchId,
           replyToMsgId: el?.replyToMsgId,
+          filePath: el?.filePath,
         };
       });
 

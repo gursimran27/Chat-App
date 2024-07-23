@@ -119,6 +119,7 @@ const Media = () => {
         isLiveLocationSharing: el?.isLiveLocationSharing,
         watchId: el?.watchId,
         replyToMsgId: el?.replyToMsgId,
+        filePath: el?.filePath,
       };
     });
     return formatted_messages;

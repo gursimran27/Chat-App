@@ -3,6 +3,8 @@ const morgan = require("morgan"); // HTTP request logger middleware for node.js
 
 const routes = require("./routes/index");
 
+const path = require('path')
+
 const rateLimit = require("express-rate-limit"); // Basic rate-limiting middleware for Express. Use to limit repeated requests to public APIs and/or endpoints such as password reset.
 const helmet = require("helmet"); // Helmet helps you secure your Express apps by setting various HTTP headers. It's not a silver bullet, but it can help!
 
@@ -70,6 +72,30 @@ app.use(
     tempFileDir: "/tmp",
   })
 );
+
+// Serve static files from the directory
+app.use('/uploads/:conversation_id', (req, res, next) => {
+  // console.log("ji")
+  let conversationID = req.params.conversation_id;
+  // userId = userId.toString()
+  // console.log(userId)
+  const userUploadsPath = path.join(__dirname, 'uploads', conversationID);
+
+  express.static(userUploadsPath)(req, res, next);
+});
+
+// Serve static files from the directory
+app.use('/uploads/status/:userId', (req, res, next) => {
+  // console.log("ji")
+  let userId = req.params.userId;
+  // userId = userId.toString()
+  // console.log(userId)
+  const userUploadsPath = path.join(__dirname, 'uploads', 'status', userId);
+
+  express.static(userUploadsPath)(req, res, next);
+});
+
+
 // app.use(
 //   session({
 //     secret: "keyboard cat",

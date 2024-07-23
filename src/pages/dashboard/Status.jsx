@@ -78,6 +78,7 @@ const Status = ({ openModal, handleCloseModal, handleopenStatusModal }) => {
               ? "video"
               : "doc",
             mediaUrl: response?.data?.mediaUrl,
+            filePath: response?.data?.filePath,
           });
           dispatch(showSnackbar({ severity: "success", message: "Status uploaded successfully" }));
         })

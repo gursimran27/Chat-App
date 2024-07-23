@@ -94,6 +94,10 @@ const oneToOneMessageSchema = new mongoose.Schema({
         type: String,
         default: null,
       },
+      filePath: {
+        type: String,
+        default: null,
+      },
     },
   ],
   unreadCount: {

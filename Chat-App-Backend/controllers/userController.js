@@ -4,6 +4,8 @@ const User = require("../models/user");
 const VideoCall = require("../models/videoCall");
 const OneToOneMessage = require("../models/OneToOneMessage");
 const catchAsync = require("../utils/catchAsync");
+const path = require("path");
+const fs = require("fs");
 const filterObj = require("../utils/filterObj");
 const { uploadImageToCloudinary } = require("../utils/imageUploader");
 
@@ -93,25 +95,59 @@ exports.upload = async (req, res) => {
     // console.log(req.body.conversation_id);
     // console.log(req.files.file)
     // fetch the data from req
-    const { conversation_id } = req.body;
+    const { conversation_id, type } = req.body;
 
     const file = req.files.file;
     //  the imageFile represent the key/name of the  file that is snet in http request
     console.log(file);
 
     let mediaUrl = null;
+    let filePath = null;
 
-    const cloud = await uploadImageToCloudinary(
-      file,
-      `${process.env.FOLDER_NAME}-${conversation_id}`,
-      1000,
-      1000
-    );
-    mediaUrl = cloud.secure_url;
+    if (file?.size <= 300000 && type !== "audio") {
+      //800kb
+      const cloud = await uploadImageToCloudinary(
+        file,
+        `${process.env.FOLDER_NAME}-${conversation_id}`,
+        1000,
+        1000
+      );
+      mediaUrl = cloud.secure_url;
+    } else {
+      let currentDir = __dirname;
+      let prvDir = path.join(currentDir, "..");
+      prvDir = path.resolve(prvDir);
+      let uploadDir = path.join(prvDir, "uploads");
+
+      let extention = `.${file?.name.split(".").pop()}`;
+      if (!extention) {
+        extention = `${file?.mimetype.split("/").pop()}`;
+      }
+
+      const filename = file?.name.split(".")[0] + Date.now() + extention;
+
+      const serverPath = path.join(uploadDir, conversation_id);
+
+      if (!fs.existsSync(serverPath)) {
+        fs.mkdirSync(serverPath);
+        console.log(`Directory created:`);
+      } else {
+        console.log(`Directory already exists`);
+      }
+
+      filePath = path.join(serverPath, filename);
+
+      file.mv(filePath, (err) => {
+        console.log(err);
+      });
+
+      mediaUrl = `http://localhost:3001/uploads/${conversation_id}/${filename}`;
+    }
 
     res.status(200).json({
       success: true,
       mediaUrl: mediaUrl,
+      filePath: filePath,
       message: "uploaded successfully to cloudinary",
     });
   } catch (error) {
@@ -130,21 +166,59 @@ exports.uploadStatus = async (req, res) => {
 
     const file = req.files.file;
     //  the imageFile represent the key/name of the  file that is snet in http request
+    const id = req.user?._id;
+    const userId = id.toString();
+    
     console.log(file);
 
     let mediaUrl = null;
+    let filePath = null;
 
-    const cloud = await uploadImageToCloudinary(
-      file,
-      `${process.env.FOLDER_NAME}-status-${req.user?._id}`,
-      1000,
-      1000
-    );
-    mediaUrl = cloud.secure_url;
+    if (file?.size <= 100000) {//less than 100 kb
+      //800kb
+      const cloud = await uploadImageToCloudinary(
+        file,
+        `${process.env.FOLDER_NAME}-status-${req.user?._id}`,
+        1000,
+        1000
+      );
+      mediaUrl = cloud.secure_url;
+    } else {
+      let currentDir = __dirname;
+      let prvDir = path.join(currentDir, "..");
+      prvDir = path.resolve(prvDir);
+      let uploadDir = path.join(prvDir, "uploads");
+      let uploadStatusDir = path.join(uploadDir, "status");
+      
+      let extention = `.${file?.name.split(".").pop()}`;
+      if (!extention) {
+        extention = `${file?.mimetype.split("/").pop()}`;
+      }
+      
+      const filename = file?.name.split(".")[0] + Date.now() + extention;
+      
+      const serverPath = path.join(uploadStatusDir, userId);
+      
+      if (!fs.existsSync(serverPath)) {
+        fs.mkdirSync(serverPath);
+        console.log(`Directory created:`);
+      } else {
+        console.log(`Directory already exists`);
+      }
+      
+      filePath = path.join(serverPath, filename);
+      
+      file.mv(filePath, (err) => {
+        console.log(err);
+      });
+
+      mediaUrl = `http://localhost:3001/uploads/status/${userId}/${filename}`;
+    }
 
     res.status(200).json({
       success: true,
       mediaUrl: mediaUrl,
+      filePath: filePath,
       message: "Status uploaded successfully to cloudinary",
     });
   } catch (error) {
@@ -665,13 +739,21 @@ exports.clearChat = catchAsync(async (req, res, next) => {
 
     oldMessages?.get(userId.toString()).delete(conversationId.toString());
 
-    res
-      .status(200)
-      .json({
-        message: "Chat cleared successfully",
-        conversationId: conversationId,
-      });
+    res.status(200).json({
+      message: "Chat cleared successfully",
+      conversationId: conversationId,
+    });
   } catch (error) {
     res.status(500).json({ message: "Error clearing chat", error });
+  }
+});
+
+exports.downlaod = catchAsync(async (req, res, next) => {
+  try {
+    const { path } = req.body;
+    console.log(path)
+    res.download(path);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });

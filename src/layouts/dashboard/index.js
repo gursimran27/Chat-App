@@ -54,6 +54,7 @@ import { format } from "date-fns";
 import toast from "react-hot-toast";
 import sound from "../../assets/notifications/level-up-191997.mp3";
 import incommingSound from "../../assets/notifications/Whatsapp Message - QuickSounds.com.mp3";
+import { LuMessageSquare } from "react-icons/lu";
 
 const DashboardLayout = () => {
   const isDesktop = useResponsive("up", "md");
@@ -266,6 +267,7 @@ const DashboardLayout = () => {
               isLiveLocationSharing: message?.isLiveLocationSharing,
               watchId: message?.watchId,
               replyToMsgId: message?.replyToMsgId,
+              filePath: message?.filePath,
             })
           );
         }

@@ -19,6 +19,7 @@ import {
   DotsThreeVertical,
   DownloadSimple,
   Image,
+  Path,
   Star,
   X,
   XCircle,
@@ -55,6 +56,7 @@ import myLoc from "../../assets/unnamed.png";
 import { Icon } from "leaflet";
 import WaveSurfer from "wavesurfer.js";
 import { FaPlay, FaStop } from "react-icons/fa";
+import { Axios } from "axios";
 
 const formatDate = (date) => {
   const today = new Date();
@@ -355,6 +357,8 @@ const DocMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
   const theme = useTheme();
   const [openModal, setOpenModal] = useState(false);
 
+  const { token } = useSelector((state) => state.auth);
+
   const handleOpenModal = () => {
     setOpenModal(true);
   };
@@ -413,6 +417,34 @@ const DocMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
     if (openPicker) {
       setOpenPicker(false);
     }
+  };
+
+  const handleDownloadFromServer = async (path) => {
+    const response = await axios.put(
+      `/user/download`,
+      { path: path }, // data object as second parameter
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        responseType: 'blob', // important
+      }
+    );
+
+    // Create a new Blob object using the response data
+    const blob = new Blob([response.data], { type: response.data.type });
+    // Create a link element
+    const link = document.createElement('a');
+    // Set the download attribute with a filename
+    link.href = window.URL.createObjectURL(blob);
+    link.download = path.split('/').pop(); // Extract filename from path
+    // Append to the document body
+    document.body.appendChild(link);
+    // Trigger click event on the link
+    link.click();
+    // Clean up and remove the link
+    document.body.removeChild(link);
   };
 
   return (
@@ -527,7 +559,11 @@ const DocMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
                 <DownloadSimple
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleDownload();
+                    if (el?.filePath) {
+                      handleDownloadFromServer(el?.filePath);
+                    } else {
+                      handleDownload();
+                    }
                   }}
                 />
               </IconButton>
@@ -854,7 +890,11 @@ const LinkMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
                 <Typography
                   variant="body2"
                   // color={el.incoming ? theme.palette.text : "#fff"}
-                  className={` ${theme.palette.mode  == 'light' ? 'text-black' : theme.palette.text}`}
+                  className={` ${
+                    theme.palette.mode == "light"
+                      ? "text-black"
+                      : theme.palette.text
+                  }`}
                 >
                   {el.message}
                 </Typography>
@@ -992,7 +1032,7 @@ const ReplyMsg = ({
   const dispatch = useDispatch();
 
   const scrollToMessage = (messageId) => {
-    if(!menu) return;
+    if (!menu) return;
     if (messageRefs.current[messageId]) {
       messageRefs.current[messageId].scrollIntoView({ behavior: "smooth" });
       setHighlightedMessageId(messageId);
@@ -1100,7 +1140,7 @@ const ReplyMsg = ({
           <Stack spacing={2}>
             {/* <a href={`#${el?.replyToMsgId}`}> */}
             <Stack
-            className="border-l-4 border-l-purple-600"
+              className="border-l-4 border-l-purple-600"
               p={2}
               direction={"column"}
               spacing={3}
@@ -1659,7 +1699,7 @@ const VideoMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
             <video
               src={el?.src}
               type={el?.type} // Specify the video type if known
-              controls
+              // controls
               style={{
                 width: "100%",
                 height: "210px",
@@ -1796,10 +1836,10 @@ const VideoMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
             }}
           >
             <video
-              src={el?.src}
+              src={`${el?.src}?v=${Date.now()}`}
               type={el?.type} // Specify the video type if known
               controls
-              autoPlay
+              // autoPlay
               style={{
                 maxWidth: "100%",
                 maxHeight: "100%",
@@ -3205,7 +3245,7 @@ const VoiceMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
                       ? "bg-gray-500 text-[#ffff]"
                       : null
                   } `}
-                  onClick={(e)=>handleIncreaseSpeed(e)}
+                  onClick={(e) => handleIncreaseSpeed(e)}
                 >
                   {playbackRates[currentRateIndex]}x
                 </div>
@@ -3335,7 +3375,6 @@ const Timeline = ({ el }) => {
   );
 };
 
-
 const NewMessage = ({ el }) => {
   const theme = useTheme();
   return (
@@ -3363,5 +3402,5 @@ export {
   LocMsg,
   LiveLocMsg,
   VoiceMsg,
-  NewMessage
+  NewMessage,
 };

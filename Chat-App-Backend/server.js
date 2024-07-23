@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 dotenv.config({ path: "./config.env" });
 const { cloudinaryConnect } = require("./config/cloudinary");
 const cloudinary = require("cloudinary").v2;
+const fs = require("fs");
 
 const oldMessages = new Map(); //store in reverse order//TODO store userid and obj of conversationID
 
@@ -98,30 +99,41 @@ const scheduleStatusRemoval = async (statusId, user_id) => {
   try {
     const status = await Status.findById(statusId);
     if (status) {
-      let options = {
-        resource_type: "image",
-      };
-
-      if (status?.type == "video") {
-        options.resource_type = "video";
-      }
-      //delete from cloudinary
-      const ID = status?.content.split("/").pop().split(".")[0];
-      if (ID.includes("?") && ID.includes("=")) {
-        console.log(`no image uploaded to cloudinary`);
+      if (status?.filePath) {
+        if (fs.existsSync(status?.filePath)) {
+          fs.unlink(status?.filePath, (err) => {
+            if (err) {
+              console.error("Error deleting status:", err);
+            }
+            console.log("deleted from server directory");
+          });
+        }
       } else {
-        try {
-          console.log(`Deleting from media server...`, ID);
-          // not using await as it add wait the thread , we can delete in background
-          cloudinary.uploader
-            .destroy(
-              `${process.env.FOLDER_NAME}-status-${user_id}/${ID}`,
-              options
-            )
-            .then((res) => console.log(res));
-        } catch (error) {
-          console.log(`Unable to delete profile pic from cloudinary`);
-          console.log(error.message);
+        let options = {
+          resource_type: "image",
+        };
+
+        if (status?.type == "video") {
+          options.resource_type = "video";
+        }
+        //delete from cloudinary
+        const ID = status?.content.split("/").pop().split(".")[0];
+        if (ID.includes("?") && ID.includes("=")) {
+          console.log(`no image uploaded to cloudinary`);
+        } else {
+          try {
+            console.log(`Deleting from media server...`, ID);
+            // not using await as it add wait the thread , we can delete in background
+            cloudinary.uploader
+              .destroy(
+                `${process.env.FOLDER_NAME}-status-${user_id}/${ID}`,
+                options
+              )
+              .then((res) => console.log(res));
+          } catch (error) {
+            console.log(`Unable to delete profile pic from cloudinary`);
+            console.log(error.message);
+          }
         }
       }
 
@@ -344,8 +356,8 @@ io.on("connection", async (socket) => {
           (msg) => !msg.deletedFor.get(data.user_id)
         );
 
-        if (notDeletedMessages.length>0) {
-          console.log("lol")
+        if (notDeletedMessages.length > 0) {
+          console.log("lol");
           const messagesWithTimeLine = [];
           let lastTimeline = "";
 
@@ -524,7 +536,8 @@ io.on("connection", async (socket) => {
     // fs.writeFileSync(filePath, buffer);
 
     // data: {to, from, text, file}
-    const { conversation_id, to, from, type, msg, mediaUrl } = fileData;
+    const { conversation_id, to, from, type, msg, mediaUrl, filePath } =
+      fileData;
     // let mediaUrl = null;
 
     // if (filePath) {
@@ -553,6 +566,7 @@ io.on("connection", async (socket) => {
         text: msg ? msg : fileData.name,
         status: "Delivered", // Update the status to Delivered if the conversation IDs do not match
         file: mediaUrl,
+        filePath: filePath,
       };
       // }
     } else {
@@ -564,6 +578,7 @@ io.on("connection", async (socket) => {
         text: msg ? msg : fileData.name,
         status: "Sent",
         file: mediaUrl,
+        filePath: filePath,
       };
     }
 
@@ -883,30 +898,43 @@ io.on("connection", async (socket) => {
           }
 
           if (message?.file) {
-            let options = {
-              resource_type: "image",
-            };
-
-            if (message?.type == "video" || message?.type == "audio") {
-              options.resource_type = "video";
-            }
-            //delete from cloudinary
-            const ID = message?.file.split("/").pop().split(".")[0];
-            if (ID.includes("?") && ID.includes("=")) {
-              console.log(`no image uploaded to cloudinary`);
+            if (message?.filePath) {
+              if (fs.existsSync(message?.filePath)) {
+                fs.unlink(message?.filePath, (err) => {
+                  if (err) {
+                    console.error("Error deleting file:", err);
+                  }
+                  console.log("deleted from server directory");
+                });
+              } else {
+                console.log("directory doesnot exist");
+              }
             } else {
-              try {
-                console.log(`Deleting from media server...`, ID);
-                // not using await as it add wait the thread , we can delete in background
-                cloudinary.uploader
-                  .destroy(
-                    `${process.env.FOLDER_NAME}-${conversationId}/${ID}`,
-                    options
-                  )
-                  .then((res) => console.log(res));
-              } catch (error) {
-                console.log(`Unable to delete profile pic from cloudinary`);
-                console.log(error.message);
+              let options = {
+                resource_type: "image",
+              };
+
+              if (message?.type == "video" || message?.type == "audio") {
+                options.resource_type = "video";
+              }
+              //delete from cloudinary
+              const ID = message?.file.split("/").pop().split(".")[0];
+              if (ID.includes("?") && ID.includes("=")) {
+                console.log(`no image uploaded to cloudinary`);
+              } else {
+                try {
+                  console.log(`Deleting from media server...`, ID);
+                  // not using await as it add wait the thread , we can delete in background
+                  cloudinary.uploader
+                    .destroy(
+                      `${process.env.FOLDER_NAME}-${conversationId}/${ID}`,
+                      options
+                    )
+                    .then((res) => console.log(res));
+                } catch (error) {
+                  console.log(`Unable to delete profile pic from cloudinary`);
+                  console.log(error.message);
+                }
               }
             }
           }
@@ -1185,13 +1213,14 @@ io.on("connection", async (socket) => {
 
   // *----------------------------status---------------------------------------//
   socket.on("addStatus", async (data) => {
-    const { user_id, type, mediaUrl } = data;
+    const { user_id, type, mediaUrl, filePath } = data;
 
     try {
       const newStatus = new Status({
         userId: user_id,
         content: mediaUrl,
         type: type,
+        filePath: filePath,
       });
       await newStatus.save();
 
@@ -1239,33 +1268,44 @@ io.on("connection", async (socket) => {
 
     try {
       const status = await Status.findById(statusId);
-      if (status) {
-        let options = {
-          resource_type: "image",
-        };
+        if (status) {
+          if (status?.filePath) {
+            if (fs.existsSync(status?.filePath)) {
+              fs.unlink(status?.filePath, (err) => {
+                if (err) {
+                  console.error("Error deleting status:", err);
+                }
+                console.log("deleted from server directory");
+              });
+            }
+          } else {
+            let options = {
+              resource_type: "image",
+            };
 
-        if (status?.type == "video") {
-          options.resource_type = "video";
-        }
-        //delete from cloudinary
-        const ID = status?.content.split("/").pop().split(".")[0];
-        if (ID.includes("?") && ID.includes("=")) {
-          console.log(`no image uploaded to cloudinary`);
-        } else {
-          try {
-            console.log(`Deleting from media server...`, ID);
-            // not using await as it add wait the thread , we can delete in background
-            cloudinary.uploader
-              .destroy(
-                `${process.env.FOLDER_NAME}-status-${user_id}/${ID}`,
-                options
-              )
-              .then((res) => console.log(res));
-          } catch (error) {
-            console.log(`Unable to delete profile pic from cloudinary`);
-            console.log(error.message);
+            if (status?.type == "video") {
+              options.resource_type = "video";
+            }
+            //delete from cloudinary
+            const ID = status?.content.split("/").pop().split(".")[0];
+            if (ID.includes("?") && ID.includes("=")) {
+              console.log(`no image uploaded to cloudinary`);
+            } else {
+              try {
+                console.log(`Deleting from media server...`, ID);
+                // not using await as it add wait the thread , we can delete in background
+                cloudinary.uploader
+                  .destroy(
+                    `${process.env.FOLDER_NAME}-status-${user_id}/${ID}`,
+                    options
+                  )
+                  .then((res) => console.log(res));
+              } catch (error) {
+                console.log(`Unable to delete profile pic from cloudinary`);
+                console.log(error.message);
+              }
+            }
           }
-        }
 
         await status.remove();
 

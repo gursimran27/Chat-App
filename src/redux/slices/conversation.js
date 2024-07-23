@@ -259,6 +259,7 @@ const slice = createSlice({
             isLiveLocationSharing: el?.isLiveLocationSharing,
             watchId: el?.watchId,
             replyToMsgId: el?.replyToMsgId,
+            filePath: el?.filePath,
           };
         } else {
           return el;
@@ -316,6 +317,7 @@ const slice = createSlice({
             isLiveLocationSharing: el?.isLiveLocationSharing,
             watchId: el?.watchId,
             replyToMsgId: el?.replyToMsgId,
+            filePath: el?.filePath,
           };
         } else {
           return el;
