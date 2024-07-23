@@ -41,6 +41,7 @@ import useResponsive from "../../hooks/useResponsive";
 import { socket } from "../../socket";
 import "./MsgTypes.css";
 import { format } from "date-fns";
+import { LuPlay } from "react-icons/lu";
 
 import "leaflet/dist/leaflet.css";
 import {
@@ -1662,6 +1663,9 @@ const VideoMsg = ({ el, menu, messageRefs, highlightedMessageId }) => {
             }
           }}
         >
+        <div className=" absolute top-[41%] left-[40%]" >
+        <LuPlay  color="white" size={36} className=" shadow-xl"/>
+        </div>
           <Typography
             variant="capton"
             style={{
@@ -3361,6 +3365,7 @@ const Timeline = ({ el }) => {
   const theme = useTheme();
   return (
     <Stack
+    className=" select-none"
       direction="row"
       alignItems={"center"}
       justifyContent={"space-between"}
