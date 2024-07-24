@@ -56,7 +56,7 @@ const Chats = () => {
     socket.emit(
       "get_direct_conversations",
       { user_id },
-      (data, pinnedChats) => {
+      (data, pinnedChats, deletedChats) => {
         console.log(data); // this data is the list of conversations
         // dispatch action
 
@@ -64,6 +64,7 @@ const Chats = () => {
           FetchDirectConversations({
             conversations: data,
             pinnedChats: pinnedChats,
+            deletedChats: deletedChats
           })
         );
       }

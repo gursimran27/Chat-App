@@ -967,8 +967,11 @@ const Footer = () => {
 
   const [showAudioRecoder, setshowAudioRecoder] = useState(false);
 
+  const { friends } = useSelector((state)=>state?.app?.user);
+
   return (
     <Box
+    className={` ${friends.includes(current_conversation?.user_id) ? null : 'pointer-events-none opacity-50'}`}
       sx={{
         position: "relative",
         backgroundColor: "transparent !important",

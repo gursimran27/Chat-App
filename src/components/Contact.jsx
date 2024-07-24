@@ -30,14 +30,44 @@ import {
 } from "phosphor-react";
 import useResponsive from "../hooks/useResponsive";
 import { useDispatch, useSelector } from "react-redux";
-import { ToggleSidebar, UpdateSidebarType } from "../redux/slices/app";
+import { SelectConversation, showSnackbar, ToggleSidebar, UpdateSidebarType } from "../redux/slices/app";
 import AntSwitch from "../components/AntSwitch";
+import {
+  ClearCurrentMessagesAndCurrentConversation,
+  DeleteChat,
+  UpdateHasMore,
+  UpdatePage,
+  UpdateReply_msg,
+} from "../redux/slices/conversation";
+import axios from "../utils/axios";
+import { socket } from "../socket";
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
 const BlockDialog = ({ open, handleClose }) => {
+
+  const user_id = window.localStorage.getItem("user_id");
+  const { current_conversation } = useSelector(
+    (state) => state.conversation.direct_chat
+  );
+  const dispatch = useDispatch();
+  
+
+  const handleRemoveFriend = ()=>{
+    socket.emit("removeFriend", {
+      from: user_id,
+      to: current_conversation?.user_id,
+    });
+    dispatch(
+      showSnackbar({
+        severity: "success",
+        message: `${current_conversation?.name} removed from friend-list`,
+      })
+    );
+    handleClose();
+  }
   return (
     <Dialog
       open={open}
@@ -46,21 +76,63 @@ const BlockDialog = ({ open, handleClose }) => {
       onClose={handleClose}
       aria-describedby="alert-dialog-slide-description"
     >
-      <DialogTitle>Block this contact</DialogTitle>
+      <DialogTitle>Remove this contact from friends</DialogTitle>
       <DialogContent>
         <DialogContentText id="alert-dialog-slide-description">
-          Are you sure you want to block this Contact?
+          Are you sure you want to remove this Contact?
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Cancel</Button>
-        <Button onClick={handleClose}>Yes</Button>
+        <Button className=" hover:text-green-500 transition-colors duration-300" onClick={handleClose}>Cancel</Button>
+        <Button className=" hover:text-red-500 transition-colors duration-300" onClick={handleRemoveFriend}>Yes</Button>
       </DialogActions>
     </Dialog>
   );
 };
 
 const DeleteChatDialog = ({ open, handleClose }) => {
+  const dispatch = useDispatch();
+  const { sideBar } = useSelector((state) => state.app);
+  const { token } = useSelector((state) => state.auth);
+  const { current_conversation } = useSelector(
+    (state) => state.conversation.direct_chat
+  );
+
+
+  const handleDeleteChat = async () => {
+    try {
+      const response = await axios.put(
+        `user/deleteChat/${current_conversation?.id}`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      dispatch(SelectConversation({ room_id: null }));
+      dispatch(ClearCurrentMessagesAndCurrentConversation());
+      dispatch(
+        UpdateReply_msg({ reply: false, replyToMsg: null, messageId: null })
+      );
+      dispatch(UpdatePage({ page: 2 }));
+      dispatch(UpdateHasMore({ hasMore: true }));
+      if (sideBar.open) {
+        dispatch(ToggleSidebar());
+        dispatch(UpdateSidebarType("CONTACT"));
+      }
+
+      dispatch(DeleteChat({conversationId: response?.data?.conversationId}));
+
+
+    } catch (error) {
+      console.error("Error deleting the chat", error);
+    }
+  }
+
+  
   return (
     <Dialog
       open={open}
@@ -76,8 +148,8 @@ const DeleteChatDialog = ({ open, handleClose }) => {
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Cancel</Button>
-        <Button onClick={handleClose}>Yes</Button>
+        <Button className=" hover:text-green-500 transition-colors duration-300" onClick={handleClose}>Cancel</Button>
+        <Button className=" hover:text-red-500 transition-colors duration-300" onClick={handleDeleteChat}>Yes</Button>
       </DialogActions>
     </Dialog>
   );
@@ -119,6 +191,8 @@ const Contact = () => {
     (state) => state.conversation.direct_chat
   );
 
+  const { friends } = useSelector((state)=>state?.app?.user);
+
   const dispatch = useDispatch();
 
   const isDesktop = useResponsive("up", "md");
@@ -138,12 +212,11 @@ const Contact = () => {
   );
 
   const lastThreeImages = current_messages
-  .filter(msg => msg.subtype === 'img')
-  .slice(-3)  // Get the last three elements
-  .map(msg => msg.src);
+    .filter((msg) => msg.subtype === "img")
+    .slice(-3) // Get the last three elements
+    .map((msg) => msg.src);
 
-console.log(lastThreeImages);
-
+  console.log(lastThreeImages);
 
   return (
     <Box
@@ -280,7 +353,7 @@ console.log(lastThreeImages);
           <Stack direction={"row"} alignItems="center" spacing={2}>
             {lastThreeImages.map((el) => (
               <Box>
-                <img src={el} alt={'Error'}/>
+                <img src={el} alt={"Error"} />
               </Box>
             ))}
           </Stack>
@@ -330,6 +403,7 @@ console.log(lastThreeImages);
           <Divider />
           <Stack direction="row" alignItems={"center"} spacing={2}>
             <Button
+              className={` hover:text-red-500 transition-colors duration-300 ${friends.includes(current_conversation?.user_id) ? null : 'pointer-events-none opacity-50'}`}
               onClick={() => {
                 setOpenBlock(true);
               }}
@@ -337,9 +411,13 @@ console.log(lastThreeImages);
               startIcon={<Prohibit />}
               variant="outlined"
             >
-              Block
+              {
+                friends.includes(current_conversation?.user_id) ?
+                'Remove': "Removed"
+              }
             </Button>
             <Button
+              className=" hover:text-red-500 transition-colors duration-300"
               onClick={() => {
                 setOpenDelete(true);
               }}

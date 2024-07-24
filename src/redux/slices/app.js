@@ -97,6 +97,12 @@ const slice = createSlice({
         isLiveLocationSharing: false,
       }
     },
+    removeFromFriends(state, action) {
+      state.user.friends = state.user.friends.filter((el)=> el !==action.payload.id.id);
+    },
+    addToFriends(state, action) {
+      state.user.friends = [ ...state.user.friends, action.payload.id];
+    },
   },
 });
 
@@ -368,6 +374,21 @@ export const RemoveStatus = ({statusId}) => {
   return async (dispatch, getState) => {
     dispatch(
       slice.actions.removeStatus({statusId: statusId})
+    );
+  };
+};
+
+export const RemoveFromFriends = ({id}) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.removeFromFriends({id: id})
+    );
+  };
+};
+export const AddToFriends = ({id}) => {
+  return async (dispatch, getState) => {
+    dispatch(
+      slice.actions.addToFriends({id: id})
     );
   };
 };

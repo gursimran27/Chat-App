@@ -87,6 +87,12 @@ const userSchema = new mongoose.Schema({
       ref: "OneToOneMessage",
     },
   ],
+  deletedChats: [
+    {
+      type: mongoose.Schema.ObjectId,
+      ref: "OneToOneMessage",
+    },
+  ],
   isLiveLocationSharing: {
     type: Boolean,
     default: false,

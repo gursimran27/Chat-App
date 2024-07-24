@@ -6,7 +6,9 @@ import SideNav from "./SideBar";
 import { useDispatch, useSelector } from "react-redux";
 import {
   AddStatus,
+  AddToFriends,
   FetchUserProfile,
+  RemoveFromFriends,
   RemoveStatus,
   SelectConversation,
   showSnackbar,
@@ -392,6 +394,7 @@ const DashboardLayout = () => {
       socket.on("request_accepted", (data) => {
         const notiSound = new Audio(sound);
         notiSound.play();
+        dispatch(AddToFriends({id: data?.id}));
         dispatch(
           showSnackbar({
             severity: "success",
@@ -608,6 +611,10 @@ const DashboardLayout = () => {
       );
     });
 
+    socket.on("removedFriend", (data) => {
+      dispatch(RemoveFromFriends({ id: data }));
+    });
+
     // // Listen for the 'isSeen' event from the server
     // socket.on("isSeen", () => {
     //   // Get the current conversation ID
@@ -640,6 +647,7 @@ const DashboardLayout = () => {
       socket?.off("friendStatusAdded");
       socket?.off("statusRemoved");
       socket?.off("friendStatusRemoved");
+      socket?.off("removedFriend");
     };
   }, [isLoggedIn, socket]);
 

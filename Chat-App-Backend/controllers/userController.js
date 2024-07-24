@@ -737,14 +737,50 @@ exports.clearChat = catchAsync(async (req, res, next) => {
     // Save the updated conversation
     await conversation.save();
 
-    oldMessages?.get(userId.toString()).delete(conversationId.toString());
+    oldMessages?.get(userId.toString())?.delete(conversationId.toString());
 
     res.status(200).json({
       message: "Chat cleared successfully",
       conversationId: conversationId,
     });
   } catch (error) {
-    res.status(500).json({ message: "Error clearing chat", error });
+    res.status(500).json({ message: "Error clearing chat", error: error.message });
+  }
+});
+
+exports.deleteChat = catchAsync(async (req, res, next) => {
+  try {
+    const { conversationId } = req.params;
+    const userId = req.user._id;
+
+    const conversation = await OneToOneMessage.findById(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ error: "Conversation not found" });
+    }
+
+    // Iterate over each message and mark it as deleted for the user
+    conversation?.messages.forEach((message) => {
+      message.deletedFor.set(userId, true);
+      message.star.set(userId, false);
+    });
+
+    // Save the updated conversation
+    await conversation.save();
+
+    oldMessages?.get(userId.toString())?.delete(conversationId.toString());
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $addToSet: { deletedChats: conversationId } }, // Add to set ensures no duplicates
+      { new: true }
+    );
+
+    res.status(200).json({
+      message: "Chat deleted successfully",
+      conversationId: conversationId,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error clearing chat", error: error.message });
   }
 });
 

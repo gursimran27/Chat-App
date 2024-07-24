@@ -259,6 +259,19 @@ io.on("connection", async (socket) => {
     await receiver.save({ new: true, validateModifiedOnly: true });
     await sender.save({ new: true, validateModifiedOnly: true });
 
+    const from = request_doc.sender;
+    const to = request_doc.recipient;
+
+    const inverse_request_doc = await FriendRequest.find({
+      sender: request_doc.recipient,
+      recipient: request_doc.sender,
+    });
+
+    if(inverse_request_doc.length > 0){
+      console.log("haggi aw",inverse_request_doc)
+      await FriendRequest.findByIdAndDelete(inverse_request_doc[0]._id);
+    }
+
     await FriendRequest.findByIdAndDelete(data.request_id);
 
     // delete this request doc
@@ -267,9 +280,11 @@ io.on("connection", async (socket) => {
     // emit event request accepted to both
     io.to(sender?.socket_id).emit("request_accepted", {
       message: "Friend Request Accepted",
+      id: to,
     });
     io.to(receiver?.socket_id).emit("request_accepted", {
       message: "Friend Request Accepted",
+      id: from,
     });
   });
 
@@ -291,11 +306,12 @@ io.on("connection", async (socket) => {
     // db.books.find({ authors: { $elemMatch: { name: "John Smith" } } })
 
     const user = await User.findById(user_id);
-    const pinnedChats = user.pinnedChats || [];
+    const pinnedChats = user?.pinnedChats || [];
+    const deletedChats = user?.deletedChats || [];
 
     // console.log(existing_conversations);
 
-    callback(existing_conversations, pinnedChats);
+    callback(existing_conversations, pinnedChats, deletedChats);
   });
 
   socket.on("start_conversation", async (data) => {
@@ -313,7 +329,7 @@ io.on("connection", async (socket) => {
       "firstName lastName avatar _id email status about location"
     );
 
-    console.log(existing_conversations[0], "Existing Conversation");
+    // console.log(existing_conversations[0], "Existing Conversation");
 
     // if no => create a new OneToOneMessage doc & emit event "start_chat" & send conversation details as payload
     if (existing_conversations.length === 0) {
@@ -332,7 +348,12 @@ io.on("connection", async (socket) => {
     }
     // if yes => just emit event "start_chat" & send conversation details as payload
     else {
-      //"open_chat"
+      await User.findByIdAndUpdate(
+        from,
+        { $pull: { deletedChats: existing_conversations[0]?._id } }, // Remove the conversation ID from pinnedChats
+        { new: true }
+      );
+
       socket.emit("start_chat", existing_conversations[0]);
     }
   });
@@ -357,7 +378,7 @@ io.on("connection", async (socket) => {
         );
 
         if (notDeletedMessages.length > 0) {
-          console.log("lol");
+          // console.log("lol");
           const messagesWithTimeLine = [];
           let lastTimeline = "";
 
@@ -1263,49 +1284,51 @@ io.on("connection", async (socket) => {
     }
   });
 
+  // *----------------------------status---------------------------------------//
+
   socket.on("deleteStatus", async (data) => {
     const { user_id, statusId } = data;
 
     try {
       const status = await Status.findById(statusId);
-        if (status) {
-          if (status?.filePath) {
-            if (fs.existsSync(status?.filePath)) {
-              fs.unlink(status?.filePath, (err) => {
-                if (err) {
-                  console.error("Error deleting status:", err);
-                }
-                console.log("deleted from server directory");
-              });
-            }
-          } else {
-            let options = {
-              resource_type: "image",
-            };
-
-            if (status?.type == "video") {
-              options.resource_type = "video";
-            }
-            //delete from cloudinary
-            const ID = status?.content.split("/").pop().split(".")[0];
-            if (ID.includes("?") && ID.includes("=")) {
-              console.log(`no image uploaded to cloudinary`);
-            } else {
-              try {
-                console.log(`Deleting from media server...`, ID);
-                // not using await as it add wait the thread , we can delete in background
-                cloudinary.uploader
-                  .destroy(
-                    `${process.env.FOLDER_NAME}-status-${user_id}/${ID}`,
-                    options
-                  )
-                  .then((res) => console.log(res));
-              } catch (error) {
-                console.log(`Unable to delete profile pic from cloudinary`);
-                console.log(error.message);
+      if (status) {
+        if (status?.filePath) {
+          if (fs.existsSync(status?.filePath)) {
+            fs.unlink(status?.filePath, (err) => {
+              if (err) {
+                console.error("Error deleting status:", err);
               }
+              console.log("deleted from server directory");
+            });
+          }
+        } else {
+          let options = {
+            resource_type: "image",
+          };
+
+          if (status?.type == "video") {
+            options.resource_type = "video";
+          }
+          //delete from cloudinary
+          const ID = status?.content.split("/").pop().split(".")[0];
+          if (ID.includes("?") && ID.includes("=")) {
+            console.log(`no image uploaded to cloudinary`);
+          } else {
+            try {
+              console.log(`Deleting from media server...`, ID);
+              // not using await as it add wait the thread , we can delete in background
+              cloudinary.uploader
+                .destroy(
+                  `${process.env.FOLDER_NAME}-status-${user_id}/${ID}`,
+                  options
+                )
+                .then((res) => console.log(res));
+            } catch (error) {
+              console.log(`Unable to delete profile pic from cloudinary`);
+              console.log(error.message);
             }
           }
+        }
 
         await status.remove();
 
@@ -1336,6 +1359,34 @@ io.on("connection", async (socket) => {
     } catch (err) {
       console.error("Error removing status:", err);
     }
+  });
+
+  // *----------------------------status---------------------------------------//
+
+  socket.on("removeFriend", async (data) => {
+    const { from, to } = data;
+
+    try {
+
+      const sender = await User.findByIdAndUpdate(
+        from,
+        { $pull: { friends: to } },
+        { new: true }
+      );
+
+      const receiver = await User.findByIdAndUpdate(
+        to,
+        { $pull: { friends: from } },
+        { new: true }
+      );
+
+      io.to(sender?.socket_id).emit("removedFriend", {
+        id: to,
+      });
+      io.to(receiver?.socket_id).emit("removedFriend", {
+        id: from,
+      });
+    } catch (error) {}
   });
 
   // *-------------- HANDLE AUDIO CALL SOCKET EVENTS ----------------- //

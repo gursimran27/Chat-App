@@ -14,13 +14,19 @@ import { styled, useTheme, alpha } from "@mui/material/styles";
 import { useDispatch, useSelector } from "react-redux";
 import {
   SelectConversation,
+  ToggleSidebar,
+  UpdateSidebarType,
   closeSnackBar,
   showSnackbar,
 } from "../redux/slices/app";
 import {
   ClearCurrentMessagesAndCurrentConversation,
+  DeleteChat,
   UpdateConversationUnread,
   UpdateDirectConversationForPinnedChat,
+  UpdateHasMore,
+  UpdatePage,
+  UpdateReply_msg,
 } from "../redux/slices/conversation";
 import { DotsThreeVertical } from "phosphor-react";
 import axios from "../utils/axios";
@@ -31,10 +37,10 @@ const Message_options = [
     title: "Pin Chat",
   },
   {
-    title: "Report",
+    title: "Delete Chat",
   },
   {
-    title: "Delete Chat",
+    title: "Report",
   },
 ];
 
@@ -78,6 +84,7 @@ const StyledBadge = styled(Badge)(({ theme }) => ({
 }));
 
 const MessageOption = ({ conversationId, name, pinned }) => {
+  const { sideBar } = useSelector((state) => state.app);
   const dispatch = useDispatch();
   const [anchorEl, setAnchorEl] = useState(null); //store referance
   const open = Boolean(anchorEl); //convert referance to boollean
@@ -155,6 +162,40 @@ const MessageOption = ({ conversationId, name, pinned }) => {
     handleClose();
   };
 
+  const handleDeleteChat = async (conversationId) => {
+    try {
+      const response = await axios.put(
+        `user/deleteChat/${conversationId}`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      dispatch(SelectConversation({ room_id: null }));
+      dispatch(ClearCurrentMessagesAndCurrentConversation());
+      dispatch(
+        UpdateReply_msg({ reply: false, replyToMsg: null, messageId: null })
+      );
+      dispatch(UpdatePage({ page: 2 }));
+      dispatch(UpdateHasMore({ hasMore: true }));
+      if (sideBar.open) {
+        dispatch(ToggleSidebar());
+        dispatch(UpdateSidebarType("CONTACT"));
+      }
+
+      dispatch(DeleteChat({conversationId: response?.data?.conversationId}));
+
+
+    } catch (error) {
+      console.error("Error deleting the chat", error);
+    }
+    handleClose();
+  }
+
   return (
     <>
       <DotsThreeVertical
@@ -189,6 +230,8 @@ const MessageOption = ({ conversationId, name, pinned }) => {
               >
                 {!pinned ? el?.title : "Unpin Chat"}
               </MenuItem>
+            ) : el.title == "Delete Chat" ? (
+              <MenuItem onClick={()=>handleDeleteChat(conversationId)}>{el.title}</MenuItem>
             ) : (
               <MenuItem onClick={handleClose}>{el.title}</MenuItem>
             )
@@ -286,7 +329,7 @@ const ChatElement = ({
                     alt={name}
                     src={img}
                     className={`${
-                      statuses.length > 0
+                      statuses?.length > 0
                         ? "border-[3.5px] border-green-600"
                         : null
                     }`}
@@ -297,16 +340,16 @@ const ChatElement = ({
                   alt={name}
                   src={img}
                   className={`${
-                    statuses.length > 0
+                    statuses?.length > 0
                       ? "border-[3.5px] border-green-600"
                       : null
                   }`}
                 />
               )}
-              {statuses.length>0 && (
+              {statuses?.length > 0 && (
                 <Tooltip placement="left-end" title="Statueses">
                   <div className=" text-sm absolute -top-1 bg-green-400 rounded-full text-black w-5 flex items-center justify-center -left-2 animate-bounce">
-                  {statuses.length}
+                    {statuses?.length}
                   </div>
                 </Tooltip>
               )}

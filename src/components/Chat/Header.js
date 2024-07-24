@@ -36,6 +36,7 @@ import "./UserLastSeen.css"; // Import CSS file
 import {
   ClearChat,
   ClearCurrentMessagesAndCurrentConversation,
+  DeleteChat,
   UpdateHasMore,
   UpdatePage,
   UpdateReply_msg,
@@ -78,7 +79,7 @@ const Conversation_Menu = [
     title: "Clear messages",
   },
   {
-    title: "Mute notifications",
+    title: "Close Chat",
   },
   {
     title: "Delete chat",
@@ -93,7 +94,6 @@ const ChatHeader = () => {
   const { current_conversation } = useSelector(
     (state) => state.conversation.direct_chat
   );
-
 
   const { open } = useSelector((state) => state.app.sideBar);
 
@@ -178,11 +178,11 @@ const ChatHeader = () => {
     }
   };
 
-  const handleClearChat = async ()=>{
+  const handleClearChat = async () => {
     handleCloseConversationMenu();
     try {
       const response = await axios.put(
-        `http://localhost:3001/api/v1/user/clearChat/${current_conversation?.id}`,
+        `/user/clearChat/${current_conversation?.id}`,
         {},
         {
           headers: {
@@ -192,14 +192,45 @@ const ChatHeader = () => {
         }
       );
 
-      console.log(response)
+      console.log(response);
 
-      dispatch(ClearChat({conversationId: response?.data?.conversationId}));
-
+      dispatch(ClearChat({ conversationId: response?.data?.conversationId }));
     } catch (error) {
       console.error("Error clearing the char", error);
     }
-  }
+  };
+
+  const handleDeleteChat = async () => {
+    try {
+      const response = await axios.put(
+        `user/deleteChat/${current_conversation?.id}`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      dispatch(SelectConversation({ room_id: null }));
+      dispatch(ClearCurrentMessagesAndCurrentConversation());
+      dispatch(
+        UpdateReply_msg({ reply: false, replyToMsg: null, messageId: null })
+      );
+      dispatch(UpdatePage({ page: 2 }));
+      dispatch(UpdateHasMore({ hasMore: true }));
+      if (sideBar.open) {
+        dispatch(ToggleSidebar());
+        dispatch(UpdateSidebarType("CONTACT"));
+      }
+
+      dispatch(DeleteChat({ conversationId: response?.data?.conversationId }));
+    } catch (error) {
+      console.error("Error deleting the chat", error);
+    }
+    handleCloseConversationMenu();
+  };
 
   return (
     <>
@@ -385,8 +416,24 @@ const ChatHeader = () => {
                           <span>{el.title}</span>
                         </Stack>{" "}
                       </MenuItem>
+                    ) : el.title == "Delete chat" ? (
+                      <MenuItem onClick={handleDeleteChat}>
+                        <Stack
+                          sx={{ minWidth: 100 }}
+                          direction="row"
+                          alignItems={"center"}
+                          justifyContent="space-between"
+                        >
+                          <span>{el.title}</span>
+                        </Stack>{" "}
+                      </MenuItem>
                     ) : (
-                      <MenuItem onClick={handleCloseConversationMenu}>
+                      <MenuItem
+                        onClick={() => {
+                          handleCloseConversationMenu();
+                          handleCloseChat();
+                        }}
+                      >
                         <Stack
                           sx={{ minWidth: 100 }}
                           direction="row"

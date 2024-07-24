@@ -88,9 +88,18 @@
 
     - Users can add statuses that automatically disappear after 1 hours or the user can delete status also.
 
-21. **Clear chat Feature**
+22. **Clear chat Feature**
 
-    - Ability to clear chat messages.
+    - Allows a user to clear the chat messages for themselves while the other participant in the chat retains the messages.
+
+23. **Delete Chat**
+
+    - Allows a user to delete the entire chat conversation for themselves while the other participant retains the conversation.
+
+24. **Remove Friend**
+
+    - Allows a user to remove a friend from their friend list simillar to BLOCK.
+
 
 
 ## Installation
