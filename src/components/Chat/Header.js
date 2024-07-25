@@ -161,6 +161,8 @@ const ChatHeader = () => {
     }
   };
 
+  const { friends } = useSelector((state)=>state?.app?.user);
+
   const { sideBar } = useSelector((state) => state.app);
 
   const handleCloseChat = () => {
@@ -261,7 +263,7 @@ const ChatHeader = () => {
             spacing={2}
             direction="row"
           >
-            {current_conversation?.online ? (
+            {(current_conversation?.online && friends.includes(current_conversation?.user_id) )? (
               <>
                 <Box>
                   <StyledBadge
@@ -306,7 +308,7 @@ const ChatHeader = () => {
                   <div className={`last-seen ${updating ? "updating" : ""}`}>
                     <Typography variant="caption">
                       {" "}
-                      {formatLastSeen(lastSeen)}
+                      {friends.includes(current_conversation?.user_id) && formatLastSeen(lastSeen)}
                     </Typography>
                   </div>
                 </Stack>

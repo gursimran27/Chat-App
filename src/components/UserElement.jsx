@@ -83,7 +83,7 @@ const UserElement = ({ avatar, firstName, lastName, status, _id }) => {
       >
         <Stack direction="row" alignItems={"center"} spacing={2}>
           {" "}
-          {status == "Online" ? (
+          {false ? (
             <StyledBadge
               overlap="circular"
               anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
@@ -149,7 +149,7 @@ const FriendRequestElement = ({
       >
         <Stack direction="row" alignItems={"center"} spacing={2}>
           {" "}
-          {status == "Online" ? (
+          {false ? (
             <StyledBadge
               overlap="circular"
               anchorOrigin={{ vertical: "bottom", horizontal: "right" }}

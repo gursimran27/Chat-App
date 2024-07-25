@@ -187,14 +187,12 @@ const MessageOption = ({ conversationId, name, pinned }) => {
         dispatch(UpdateSidebarType("CONTACT"));
       }
 
-      dispatch(DeleteChat({conversationId: response?.data?.conversationId}));
-
-
+      dispatch(DeleteChat({ conversationId: response?.data?.conversationId }));
     } catch (error) {
       console.error("Error deleting the chat", error);
     }
     handleClose();
-  }
+  };
 
   return (
     <>
@@ -231,7 +229,9 @@ const MessageOption = ({ conversationId, name, pinned }) => {
                 {!pinned ? el?.title : "Unpin Chat"}
               </MenuItem>
             ) : el.title == "Delete Chat" ? (
-              <MenuItem onClick={()=>handleDeleteChat(conversationId)}>{el.title}</MenuItem>
+              <MenuItem onClick={() => handleDeleteChat(conversationId)}>
+                {el.title}
+              </MenuItem>
             ) : (
               <MenuItem onClick={handleClose}>{el.title}</MenuItem>
             )
@@ -252,6 +252,9 @@ const ChatElement = ({
   id,
   pinned,
   statuses,
+  user_id,
+  typing,
+  recordingAudio,
 }) => {
   // console.log("msg",msg);
   const dispatch = useDispatch();
@@ -265,7 +268,7 @@ const ChatElement = ({
   // if (!room_id) {
   //   isSelected = false;
   // }
-
+  const { friends } = useSelector((state) => state?.app?.user);
   const theme = useTheme();
 
   const [openStatusModal, setOpenStatusModal] = useState(false);
@@ -279,7 +282,7 @@ const ChatElement = ({
   };
 
   const handleClickAvatar = (e) => {
-    if (statuses.length) {
+    if (statuses?.length > 0 && friends.includes(user_id)) {
       e.stopPropagation();
       handleopenStatusModal();
     }
@@ -319,7 +322,7 @@ const ChatElement = ({
           <Stack direction="row" spacing={1}>
             {" "}
             <div onClick={(e) => handleClickAvatar(e)} className=" relative">
-              {online ? (
+              {online && friends.includes(user_id) ? (
                 <StyledBadge
                   overlap="circular"
                   anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
@@ -329,7 +332,7 @@ const ChatElement = ({
                     alt={name}
                     src={img}
                     className={`${
-                      statuses?.length > 0
+                      statuses?.length > 0 && friends.includes(user_id)
                         ? "border-[3.5px] border-green-600"
                         : null
                     }`}
@@ -340,13 +343,13 @@ const ChatElement = ({
                   alt={name}
                   src={img}
                   className={`${
-                    statuses?.length > 0
+                    statuses?.length > 0 && friends.includes(user_id)
                       ? "border-[3.5px] border-green-600"
                       : null
                   }`}
                 />
               )}
-              {statuses?.length > 0 && (
+              {statuses?.length > 0 && friends.includes(user_id) && (
                 <Tooltip placement="left-end" title="Statueses">
                   <div className=" text-sm absolute -top-1 bg-green-400 rounded-full text-black w-5 flex items-center justify-center -left-2 animate-bounce">
                     {statuses?.length}
@@ -356,7 +359,13 @@ const ChatElement = ({
             </div>
             <Stack spacing={0.3}>
               <Typography variant="subtitle2">{name}</Typography>
-              <Typography variant="caption">{truncateText(msg, 15)}</Typography>
+              <Typography variant="caption">
+                {typing
+                  ? <span className={` ${theme.palette.mode === "light" ? ' text-orange-700' : 'text-green-500'}`}>Typing...</span>
+                  : recordingAudio
+                  ? <span className={` ${theme.palette.mode === "light" ? ' text-orange-700' : 'text-green-500'}`}>Recording audio...</span>
+                  : truncateText(msg, 15)}
+              </Typography>
             </Stack>
           </Stack>
           <Stack spacing={2} alignItems={"center"}>

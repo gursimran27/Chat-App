@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
   Divider,
   IconButton,
+  InputAdornment,
   Stack,
   Tooltip,
   Typography,
@@ -28,11 +29,24 @@ import {
 import Friends from "../../sections/Dashboard/Friends";
 import { socket } from "../../socket";
 import { useDispatch, useSelector } from "react-redux";
-import { ClearCurrentMessagesAndCurrentConversation, FetchDirectConversations, UpdateHasMore, UpdatePage, UpdateReply_msg } from "../../redux/slices/conversation";
+import {
+  ClearCurrentMessagesAndCurrentConversation,
+  FetchDirectConversations,
+  UpdateConversationUnread,
+  UpdateHasMore,
+  UpdatePage,
+  UpdateReply_msg,
+} from "../../redux/slices/conversation";
 import Status from "./Status";
 import Carousel from "./Carousel";
 import Carousels from "./Carousel";
-import { SelectConversation, ToggleSidebar, UpdateSidebarType } from "../../redux/slices/app";
+import {
+  SelectConversation,
+  ToggleSidebar,
+  UpdateSidebarType,
+} from "../../redux/slices/app";
+import TextField from "@mui/material/TextField";
+import Autocomplete from "@mui/material/Autocomplete";
 
 const user_id = window.localStorage.getItem("user_id");
 
@@ -44,13 +58,20 @@ const Chats = () => {
 
   const { statuses } = useSelector((state) => state.app.user);
 
+  const { room_id } = useSelector((state) => state.app);
+
   const dispatch = useDispatch();
 
   const { conversations } = useSelector(
     (state) => state.conversation.direct_chat
   );
-  // Sort conversations by unread count in descending order
-  // const sortedConversations = [...conversations].sort((a, b) => b.unread - a.unread);
+
+  const list = conversations.map((el) => {
+    return {
+      label: el?.name,
+      id: el?.id,
+    };
+  });
 
   useEffect(() => {
     socket.emit(
@@ -64,7 +85,7 @@ const Chats = () => {
           FetchDirectConversations({
             conversations: data,
             pinnedChats: pinnedChats,
-            deletedChats: deletedChats
+            deletedChats: deletedChats,
           })
         );
       }
@@ -100,6 +121,11 @@ const Chats = () => {
   const handleCloseStatusModal = () => {
     setOpenStatusModal(false);
   };
+
+  let val = null;
+  // const isOptionEqualToValue = (option, value) => {
+  //   return option.id === value.id;
+  // };
 
   return (
     <>
@@ -169,7 +195,7 @@ const Chats = () => {
             </Stack>
           </Stack>
           <Stack sx={{ width: "100%" }}>
-            <Search>
+            {/* <Search>
               <SearchIconWrapper>
                 <MagnifyingGlass color="#709CE6" />
               </SearchIconWrapper>
@@ -177,7 +203,36 @@ const Chats = () => {
                 placeholder="Search…"
                 inputProps={{ "aria-label": "search" }}
               />
-            </Search>
+            </Search> */}
+            <Autocomplete
+              value={val}
+              //  isOptionEqualToValue={isOptionEqualToValue}
+              onChange={(event, newValue) => {
+                // console.log(newValue);
+                if (newValue) {
+                  if (newValue?.id == room_id) return;
+                  // console.log('change')
+                  dispatch(ClearCurrentMessagesAndCurrentConversation());
+                  dispatch(SelectConversation({ room_id: newValue?.id }));
+                  dispatch(
+                    UpdateConversationUnread({ conversationId: newValue?.id })
+                  );
+                }
+              }}
+              options={list}
+              // sx={{ width: 300 }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label={
+                    <span style={{ display: "flex", alignItems: "center" }}>
+                      <MagnifyingGlass color="#709CE6" style={{ marginRight: 4 }} />
+                        Search
+                    </span>
+                  }
+                />
+              )}
+            />
           </Stack>
           <Stack spacing={1}>
             <Stack direction={"row"} spacing={1.5} alignItems="center">

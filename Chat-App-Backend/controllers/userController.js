@@ -232,7 +232,7 @@ exports.uploadStatus = async (req, res) => {
 exports.getUsers = catchAsync(async (req, res, next) => {
   const all_users = await User.find({
     verified: true,
-  }).select("firstName lastName _id");
+  }).select("firstName lastName _id avatar status");
 
   const this_user = req.user; //it is _id
 
@@ -562,7 +562,7 @@ exports.fetchMsg = catchAsync(async (req, res, next) => {
     for (const key of oldMessages.get(userId).keys()) {
       console.log(key);
     }
-    const result = messages.slice(skip).slice(0, limit);
+    const result = messages?.slice(skip).slice(0, limit);
     // console.log(result)
 
     res.status(200).json({
