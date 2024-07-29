@@ -7,6 +7,7 @@ const initialState = {
   open_audio_notification_dialog: false,
   call_queue: [], // can have max 1 call at any point of time
   incoming: false,
+  main: false,
 };
 
 const slice = createSlice({
@@ -15,6 +16,7 @@ const slice = createSlice({
   reducers: {
     pushToAudioCallQueue(state, action) {
       // check audio_call_queue in redux store
+      console.error(state.call_queue.length === 0);
 
       if (state.call_queue.length === 0) {
         state.call_queue.push(action.payload.call);
@@ -28,15 +30,18 @@ const slice = createSlice({
         }
       } else {
         // if queue is not empty then emit user_is_busy => in turn server will send this event to sender of call
-        socket.emit("user_is_busy_audio_call", { ...action.payload });
+        // console.error("busy")
+        // socket.emit("user_is_busy_audio_call", { from: action.payload.call.userID , to: action.payload.call.streamID });
       }
 
       // Ideally queue should be managed on server side
     },
     resetAudioCallQueue(state, action) {
       state.call_queue = [];
+      state.open_audio_dialog = false;
       state.open_audio_notification_dialog = false;
       state.incoming = false;
+      state.main = false;
     },
     closeNotificationDialog(state, action) {
       state.open_audio_notification_dialog = false;
@@ -44,6 +49,11 @@ const slice = createSlice({
     updateCallDialog(state, action) {
       state.open_audio_dialog = action.payload.state;
       state.open_audio_notification_dialog = false;
+    },
+    updateMain(state, action) {
+      state.open_audio_dialog = false;
+      state.open_audio_notification_dialog = false;
+      state.main = true;
     },
   },
 });
@@ -105,5 +115,11 @@ export const CloseAudioNotificationDialog = () => {
 export const UpdateAudioCallDialog = ({ state }) => {
   return async (dispatch, getState) => {
     dispatch(slice.actions.updateCallDialog({ state }));
+  };
+};
+
+export const UpdateMain = () => {
+  return async (dispatch, getState) => {
+    dispatch(slice.actions.updateMain());
   };
 };

@@ -971,7 +971,7 @@ const Footer = () => {
 
   return (
     <Box
-    className={` ${friends.includes(current_conversation?.user_id) ? null : 'pointer-events-none opacity-50'}`}
+    className={` ${friends.includes(current_conversation?.user_id) ? null : 'pointer-events-none opacity-50 cursor-not-allowed'}`}
       sx={{
         position: "relative",
         backgroundColor: "transparent !important",

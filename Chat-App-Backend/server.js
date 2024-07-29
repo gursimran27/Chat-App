@@ -267,8 +267,8 @@ io.on("connection", async (socket) => {
       recipient: request_doc.sender,
     });
 
-    if(inverse_request_doc.length > 0){
-      console.log("haggi aw",inverse_request_doc)
+    if (inverse_request_doc.length > 0) {
+      console.log("haggi aw", inverse_request_doc);
       await FriendRequest.findByIdAndDelete(inverse_request_doc[0]._id);
     }
 
@@ -1367,7 +1367,6 @@ io.on("connection", async (socket) => {
     const { from, to } = data;
 
     try {
-
       const sender = await User.findByIdAndUpdate(
         from,
         { $pull: { friends: to } },
@@ -1398,15 +1397,35 @@ io.on("connection", async (socket) => {
     const to_user = await User.findById(to);
     const from_user = await User.findById(from);
 
+    if (to_user?.inCall) {
+      await AudioCall.findByIdAndUpdate(
+        roomID,
+        { verdict: "Busy", status: "Ended", endedAt: Date.now() }
+      );
+
+      // TODO => emit on_another_audio_call to sender of call
+      io.to(from_user?.socket_id).emit("on_another_audio_call", {
+        from,
+        to,
+      });
+      return;
+    }
+
+    from_user.inCall = true;
+    to_user.inCall = true;
+    await from_user.save();
+    await to_user.save();
+
     console.log("to_user", to_user);
 
     // send notification to receiver of call
     io.to(to_user?.socket_id).emit("audio_call_notification", {
       from: from_user,
+      to: to_user,
       roomID,
       streamID: from,
       userID: to,
-      userName: to,
+      userName: to_user?.firstName,
     });
   });
 
@@ -1414,14 +1433,18 @@ io.on("connection", async (socket) => {
   socket.on("audio_call_not_picked", async (data) => {
     console.log(data);
     // find and update call record
-    const { to, from } = data;
+    const { to, from, roomID } = data;
 
     const to_user = await User.findById(to);
+    const from_user = await User.findById(from);
 
-    await AudioCall.findOneAndUpdate(
-      {
-        participants: { $size: 2, $all: [to, from] },
-      },
+    from_user.inCall = false;
+    to_user.inCall = false;
+    await from_user.save();
+    await to_user.save();
+
+    await AudioCall.findByIdAndUpdate(
+      roomID,
       { verdict: "Missed", status: "Ended", endedAt: Date.now() }
     );
 
@@ -1434,43 +1457,72 @@ io.on("connection", async (socket) => {
 
   // handle audio_call_accepted
   socket.on("audio_call_accepted", async (data) => {
-    const { to, from } = data;
+    const { userID, streamID, roomID } = data;
 
-    const from_user = await User.findById(from);
+    const from_user = await User.findById(streamID);
 
     // find and update call record
-    await AudioCall.findOneAndUpdate(
-      {
-        participants: { $size: 2, $all: [to, from] },
-      },
+    await AudioCall.findByIdAndUpdate(
+      roomID,
       { verdict: "Accepted" }
     );
 
     // TODO => emit call_accepted to sender of call
     io.to(from_user?.socket_id).emit("audio_call_accepted", {
-      from,
-      to,
+      streamID,
+      userID,
     });
   });
 
   // handle audio_call_denied
   socket.on("audio_call_denied", async (data) => {
     // find and update call record
-    const { to, from } = data;
+    const { streamID, userID, roomID } = data;
 
-    await AudioCall.findOneAndUpdate(
-      {
-        participants: { $size: 2, $all: [to, from] },
-      },
+
+   const doc=  await AudioCall.findByIdAndUpdate(
+       roomID,
       { verdict: "Denied", status: "Ended", endedAt: Date.now() }
     );
 
-    const from_user = await User.findById(from);
+    console.log('doc',doc)
+
+    const from_user = await User.findById(streamID);
+    const to_user = await User.findById(userID);
+
+    from_user.inCall = false;
+    to_user.inCall = false;
+    await from_user.save();
+    await to_user.save();
     // TODO => emit call_denied to sender of call
 
     io.to(from_user?.socket_id).emit("audio_call_denied", {
-      from,
-      to,
+      streamID,
+      userID,
+    });
+  });
+
+  socket.on("audio_call_ended", async (data) => {
+    // find and update call record
+    const { streamID, userID, roomID } = data;
+
+    await AudioCall.findByIdAndUpdate(
+      roomID,
+      { verdict: "Accepted", status: "Ended", endedAt: Date.now() }
+    );
+
+    const from_user = await User.findById(streamID);
+    const to_user = await User.findById(userID);
+
+    from_user.inCall = false;
+    to_user.inCall = false;
+    await from_user.save();
+    await to_user.save();
+    // TODO => emit call_denied to sender of call
+
+    io.to(from_user?.socket_id).emit("audio_call_ended", {
+    });
+    io.to(to_user?.socket_id).emit("audio_call_ended", {
     });
   });
 
@@ -1485,9 +1537,9 @@ io.on("connection", async (socket) => {
       { verdict: "Busy", status: "Ended", endedAt: Date.now() }
     );
 
-    const from_user = await User.findById(from);
+    const to_user = await User.findById(to);
     // TODO => emit on_another_audio_call to sender of call
-    io.to(from_user?.socket_id).emit("on_another_audio_call", {
+    io.to(to_user?.socket_id).emit("on_another_audio_call", {
       from,
       to,
     });

@@ -336,6 +336,7 @@ exports.startAudioCall = catchAsync(async (req, res, next) => {
   const from_user = await User.findById(from);
   const to_user = await User.findById(to);
 
+
   // create a new call audioCall Doc and send required data to client
   const new_audio_call = await AudioCall.create({
     participants: [from, to],
@@ -346,11 +347,12 @@ exports.startAudioCall = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     data: {
-      from: to_user,
+      from: from_user,
+      to:to_user,
       roomID: new_audio_call._id,
       streamID: to,
       userID: from,
-      userName: from,
+      userName: from_user?.firstName,
     },
   });
 });

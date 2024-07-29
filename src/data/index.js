@@ -50,7 +50,7 @@ const CallList = [
   {
     id: 0,
     img: faker.image.avatar(),
-    name: faker.name.firstName(),
+    name: 'gora',
     online: true,
     incoming: true,
     missed: false,

@@ -24,6 +24,7 @@ import { faker } from "@faker-js/faker";
 import useResponsive from "../../hooks/useResponsive";
 import {
   SelectConversation,
+  showSnackbar,
   ToggleSidebar,
   UpdateSidebarType,
 } from "../../redux/slices/app";
@@ -161,7 +162,7 @@ const ChatHeader = () => {
     }
   };
 
-  const { friends } = useSelector((state)=>state?.app?.user);
+  const { friends } = useSelector((state) => state?.app?.user);
 
   const { sideBar } = useSelector((state) => state.app);
 
@@ -263,7 +264,8 @@ const ChatHeader = () => {
             spacing={2}
             direction="row"
           >
-            {(current_conversation?.online && friends.includes(current_conversation?.user_id) )? (
+            {current_conversation?.online &&
+            friends.includes(current_conversation?.user_id) ? (
               <>
                 <Box>
                   <StyledBadge
@@ -308,7 +310,8 @@ const ChatHeader = () => {
                   <div className={`last-seen ${updating ? "updating" : ""}`}>
                     <Typography variant="caption">
                       {" "}
-                      {friends.includes(current_conversation?.user_id) && formatLastSeen(lastSeen)}
+                      {friends.includes(current_conversation?.user_id) &&
+                        formatLastSeen(lastSeen)}
                     </Typography>
                   </div>
                 </Stack>
@@ -321,14 +324,28 @@ const ChatHeader = () => {
             spacing={isMobile ? 1 : 3}
           >
             <IconButton
-              onClick={() => {
-                dispatch(StartVideoCall(current_conversation.user_id));
-              }}
+              // onClick={() => {
+              //   dispatch(StartVideoCall(current_conversation.user_id));
+              // }}
+              className={` ${
+                friends.includes(current_conversation?.user_id)
+                  ? null
+                  : "pointer-events-none opacity-50 cursor-not-allowed"
+              }`}
             >
               <VideoCamera />
             </IconButton>
             <IconButton
+              className={` ${
+                friends.includes(current_conversation?.user_id)
+                  ? null
+                  : "pointer-events-none opacity-50 cursor-not-allowed"
+              }`}
               onClick={() => {
+                if(!current_conversation?.online){
+                  dispatch(showSnackbar({ severity: "error", message: `${current_conversation?.name} is offline` }));
+                  return;
+                }
                 dispatch(StartAudioCall(current_conversation.user_id));
               }}
             >

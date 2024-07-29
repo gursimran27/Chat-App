@@ -40,6 +40,7 @@ import AudioCallNotification from "../../sections/Dashboard/Audio/CallNotificati
 import VideoCallNotification from "../../sections/Dashboard/video/CallNotification";
 import {
   PushToAudioCallQueue,
+  ResetAudioCallQueue,
   UpdateAudioCallDialog,
 } from "../../redux/slices/audioCall";
 import AudioCallDialog from "../../sections/Dashboard/Audio/CallDialog";
@@ -57,12 +58,13 @@ import toast from "react-hot-toast";
 import sound from "../../assets/notifications/level-up-191997.mp3";
 import incommingSound from "../../assets/notifications/Whatsapp Message - QuickSounds.com.mp3";
 import { LuMessageSquare } from "react-icons/lu";
+import Main from "../../sections/Dashboard/Audio/Main";
 
 const DashboardLayout = () => {
   const isDesktop = useResponsive("up", "md");
   const dispatch = useDispatch();
   const { user_id } = useSelector((state) => state.auth);
-  const { open_audio_notification_dialog, open_audio_dialog } = useSelector(
+  const { open_audio_notification_dialog, open_audio_dialog, main } = useSelector(
     (state) => state.audioCall
   );
   const { open_video_notification_dialog, open_video_dialog } = useSelector(
@@ -296,7 +298,7 @@ const DashboardLayout = () => {
           notiSound.play();
 
           const conversations = concersationsRef.current;
-          const openChat = conversations.find(
+          const openChat = conversations.filter(
             (el) => el?.user_id === message.from
           );
 
@@ -309,7 +311,8 @@ const DashboardLayout = () => {
               <div
                 className="flex-1 w-0 p-4 cursor-pointer"
                 onClick={() => {
-                  if (openChat.length <= 0) {
+                  if (openChat?.length <= 0) {
+                    console.log("sssss",openChat)
                     toast.dismiss(t.id);
                     dispatch(
                       showSnackbar({
@@ -615,6 +618,18 @@ const DashboardLayout = () => {
       dispatch(RemoveFromFriends({ id: data }));
     });
 
+    socket.on("audio_call_missed", () => {
+      // TODO => You can play an audio indicating call is missed at receiver's end
+      // Abort call
+      dispatch(ResetAudioCallQueue());
+    });
+
+    socket.on("audio_call_ended", () => {
+      // TODO => You can play an audio indicating call is missed at receiver's end
+      // Abort call
+      dispatch(ResetAudioCallQueue());
+    });
+
     // // Listen for the 'isSeen' event from the server
     // socket.on("isSeen", () => {
     //   // Get the current conversation ID
@@ -648,6 +663,7 @@ const DashboardLayout = () => {
       socket?.off("statusRemoved");
       socket?.off("friendStatusRemoved");
       socket?.off("removedFriend");
+      socket?.off("audio_call_missed");
     };
   }, [isLoggedIn, socket]);
 
@@ -681,6 +697,11 @@ const DashboardLayout = () => {
         <VideoCallDialog
           open={open_video_dialog}
           handleClose={handleCloseVideoDialog}
+        />
+      )}
+      {main && (
+        <Main
+          open={main}
         />
       )}
     </div>
