@@ -16,7 +16,6 @@ const slice = createSlice({
   reducers: {
     pushToAudioCallQueue(state, action) {
       // check audio_call_queue in redux store
-      console.error(state.call_queue.length === 0);
 
       if (state.call_queue.length === 0) {
         state.call_queue.push(action.payload.call);

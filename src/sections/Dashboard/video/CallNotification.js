@@ -1,4 +1,4 @@
-import { faker } from "@faker-js/faker";
+
 import {
   Avatar,
   Button,
@@ -13,9 +13,10 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   ResetVideoCallQueue,
   UpdateVideoCallDialog,
+  UpdateMainVideo,
 } from "../../../redux/slices/videoCall";
 import { socket } from "../../../socket";
-import { AWS_S3_REGION, S3_BUCKET_NAME } from "../../../config";
+
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -23,12 +24,14 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 
 const CallNotification = ({ open, handleClose }) => {
   const dispatch = useDispatch();
+
   const { user } = useSelector((state) => state.app);
   const [call_details] = useSelector((state) => state.videoCall.call_queue);
 
   const handleAccept = () => {
     socket.emit("video_call_accepted", { ...call_details });
-    dispatch(UpdateVideoCallDialog({ state: true }));
+    // dispatch(UpdateAudioCallDialog({ state: true }));
+    dispatch(UpdateMainVideo());
   };
 
   const handleDeny = () => {
@@ -48,20 +51,32 @@ const CallNotification = ({ open, handleClose }) => {
         aria-describedby="alert-dialog-slide-description"
       >
         <DialogContent>
-          <Stack direction="row" spacing={24} p={2}>
-            <Stack>
+          <Stack direction="row" spacing={10} p={2} justifyContent={"center"}
+              alignItems={"center"}>
+            <Stack direction={"column"}
+              justifyContent={"center"}
+              alignItems={"center"}>
               <Avatar
                 sx={{ height: 100, width: 100 }}
-                // src={`https://${S3_BUCKET_NAME}.s3.${AWS_S3_REGION}.amazonaws.com/${call_details?.from_user?.avatar}`}
-                src={faker.image.avatar()}
+                src={
+                  call_details?.from?.avatar ||
+                  `https://api.dicebear.com/5.x/initials/svg?seed=${call_details?.from?.firstName} ${call_details?.from?.lastName}`
+                }
               />
+              <span className=" capitalize">{call_details?.from?.firstName}</span>
             </Stack>
-            <Stack>
+            <div className=" text-xl font-bold">Incomming...</div>
+            <Stack direction={"column"}
+              justifyContent={"center"}
+              alignItems={"center"}>
               <Avatar
                 sx={{ height: 100, width: 100 }}
-                // src={`https://${S3_BUCKET_NAME}.s3.${AWS_S3_REGION}.amazonaws.com/${user?.avatar}`}
-                src={faker.image.avatar()}
+                src={
+                  call_details?.to?.avatar ||
+                  `https://api.dicebear.com/5.x/initials/svg?seed=${call_details?.to?.firstName} ${call_details?.to?.lastName}`
+                }
               />
+              <span className=" capitalize">{call_details?.to?.firstName}</span>
             </Stack>
           </Stack>
         </DialogContent>

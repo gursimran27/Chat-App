@@ -822,7 +822,7 @@ io.on("connection", async (socket) => {
           oldMessages
             ?.get(to.toString())
             ?.get(conversationId.toString())
-            .forEach((el) => {
+            ?.forEach((el) => {
               if (el?._id == messageId) {
                 el?.reaction.set(from, reaction);
               }
@@ -886,7 +886,7 @@ io.on("connection", async (socket) => {
   });
 
   // *----------------------------deleteForEveryone---------------------------------------//
-  socket.on("deleteForEveryone", async (data) => {
+  socket.on("deleteForEveryone", async (data) => {  
     const { conversationId, to, from, messageId } = data;
 
     try {
@@ -990,7 +990,7 @@ io.on("connection", async (socket) => {
         oldMessages
           ?.get(to.toString())
           ?.get(conversationId.toString())
-          .forEach((el) => {
+          ?.forEach((el) => {
             if (el?._id == messageId) {
               el.star = {}; // Set star to empty object
               el.reaction = {}; // Set reaction to empty object
@@ -1398,10 +1398,11 @@ io.on("connection", async (socket) => {
     const from_user = await User.findById(from);
 
     if (to_user?.inCall) {
-      await AudioCall.findByIdAndUpdate(
-        roomID,
-        { verdict: "Busy", status: "Ended", endedAt: Date.now() }
-      );
+      await AudioCall.findByIdAndUpdate(roomID, {
+        verdict: "Busy",
+        status: "Ended",
+        endedAt: Date.now(),
+      });
 
       // TODO => emit on_another_audio_call to sender of call
       io.to(from_user?.socket_id).emit("on_another_audio_call", {
@@ -1443,10 +1444,11 @@ io.on("connection", async (socket) => {
     await from_user.save();
     await to_user.save();
 
-    await AudioCall.findByIdAndUpdate(
-      roomID,
-      { verdict: "Missed", status: "Ended", endedAt: Date.now() }
-    );
+    await AudioCall.findByIdAndUpdate(roomID, {
+      verdict: "Missed",
+      status: "Ended",
+      endedAt: Date.now(),
+    });
 
     // TODO => emit call_missed to receiver of call
     io.to(to_user?.socket_id).emit("audio_call_missed", {
@@ -1462,10 +1464,7 @@ io.on("connection", async (socket) => {
     const from_user = await User.findById(streamID);
 
     // find and update call record
-    await AudioCall.findByIdAndUpdate(
-      roomID,
-      { verdict: "Accepted" }
-    );
+    await AudioCall.findByIdAndUpdate(roomID, { verdict: "Accepted" });
 
     // TODO => emit call_accepted to sender of call
     io.to(from_user?.socket_id).emit("audio_call_accepted", {
@@ -1479,13 +1478,13 @@ io.on("connection", async (socket) => {
     // find and update call record
     const { streamID, userID, roomID } = data;
 
+    const doc = await AudioCall.findByIdAndUpdate(roomID, {
+      verdict: "Denied",
+      status: "Ended",
+      endedAt: Date.now(),
+    });
 
-   const doc=  await AudioCall.findByIdAndUpdate(
-       roomID,
-      { verdict: "Denied", status: "Ended", endedAt: Date.now() }
-    );
-
-    console.log('doc',doc)
+    console.log("doc", doc);
 
     const from_user = await User.findById(streamID);
     const to_user = await User.findById(userID);
@@ -1502,29 +1501,28 @@ io.on("connection", async (socket) => {
     });
   });
 
-  socket.on("audio_call_ended", async (data) => {
-    // find and update call record
-    const { streamID, userID, roomID } = data;
+  // socket.on("audio_call_ended", async (data) => {
+  //   // find and update call record
+  //   const { streamID, userID, roomID } = data;
 
-    await AudioCall.findByIdAndUpdate(
-      roomID,
-      { verdict: "Accepted", status: "Ended", endedAt: Date.now() }
-    );
+  //   await AudioCall.findByIdAndUpdate(roomID, {
+  //     verdict: "Accepted",
+  //     status: "Ended",
+  //     endedAt: Date.now(),
+  //   });
 
-    const from_user = await User.findById(streamID);
-    const to_user = await User.findById(userID);
+  //   const from_user = await User.findById(streamID);
+  //   const to_user = await User.findById(userID);
 
-    from_user.inCall = false;
-    to_user.inCall = false;
-    await from_user.save();
-    await to_user.save();
-    // TODO => emit call_denied to sender of call
+  //   from_user.inCall = false;
+  //   to_user.inCall = false;
+  //   await from_user.save();
+  //   await to_user.save();
+  //   // TODO => emit call_denied to sender of call
 
-    io.to(from_user?.socket_id).emit("audio_call_ended", {
-    });
-    io.to(to_user?.socket_id).emit("audio_call_ended", {
-    });
-  });
+  //   io.to(from_user?.socket_id).emit("audio_call_ended", {});
+  //   io.to(to_user?.socket_id).emit("audio_call_ended", {});
+  // });
 
   // handle user_is_busy_audio_call
   socket.on("user_is_busy_audio_call", async (data) => {
@@ -1545,111 +1543,225 @@ io.on("connection", async (socket) => {
     });
   });
 
-  // --------------------- HANDLE VIDEO CALL SOCKET EVENTS ---------------------- //
+  socket.on("initiate:call", async (peerId, data) => {
+    const { streamID } = data;
 
-  // handle start_video_call event
-  socket.on("start_video_call", async (data) => {
-    const { from, to, roomID } = data;
+    const from_user = await User.findById(streamID);
 
-    console.log(data);
-
-    const to_user = await User.findById(to);
-    const from_user = await User.findById(from);
-
-    console.log("to_user", to_user);
-
-    // send notification to receiver of call
-    io.to(to_user?.socket_id).emit("video_call_notification", {
-      from: from_user,
-      roomID,
-      streamID: from,
-      userID: to,
-      userName: to,
-    });
+    io.to(from_user?.socket_id).emit("user-connected", peerId);
   });
 
-  // handle video_call_not_picked
-  socket.on("video_call_not_picked", async (data) => {
-    console.log(data);
-    // find and update call record
-    const { to, from } = data;
+  socket.on("user-toggle-audio", async (peerId, data) => {
+    const { streamID } = data;
 
-    const to_user = await User.findById(to);
+    const from_user = await User.findById(streamID);
 
-    await VideoCall.findOneAndUpdate(
-      {
-        participants: { $size: 2, $all: [to, from] },
-      },
-      { verdict: "Missed", status: "Ended", endedAt: Date.now() }
-    );
-
-    // TODO => emit call_missed to receiver of call
-    io.to(to_user?.socket_id).emit("video_call_missed", {
-      from,
-      to,
-    });
+    io.to(from_user?.socket_id).emit("user-toggle-audio", peerId);
   });
 
-  // handle video_call_accepted
-  socket.on("video_call_accepted", async (data) => {
-    const { to, from } = data;
 
-    const from_user = await User.findById(from);
+  socket.on("user-leave", async (peerId, data) => {
+    const { streamID, userID, roomID } = data;
 
-    // find and update call record
-    await VideoCall.findOneAndUpdate(
-      {
-        participants: { $size: 2, $all: [to, from] },
-      },
-      { verdict: "Accepted" }
-    );
 
-    // TODO => emit call_accepted to sender of call
-    io.to(from_user?.socket_id).emit("video_call_accepted", {
-      from,
-      to,
+    await AudioCall.findByIdAndUpdate(roomID, {
+      verdict: "Accepted",
+      status: "Ended",
+      endedAt: Date.now(),
     });
+
+    const from_user = await User.findById(streamID);
+    const to_user = await User.findById(userID);
+
+    from_user.inCall = false;
+    to_user.inCall = false;
+    await from_user.save();
+    await to_user.save();
+
+
+    io.to(from_user?.socket_id).emit("user-leave", peerId);
   });
 
-  // handle video_call_denied
-  socket.on("video_call_denied", async (data) => {
-    // find and update call record
-    const { to, from } = data;
+  // *--------------------- HANDLE VIDEO CALL SOCKET EVENTS ---------------------- //
 
-    await VideoCall.findOneAndUpdate(
-      {
-        participants: { $size: 2, $all: [to, from] },
-      },
-      { verdict: "Denied", status: "Ended", endedAt: Date.now() }
-    );
-
-    const from_user = await User.findById(from);
-    // TODO => emit call_denied to sender of call
-
-    io.to(from_user?.socket_id).emit("video_call_denied", {
-      from,
-      to,
+    // handle start_audio_call event
+    socket.on("start_video_call", async (data) => {
+      const { from, to, roomID } = data;
+  
+      const to_user = await User.findById(to);
+      const from_user = await User.findById(from);
+  
+      if (to_user?.inCall) {
+        await VideoCall.findByIdAndUpdate(roomID, {
+          verdict: "Busy",
+          status: "Ended",
+          endedAt: Date.now(),
+        });
+  
+        // TODO => emit on_another_audio_call to sender of call
+        io.to(from_user?.socket_id).emit("on_another_video_call", {
+          from,
+          to,
+        });
+        return;
+      }
+  
+      from_user.inCall = true;
+      to_user.inCall = true;
+      await from_user.save();
+      await to_user.save();
+  
+      console.log("to_user", to_user);
+  
+      // send notification to receiver of call
+      io.to(to_user?.socket_id).emit("video_call_notification", {
+        from: from_user,
+        to: to_user,
+        roomID,
+        streamID: from,
+        userID: to,
+        userName: to_user?.firstName,
+      });
     });
-  });
-
-  // handle user_is_busy_video_call
-  socket.on("user_is_busy_video_call", async (data) => {
-    const { to, from } = data;
-    // find and update call record
-    await VideoCall.findOneAndUpdate(
-      {
-        participants: { $size: 2, $all: [to, from] },
-      },
-      { verdict: "Busy", status: "Ended", endedAt: Date.now() }
-    );
-
-    const from_user = await User.findById(from);
-    // TODO => emit on_another_video_call to sender of call
-    io.to(from_user?.socket_id).emit("on_another_video_call", {
-      from,
-      to,
+  
+    // handle audio_call_not_picked
+    socket.on("video_call_not_picked", async (data) => {
+      console.log(data);
+      // find and update call record
+      const { to, from, roomID } = data;
+  
+      const to_user = await User.findById(to);
+      const from_user = await User.findById(from);
+  
+      from_user.inCall = false;
+      to_user.inCall = false;
+      await from_user.save();
+      await to_user.save();
+  
+      await VideoCall.findByIdAndUpdate(roomID, {
+        verdict: "Missed",
+        status: "Ended",
+        endedAt: Date.now(),
+      });
+  
+      // TODO => emit call_missed to receiver of call
+      io.to(to_user?.socket_id).emit("video_call_missed", {
+        from,
+        to,
+      });
     });
-  });
+  
+    // handle audio_call_accepted
+    socket.on("video_call_accepted", async (data) => {
+      const { userID, streamID, roomID } = data;
+  
+      const from_user = await User.findById(streamID);
+  
+      // find and update call record
+      await VideoCall.findByIdAndUpdate(roomID, { verdict: "Accepted" });
+  
+      // TODO => emit call_accepted to sender of call
+      io.to(from_user?.socket_id).emit("video_call_accepted", {
+        streamID,
+        userID,
+      });
+    });
+  
+    // handle audio_call_denied
+    socket.on("video_call_denied", async (data) => {
+      // find and update call record
+      const { streamID, userID, roomID } = data;
+  
+      const doc = await VideoCall.findByIdAndUpdate(roomID, {
+        verdict: "Denied",
+        status: "Ended",
+        endedAt: Date.now(),
+      });
+  
+      // console.log("doc", doc);
+  
+      const from_user = await User.findById(streamID);
+      const to_user = await User.findById(userID);
+  
+      from_user.inCall = false;
+      to_user.inCall = false;
+      await from_user.save();
+      await to_user.save();
+      // TODO => emit call_denied to sender of call
+  
+      io.to(from_user?.socket_id).emit("video_call_denied", {
+        streamID,
+        userID,
+      });
+    });
+
+  
+    // handle user_is_busy_audio_call
+    socket.on("user_is_busy_video_call", async (data) => {
+      const { to, from } = data;
+      // find and update call record
+      await VideoCall.findOneAndUpdate(
+        {
+          participants: { $size: 2, $all: [to, from] },
+        },
+        { verdict: "Busy", status: "Ended", endedAt: Date.now() }
+      );
+  
+      const to_user = await User.findById(to);
+      // TODO => emit on_another_audio_call to sender of call
+      io.to(to_user?.socket_id).emit("on_another_video_call", {
+        from,
+        to,
+      });
+    });
+  
+    socket.on("initiate:videocall", async (peerId, data) => {
+      const { streamID } = data;
+  
+      const from_user = await User.findById(streamID);
+  
+      io.to(from_user?.socket_id).emit("user-connected-videocall", peerId);
+    });
+  
+    socket.on("user-toggle-audio-videocall", async (peerId, data) => {
+      const { streamID } = data;
+  
+      const from_user = await User.findById(streamID);
+  
+      io.to(from_user?.socket_id).emit("user-toggle-audio-videocall", peerId);
+    });
+
+    socket.on("user-toggle-video", async (peerId, data) => {
+      const { streamID } = data;
+  
+      const from_user = await User.findById(streamID);
+  
+      io.to(from_user?.socket_id).emit("user-toggle-video", peerId);
+    });
+  
+  
+    socket.on("user-leave-videocall", async (peerId, data) => {
+      const { streamID, userID, roomID } = data;
+  
+  
+      await VideoCall.findByIdAndUpdate(roomID, {
+        verdict: "Accepted",
+        status: "Ended",
+        endedAt: Date.now(),
+      });
+  
+      const from_user = await User.findById(streamID);
+      const to_user = await User.findById(userID);
+  
+      from_user.inCall = false;
+      to_user.inCall = false;
+      await from_user.save();
+      await to_user.save();
+  
+  
+      io.to(from_user?.socket_id).emit("user-leave-videocall", peerId);
+    });
+  
 
   // -------------- HANDLE SOCKET DISCONNECTION ----------------- //
 

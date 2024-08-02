@@ -7,6 +7,7 @@ const initialState = {
   open_video_notification_dialog: false,
   call_queue: [], // can have max 1 call at any point of time
   incoming: false,
+  mainVideo: false,
 };
 
 const slice = createSlice({
@@ -28,15 +29,17 @@ const slice = createSlice({
         }
       } else {
         // if queue is not empty then emit user_is_busy => in turn server will send this event to sender of call
-        socket.emit("user_is_busy_video_call", { ...action.payload });
+        // socket.emit("user_is_busy_video_call", { ...action.payload });
       }
 
       // Ideally queue should be managed on server side
     },
     resetVideoCallQueue(state, action) {
       state.call_queue = [];
+      state.open_video_dialog = false;
       state.open_video_notification_dialog = false;
       state.incoming = false;
+      state.mainVideo = false;
     },
     closeNotificationDialog(state, action) {
       state.open_video_notification_dialog = false;
@@ -44,6 +47,11 @@ const slice = createSlice({
     updateCallDialog(state, action) {
       state.open_video_dialog = action.payload.state;
       state.open_video_notification_dialog = false;
+    },
+    updateMainVideo(state, action) {
+      state.open_video_dialog = false;
+      state.open_video_notification_dialog = false;
+      state.mainVideo = true;
     },
   },
 });
@@ -103,5 +111,11 @@ export const CloseVideoNotificationDialog = () => {
 export const UpdateVideoCallDialog = ({ state }) => {
   return async (dispatch, getState) => {
     dispatch(slice.actions.updateCallDialog({ state }));
+  };
+};
+
+export const UpdateMainVideo = () => {
+  return async (dispatch, getState) => {
+    dispatch(slice.actions.updateMainVideo());
   };
 };

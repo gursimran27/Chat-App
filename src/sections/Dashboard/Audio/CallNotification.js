@@ -65,7 +65,7 @@ const CallNotification = ({ open, handleClose }) => {
               />
               <span className=" capitalize">{call_details?.from?.firstName}</span>
             </Stack>
-            <div className=" text-xl font-bold">Calling...</div>
+            <div className=" text-xl font-bold">Incomming...</div>
             <Stack direction={"column"}
               justifyContent={"center"}
               alignItems={"center"}>

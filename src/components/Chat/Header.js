@@ -324,14 +324,18 @@ const ChatHeader = () => {
             spacing={isMobile ? 1 : 3}
           >
             <IconButton
-              // onClick={() => {
-              //   dispatch(StartVideoCall(current_conversation.user_id));
-              // }}
               className={` ${
                 friends.includes(current_conversation?.user_id)
                   ? null
                   : "pointer-events-none opacity-50 cursor-not-allowed"
               }`}
+              onClick={() => {
+                if(!current_conversation?.online){
+                  dispatch(showSnackbar({ severity: "error", message: `${current_conversation?.name} is offline` }));
+                  return;
+                }
+                dispatch(StartVideoCall(current_conversation.user_id));
+              }}
             >
               <VideoCamera />
             </IconButton>

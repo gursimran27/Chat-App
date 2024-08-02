@@ -374,11 +374,12 @@ exports.startVideoCall = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     data: {
-      from: to_user,
+      from: from_user,
+      to:to_user,
       roomID: new_video_call._id,
       streamID: to,
       userID: from,
-      userName: from,
+      userName: from_user?.firstName,
     },
   });
 });

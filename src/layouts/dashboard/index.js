@@ -47,6 +47,7 @@ import AudioCallDialog from "../../sections/Dashboard/Audio/CallDialog";
 import VideoCallDialog from "../../sections/Dashboard/video/CallDialog";
 import {
   PushToVideoCallQueue,
+  ResetVideoCallQueue,
   UpdateVideoCallDialog,
 } from "../../redux/slices/videoCall";
 import {
@@ -59,6 +60,7 @@ import sound from "../../assets/notifications/level-up-191997.mp3";
 import incommingSound from "../../assets/notifications/Whatsapp Message - QuickSounds.com.mp3";
 import { LuMessageSquare } from "react-icons/lu";
 import Main from "../../sections/Dashboard/Audio/Main";
+import Mainvideo from "../../sections/Dashboard/video/Mainvideo";
 
 const DashboardLayout = () => {
   const isDesktop = useResponsive("up", "md");
@@ -67,7 +69,7 @@ const DashboardLayout = () => {
   const { open_audio_notification_dialog, open_audio_dialog, main } = useSelector(
     (state) => state.audioCall
   );
-  const { open_video_notification_dialog, open_video_dialog } = useSelector(
+  const { open_video_notification_dialog, open_video_dialog, mainVideo } = useSelector(
     (state) => state.videoCall
   );
   const { isLoggedIn } = useSelector((state) => state.auth);
@@ -624,11 +626,17 @@ const DashboardLayout = () => {
       dispatch(ResetAudioCallQueue());
     });
 
-    socket.on("audio_call_ended", () => {
+    socket.on("video_call_missed", () => {
       // TODO => You can play an audio indicating call is missed at receiver's end
       // Abort call
-      dispatch(ResetAudioCallQueue());
+      dispatch(ResetVideoCallQueue());
     });
+
+    // socket.on("audio_call_ended", () => {
+    //   // TODO => You can play an audio indicating call is missed at receiver's end
+    //   // Abort call
+    //   dispatch(ResetAudioCallQueue());
+    // });
 
     // // Listen for the 'isSeen' event from the server
     // socket.on("isSeen", () => {
@@ -664,6 +672,7 @@ const DashboardLayout = () => {
       socket?.off("friendStatusRemoved");
       socket?.off("removedFriend");
       socket?.off("audio_call_missed");
+      // socket?.off("audio_call_ended");
     };
   }, [isLoggedIn, socket]);
 
@@ -702,6 +711,11 @@ const DashboardLayout = () => {
       {main && (
         <Main
           open={main}
+        />
+      )}
+      {mainVideo && (
+        <Mainvideo
+          open={mainVideo}
         />
       )}
     </div>
