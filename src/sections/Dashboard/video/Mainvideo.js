@@ -1,7 +1,7 @@
 import { Box, Modal, Slide } from "@mui/material";
 
 import { socket } from "../../../socket";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cloneDeep } from "lodash";
 
 import usePeer from "../../../hooks/usePeer";
@@ -37,6 +37,8 @@ const MainVideo = ({ open }) => {
 
   const dispatch = useDispatch();
 
+  const ref = useRef(false);
+
   // call the joined person and send strams also and also receive the streams from him/her
   useEffect(() => {
     if (!socket || !peer || !stream) return;
@@ -60,6 +62,7 @@ const MainVideo = ({ open }) => {
           ...prev,
           [newUserPeerId]: call,
         }));
+        ref.current = true;
       });
     };
     socket.on("user-connected-videocall", handleUserConnected);
@@ -130,6 +133,7 @@ const MainVideo = ({ open }) => {
           ...prev,
           [callerId]: call,
         }));
+        ref.current = true;
       });
     });
   }, [peer, setPlayers, stream]);
@@ -248,6 +252,7 @@ const MainVideo = ({ open }) => {
               toggleAudio={toggleAudio}
               toggleVideo={toggleVideo}
               leaveRoom={leaveRoom}
+              clickable={ref.current}
             />
           </>
         </Box>
