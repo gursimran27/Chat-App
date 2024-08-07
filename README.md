@@ -100,6 +100,14 @@
 
     - Allows a user to remove a friend from their friend list simillar to BLOCK.
 
+25. **Voice Call**
+
+    - Allows a user to perform a voice call.
+
+26. **Video Call**
+
+    - Allows a user to make seemless video calls.
+
 
 
 ## Installation
