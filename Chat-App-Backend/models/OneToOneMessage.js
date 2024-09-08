@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const { ArrowFatLinesDown } = require("phosphor-react");
 
 const oneToOneMessageSchema = new mongoose.Schema({
   participants: [
