@@ -185,7 +185,18 @@ exports.uploadStatus = async (req, res) => {
     let mediaUrl = null;
     let filePath = null;
 
-    if (file?.size <= 100000) {//less than 100 kb
+    // if (file?.size <= 100000) {//less than 100 kb
+    //   //800kb
+    //   const cloud = await uploadImageToCloudinary(
+    //     file,
+    //     `${process.env.FOLDER_NAME}-status-${req.user?._id}`,
+    //     1000,
+    //     1000
+    //   );
+    //   mediaUrl = cloud.secure_url;
+    // }
+
+    if (true) {//less than 100 kb
       //800kb
       const cloud = await uploadImageToCloudinary(
         file,
