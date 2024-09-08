@@ -123,7 +123,7 @@ const ChatHeader = () => {
       setUpdating(true);
       try {
         const response = await axios.get(
-          `http://localhost:3001/api/v1/user/${userId}/lastSeen`,
+          `https://chat-app-backend-wppj.onrender.com/api/v1/user/${userId}/lastSeen`,
 
           {
             headers: {

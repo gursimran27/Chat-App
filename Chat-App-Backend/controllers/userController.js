@@ -104,7 +104,18 @@ exports.upload = async (req, res) => {
     let mediaUrl = null;
     let filePath = null;
 
-    if (file?.size <= 300000 && type !== "audio") {
+    // if (file?.size <= 300000 && type !== "audio") {
+    //   //800kb
+    //   const cloud = await uploadImageToCloudinary(
+    //     file,
+    //     `${process.env.FOLDER_NAME}-${conversation_id}`,
+    //     1000,
+    //     1000
+    //   );
+    //   mediaUrl = cloud.secure_url;
+    // }
+
+    if (true) {
       //800kb
       const cloud = await uploadImageToCloudinary(
         file,
